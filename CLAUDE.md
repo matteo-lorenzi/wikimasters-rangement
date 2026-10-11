@@ -22,6 +22,6 @@ Userscript Tampermonkey (Chrome) qui étiquette par domaine les cartes de la pag
 
 ## Sauvegarde
 
-Le disque de travail peut être effacé sans prévenir (c'est déjà arrivé). La copie durable est le Project claude.ai « WikiMaster » : à chaque livraison, `project_write` avec `local_path` de chaque fichier modifié vers `wikimasters-rangement/<même chemin>`, plus le build sous `wikimasters-rangement/wikimasters-rangement.user.js`.
+Le disque de travail peut être effacé sans prévenir (c'est déjà arrivé). La copie durable est GitHub : `matteo-lorenzi/wikimasters-rangement`, branche `main`. Chaque commit est poussé tout de suite ; un travail qui n'existe qu'en local est un travail qu'on peut perdre.
 
-Dépôt absent au démarrage → le recréer depuis le Project, puis prouver la copie : `npm install && npm run build`, et `dist/` doit être identique (`cmp`) au build du Project.
+Dépôt absent au démarrage → le cloner, puis `npm install`.

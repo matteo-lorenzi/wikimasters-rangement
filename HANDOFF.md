@@ -5,7 +5,7 @@ Mis à jour le 2026-10-11. Les instructions durables sont dans `CLAUDE.md` ; ce 
 ## État
 
 - Version installée chez la personne : **v1.8.0**.
-- Dépôt reconstruit depuis le build v1.8.0 après la perte de l'environnement : `npm run build` régénère ce build **à l'octet près**. Un commit git.
+- Dépôt reconstruit depuis le build v1.8.0 après la perte de l'environnement : `npm run build` régénère ce build **à l'octet près**. Poussé sur GitHub (`matteo-lorenzi/wikimasters-rangement`), qui remplace le Project claude.ai « WikiMaster » comme copie durable ; le Project garde une copie figée du 2026-10-11.
 - `docs/wikimasters.md` (fiche du site) et `docs/tests.md` réécrits depuis l'ancienne passation.
 - **Tests perdus, pas encore recréés** : `test/` et `scripts/` sont vides, le build passe avec zéro test. `docs/tests.md` décrit ce qu'ils doivent couvrir.
 
