@@ -17,11 +17,10 @@ Userscript Tampermonkey (Chrome) qui étiquette par domaine les cartes de la pag
 
 - Carte mal classée → son cas réel (titre, description, étiquettes attendues) entre d'abord dans `test/classement.test.js`, puis la règle.
 - Bug corrigé → un test rouge sans la correction, puis sa mutation dans `scripts/regressions.py`.
-- Livrer : `npm version patch --no-git-tag-version`, `npm run build`, commit, amener le commit sur `main` (avance rapide depuis la branche de travail, accord permanent de la personne : c'est `main` qu'elle regarde sur GitHub), puis envoyer `dist/wikimasters-rangement.user.js` à la personne.
-- Un build vert compte seulement si la sortie de `node --test` affiche `# tests N` avec N > 0 : sans fichier de test, il sort vert quand même.
+- Livrer : `npm version patch --no-git-tag-version`, `npm run build`, commit et push sur la branche de travail, envoyer `dist/wikimasters-rangement.user.js` à la personne, puis finir le message par une question claire : « Je pousse sur `main` ? ». `main` est ce qu'elle regarde sur GitHub ; on y pousse (avance rapide) seulement après son oui, à chaque fois.
 
 ## Sauvegarde
 
-Le disque de travail peut être effacé sans prévenir (c'est déjà arrivé). La copie durable est GitHub : `matteo-lorenzi/wikimasters-rangement`, branche `main`. Chaque commit est poussé tout de suite ; un travail qui n'existe qu'en local est un travail qu'on peut perdre.
+Le disque de travail peut être effacé sans prévenir (c'est déjà arrivé). La copie durable est GitHub : `matteo-lorenzi/wikimasters-rangement`. Chaque commit est poussé tout de suite sur la branche de travail (`main` seulement après le oui de la personne) ; un travail qui n'existe qu'en local est un travail qu'on peut perdre.
 
 Dépôt absent au démarrage → le cloner, puis `npm install`.

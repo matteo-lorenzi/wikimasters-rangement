@@ -6,7 +6,10 @@ cd "$(dirname "$0")"
 
 node --check src/regles.js
 node --check src/app.js
-npm test --silent
+# sans fichier de test, node --test sort vert quand même : on exige « # tests N » avec N > 0
+SORTIE=$(npm test --silent 2>&1) || { echo "$SORTIE"; exit 1; }
+echo "$SORTIE" | grep -E '^# (tests|pass|fail) '
+echo "$SORTIE" | grep -qE '^# tests [1-9]' || { echo "Aucun test n'a tourné : build refusé."; exit 1; }
 # une mutation dont le texte d'origine a disparu du code ne vérifie plus rien
 "$(command -v python3 || command -v python)" scripts/regressions.py --ancres
 

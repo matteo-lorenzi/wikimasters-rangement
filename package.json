@@ -4,7 +4,7 @@
   "private": true,
   "description": "Userscript Tampermonkey qui étiquette les cartes WikiMasters par domaine.",
   "scripts": {
-    "test": "node --test",
+    "test": "node --test \"test/**/*.test.js\"",
     "build": "sh build.sh"
   },
   "devDependencies": {

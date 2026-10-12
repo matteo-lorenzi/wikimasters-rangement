@@ -1,6 +1,6 @@
 # Tests
 
-`npm test` lance `node --test`, qui prend tous les `test/*.test.js` (et les autres fichiers de `test/`, sans test dedans). Une modification est prouvée quand le test concerné passe au rouge sans elle et au vert avec.
+`npm test` lance `node --test` sur les `test/**/*.test.js` seulement (sans ce motif, les fichiers d'aide comme `faux-site.js` comptent chacun pour un test, et `# tests N` reste au-dessus de 0 même sans vrai test). `build.sh` refuse un build où aucun test n'a tourné. La CI (`.github/workflows/tests.yml`) lance `npm run build` à chaque push ; les mutations complètes se lancent à la main depuis l'onglet Actions (Tests → Run workflow). Une modification est prouvée quand le test concerné passe au rouge sans elle et au vert avec.
 
 `test/charger.js` charge les sources comme le build ; la variable `WMR_SRC` lui fait lire une autre copie de `src/` (c'est ce qu'utilise `scripts/regressions.py`).
 

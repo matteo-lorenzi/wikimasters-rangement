@@ -70,7 +70,7 @@ MUTATIONS = [
 
 def tests(src):
     env = dict(os.environ, WMR_SRC=src)
-    r = subprocess.run(['node', '--test'], cwd=RACINE, env=env, capture_output=True, text=True, encoding='utf-8')
+    r = subprocess.run(['node', '--test', 'test/**/*.test.js'], cwd=RACINE, env=env, capture_output=True, text=True, encoding='utf-8')
     sortie = r.stdout + r.stderr
     n = next((l.split()[-1] for l in sortie.splitlines() if l.startswith('# tests ')), '0')
     return r.returncode, int(n)
