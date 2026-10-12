@@ -116,6 +116,16 @@ for (const fermetureAuto of [false, true]) {
   });
 }
 
+test('pose lente : « Terminé » arrive après ~50 s, le script l\'attend sans croire à un refus', async () => {
+  // 1 000 ms ici = 50 s pour le script (attentes × 0,02) : plus que son réessai (3 s + 30 s), moins que sa limite (90 s)
+  const site = await creerSite({ cartes: [{ t: 'Joueur', d: 'footballeur' }], etiquettes: ['Sport'], pose: 1000 });
+  await choisir(site, ['Joueur']);
+  const bilan = await site.wmr.poserEtiquette('Sport');
+  assert.deepEqual({ ...bilan }, { poses: 1, deja: 0 });
+  assert.deepEqual(site.actions.filter((a) => a.type === 'pose').length, 1);
+  site.fermer();
+});
+
 test('pose refusée une fois par le site : le script réessaie et réussit', async () => {
   const site = await creerSite({ cartes: [{ t: 'Joueur', d: 'footballeur' }], etiquettes: ['Sport'], echecsPose: 1 });
   await choisir(site, ['Joueur']);

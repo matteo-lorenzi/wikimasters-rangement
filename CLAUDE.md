@@ -18,7 +18,7 @@ Userscript Tampermonkey (Chrome) qui étiquette par domaine les cartes de la pag
 - Carte mal classée → son cas réel (titre, description, étiquettes attendues) entre d'abord dans `test/classement.test.js`, puis la règle.
 - Bug corrigé → un test rouge sans la correction, puis sa mutation dans `scripts/regressions.py`.
 - Livrer : `npm version patch --no-git-tag-version`, `npm run build`, commit, puis envoyer `dist/wikimasters-rangement.user.js` à la personne.
-- Un build vert compte seulement si la sortie de `node --test` affiche `# tests N` avec N > 0 : sans fichier de test, il sort vert quand même.
+- Un build vert compte seulement si la sortie de `node --test` affiche `ℹ tests N` (ou `# tests N` en TAP) avec N > 0 : sans fichier de test, il sort vert quand même.
 
 ## Sauvegarde
 

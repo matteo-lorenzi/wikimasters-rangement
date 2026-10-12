@@ -30,11 +30,11 @@ Options de panne : `echecsPose` (« Impossible d'appliquer l'étiquette »), `ch
 
 ## `test/page.test.js` — l'automatisation sur le faux site
 
-Couvre : panneau ouvrir/fermer ; lecture (pagination tardive, pages fantômes, cartes sans `p`, chargement en échec) ; filtre avec compteur dans le libellé (le menu n'est pas rouvert) ; bilan « Terminé », fenêtre qui se ferme seule ou non ; pose refusée une fois (réessai) ou deux (arrêt rapide) ; étiquette créée ; retour en page 1 ; Ranger dans « Sans étiquette » en ≤ 2 changements de page ; lecture API complète, incrémentale, et repli sur l'écran si l'API est illisible ; erreur API passagère réessayée ; panne prolongée → rechargement et relecture ; raté pendant le rangement → rechargement, reprise, rien de perdu ; ratés à répétition → 3 rechargements puis arrêt ; journal des bugs (contenu, vider) ; **Ranger sur un gros stock** (recherches groupées, intrus jamais cochés, recherche vidée à la fin) ; suppression avec `confirm` accepté et refusé.
+Couvre : panneau ouvrir/fermer ; lecture (pagination tardive, pages fantômes, cartes sans `p`, chargement en échec) ; filtre avec compteur dans le libellé (le menu n'est pas rouvert) ; bilan « Terminé », fenêtre qui se ferme seule ou non ; pose lente (« Terminé » après ~50 s, pas pris pour un refus) ; pose refusée une fois (réessai) ou deux (arrêt rapide) ; étiquette créée ; retour en page 1 ; Ranger dans « Sans étiquette » en ≤ 2 changements de page ; lecture API complète, incrémentale, et repli sur l'écran si l'API est illisible ; erreur API passagère réessayée ; panne prolongée → rechargement et relecture ; raté pendant le rangement → rechargement, reprise, rien de perdu ; ratés à répétition → 3 rechargements puis arrêt ; journal des bugs (contenu, vider) ; **Ranger sur un gros stock** (recherches groupées, intrus jamais cochés, recherche vidée à la fin) ; suppression avec `confirm` accepté et refusé.
 
 ## `scripts/regressions.py` — les bugs déjà livrés
 
-`python scripts/regressions.py` réintroduit chaque bug passé, un à la fois, dans une copie des sources, lance les tests, et exige qu'ils le **détectent** (rouge). Les 11 actuels :
+`python scripts/regressions.py` lance d'abord toute la suite sur les sources intactes, puis réintroduit chaque bug passé, un à la fois, dans une copie des sources, lance **seulement le test qui le surveille** (`--test-name-pattern`), et exige qu'il le **détecte** (rouge). Environ 2 minutes. Les 11 actuels :
 1. carte sans `p` ignorée ;
 2. « Terminé » non géré ;
 3. compteur « (n) » gardé dans le libellé du filtre ;
@@ -47,4 +47,6 @@ Couvre : panneau ouvrir/fermer ; lecture (pagination tardive, pages fantômes, c
 10. pose réussie oubliée quand la liste ne se recharge pas ensuite ;
 11. reprise après rechargement qui oublie ce qui était déjà posé.
 
-Un nouveau bug corrigé y ajoute sa mutation. Quand le code autour change, une mutation dont le texte n'est plus trouvé est signalée « à mettre à jour » et compte comme ratée.
+Un nouveau bug corrigé y ajoute sa mutation : `(nom, fichier, texte d'origine, texte fautif, test)`, où `test` est le début du nom du test qui passe au rouge. Choisir un test qui échoue **à coup sûr**, pas selon la charge de la machine : vérifier qu'il échoue lancé seul (`node --test --test-name-pattern="^début du nom"` avec `WMR_SRC` sur la copie mutée). Quand le code autour change, une mutation dont le texte n'est plus trouvé, ou dont le test a été renommé, est signalée « à mettre à jour » et compte comme ratée.
+
+Le script lit la sortie au format TAP (`--test-reporter=tap`) : depuis Node 23, `node --test` affiche par défaut `ℹ tests N` au lieu de `# tests N`.
