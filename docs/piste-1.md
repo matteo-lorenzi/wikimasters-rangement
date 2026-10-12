@@ -1,6 +1,8 @@
 # Piste 1 — étiqueter par groupes grâce à la recherche : étude de faisabilité
 
-Étude du 2026-10-12, sur le vrai site et le compte de la personne. Aucun code de `src/` n'a été modifié.
+Étude du 2026-10-12, sur le vrai site et le compte de la personne. Aucun code de `src/` n'a été modifié pendant l'étude.
+
+> **Suite donnée (v1.8.1)** : la personne garde le mode Ranger, qui choisit lui-même sa stratégie. À partir de 200 cartes à ranger, il commence par les recherches groupées (`motsGroupes`, `appliquerRanger` dans `src/app.js`), puis termine page par page ; en dessous, rien ne change. Testé sur le faux site (`test/page.test.js`, « Ranger, gros stock ») ; sur l'export réel, `motsGroupes` retrouve les 47 mots et 664 cartes de cette étude en ~0,1 s.
 Tout ce qui n'a pas été observé ou mesuré porte la mention **[non vérifié]**.
 
 ## En bref

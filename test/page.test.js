@@ -71,6 +71,12 @@ test('une vue de 100 cartes se termine sur la page vide qui suit', async () => {
   site.fermer();
 });
 
+test('chargement en échec : la lecture s\'arrête avec un message au lieu de finir en silence', async () => {
+  const site = await creerSite({ cartes: serie(120, (i) => ({ t: `Carte ${i}`, d: 'x', obtenu: date(i) })), chargementsEnEchec: [2] });
+  await assert.rejects(site.wmr.lireVue(), /n'a pas pu charger.*Recharge la page/s);
+  site.fermer();
+});
+
 // ── filtres ──
 
 test('filtre d\'étiquette : le compteur « (n) » du libellé ne trompe pas le script', async () => {
@@ -106,6 +112,26 @@ for (const fermetureAuto of [false, true]) {
     site.fermer();
   });
 }
+
+test('pose refusée une fois par le site : le script réessaie et réussit', async () => {
+  const site = await creerSite({ cartes: [{ t: 'Joueur', d: 'footballeur' }], etiquettes: ['Sport'], echecsPose: 1 });
+  await choisir(site, ['Joueur']);
+  const bilan = await site.wmr.poserEtiquette('Sport');
+  assert.equal(bilan.poses, 1);
+  assert.deepEqual(site.cartes[0].tags, ['Sport']);
+  site.fermer();
+});
+
+test('pose refusée deux fois : arrêt rapide avec un message qui dit quoi faire, fenêtre fermée', async () => {
+  const site = await creerSite({ cartes: [{ t: 'Joueur', d: 'footballeur' }], etiquettes: ['Sport'], echecsPose: 2 });
+  await choisir(site, ['Joueur']);
+  const debut = Date.now();
+  await assert.rejects(site.wmr.poserEtiquette('Sport'), /refusé.*rien n'a été posé.*relance/s);
+  assert.ok(Date.now() - debut < 1500, 'sans attendre la limite de 90 s');
+  assert.ok(!/Appliquer une étiquette/.test(site.document.body.innerText), 'fenêtre fermée');
+  assert.deepEqual(site.cartes[0].tags, []);
+  site.fermer();
+});
 
 test('pose : une étiquette absente est créée', async () => {
   const site = await creerSite({ cartes: [{ t: 'Comète X', d: 'comète' }], etiquettes: ['Sport'] });
@@ -149,6 +175,48 @@ test('Ranger : chaque carte reçoit ses étiquettes, dans « Sans étiquette »,
   assert.ok(site.actions.some((a) => a.type === 'filtre' && a.filtre === ''), 'passe 1 dans « Sans étiquette »');
   const pages1 = site.actions.findIndex((a) => a.type === 'filtre' && a.filtre === 'Musique');
   assert.ok(site.actions.slice(0, pages1).filter((a) => a.type === 'page').length <= 2, 'passe 1 : 2 changements de page au plus');
+  assert.ok(!site.actions.some((a) => a.type === 'recherche'), 'petit stock : page par page, sans recherche');
+  sansIncident(site);
+  site.fermer();
+});
+
+// Des titres variés, comme de vrais noms : aucun mot de titre commun à tout un groupe.
+const nom = (i) => { let x = (i + 1) * 2654435761 % 4294967296, s = ''; for (let k = 0; k < 8; k++) { s += 'bcdfghjklmnprstvz'[x % 17] + 'aeiou'[Math.floor(x / 32) % 5]; x = Math.floor(x / 7) + k * 977; } return s[0].toUpperCase() + s.slice(1); };
+
+// Gros stock (≥ 200 cartes à ranger) : 230 rangeables + des intrus que la recherche ramène aussi.
+const grosStock = () => [
+  ...serie(100, (i) => ({ t: nom(i), d: ['footballeur français', 'footballeur brésilien', 'footballeuse anglaise'][i % 3], obtenu: date(i * 3) })),
+  ...serie(70, (i) => ({ t: nom(100 + i), d: "espèce d'insectes", obtenu: date(i * 3 + 1) })),
+  ...serie(40, (i) => ({ t: nom(200 + i), d: 'homme politique', obtenu: date(i * 3 + 2) })),
+  ...serie(20, (i) => ({ t: nom(300 + i), d: 'astéroïde', obtenu: date(400 + i) })),
+  ...serie(30, (i) => ({ t: nom(400 + i), d: 'xyz sans règle', obtenu: date(500 + i) })),
+  // intrus : la recherche « footballeur » les trouve par le titre, mais le moteur ne leur donne rien (ou autre chose)
+  { t: "Footballeur d'or", d: 'xyz sans règle', obtenu: date(600) },
+  { t: 'Footballeur (homonymie)', d: "page d'homonymie de Wikimédia", obtenu: date(601) },
+  { t: 'Le Footballeur', d: 'film de 1974', obtenu: date(602) },
+];
+
+test('Ranger, gros stock : recherches groupées d\'abord, puis page par page ; chaque carte reçoit ses étiquettes, les intrus aucune autre', async () => {
+  const site = await creerSite({ cartes: grosStock(), etiquettes: ['Sport', 'Nature'] });
+  const p = panneau(site);
+  p.ranger();
+  assert.ok(await attendreQue(() => p.root.querySelector('[data-go]')), p.statut());
+  assert.match(p.root.querySelector('.out').textContent, /Rangement groupé/);
+  p.appliquer();
+  assert.ok(await attendreQue(() => /✅|⚠️|Terminé, mais/.test(p.statut()), 60000), p.statut());
+  assert.match(p.statut(), /✅ 231 carte\(s\) rangée\(s\)/);
+  const tags = (t) => site.cartes.find((c) => c.t === t).tags;
+  assert.deepEqual(tags(nom(4)), ['Sport']);
+  assert.deepEqual(tags(nom(109)), ['Nature']);
+  assert.deepEqual(tags(nom(200)), ['Politique & Droit']);
+  assert.deepEqual(tags(nom(303)), ['Espace']);
+  assert.deepEqual(tags(nom(401)), [], 'sans règle : reste sans étiquette');
+  assert.deepEqual(tags("Footballeur d'or"), [], 'intrus sans règle : jamais coché');
+  assert.deepEqual(tags('Footballeur (homonymie)'), []);
+  assert.deepEqual(tags('Le Footballeur'), ['Cinéma & TV'], 'intrus d\'un autre domaine : seulement son propre domaine');
+  assert.ok(site.actions.some((a) => a.type === 'recherche' && /footba/i.test(a.q)), 'recherche groupée lancée');
+  assert.ok(site.poses().some((x) => x.n === 50), 'une page entière étiquetée d\'un coup');
+  assert.equal(site.etat.q, '', 'la recherche est vidée à la fin');
   sansIncident(site);
   site.fermer();
 });

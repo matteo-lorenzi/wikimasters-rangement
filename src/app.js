@@ -169,6 +169,12 @@ const attendreCalme = async () => {
 };
 const bouton = (re) => [...document.querySelectorAll('button')].find((b) => !b.closest('#wmr-host') && re.test(b.innerText.trim()));
 
+// Un chargement raté affiche une liste vide : sans ce contrôle, il passerait pour la fin de la vue.
+const echecChargement = () => /chargement de la collection a échoué/i.test(texte());
+const verifierChargement = () => {
+  if (echecChargement()) throw new Error('Le site n\'a pas pu charger la liste (« Le chargement de la collection a échoué »). Recharge la page puis relance : ce qui est fait reste fait.');
+};
+
 // Attend que la page affichée soit stable (même empreinte pendant 1,5 s, rien en chargement).
 const attendrePageStable = async () => {
   let prec = null, stable = 0;
@@ -177,8 +183,9 @@ const attendrePageStable = async () => {
     const e = empreinte();
     stable = (!enChargement() && e === prec) ? stable + 1 : 0;
     prec = e;
-    if (stable >= 7) return;
+    if (stable >= 7) break;
   }
+  verifierChargement();
 };
 
 // Passe à la page suivante ou précédente. Renvoie false s'il n'y en a pas.
@@ -192,6 +199,7 @@ const changerPage = async (sens) => {
   b.click();
   const ok = await attendre(() => empreinte() !== avant && cartesDom().length > 0 && !enChargement(), 90000);
   if (!ok) {
+    verifierChargement();
     if (!cartesDom().length && !enChargement()) return false; // page vide : fin réelle de la vue
     throw new Error('Le site ne répond plus (page bloquée sur « Chargement… »). Recharge la page puis relance : ce qui est fait reste fait.');
   }
@@ -360,11 +368,26 @@ const setValeur = (inp, v) => {
   inp.dispatchEvent(new Event('input', { bubbles: true }));
 };
 const champEtiquette = () => [...document.querySelectorAll('input')].find((x) => /créer une étiquette/i.test(x.placeholder || ''));
+const champRecherche = () => [...document.querySelectorAll('input')].find((x) => /Rechercher par titre/i.test(x.placeholder || ''));
+// Tape un mot dans la barre de recherche du site et attend la liste filtrée (7 à 10 s sur le vrai site).
+const rechercher = async (mot) => {
+  const inp = champRecherche();
+  if (!inp) throw new Error('Barre de recherche introuvable : es-tu sur la page Collection ?');
+  if (inp.value === mot) return;
+  const avant = empreinte();
+  setValeur(inp, mot);
+  await attendre(() => !enChargement() && (empreinte() !== avant || echecChargement()), 30000);
+  await attendrePageStable();
+};
 const fenetreOuverte = () => /Appliquer une étiquette/.test(texte());
 const fermerFenetre = async () => {
   const t = bouton(/^Terminé$/);
   if (t) t.click();
-  else [...document.querySelectorAll('button[aria-label="Fermer"]')].find((x) => !x.closest('#wmr-host'))?.click();
+  else {
+    // la croix de la fenêtre, pas celle du bandeau « Étiquette appliquée » qui porte le même libellé
+    const croix = [...document.querySelectorAll('button[aria-label="Fermer"]')].filter((x) => !x.closest('#wmr-host'));
+    (croix.find((x) => /Appliquer une étiquette/.test(x.parentElement?.innerText || '')) || croix[0])?.click();
+  }
   await attendre(() => !fenetreOuverte(), 10000);
 };
 
@@ -384,10 +407,20 @@ const poserEtiquette = async (nom) => {
   };
   if (!(await attendre(() => choix(), 10000))) { await fermerFenetre(); throw new Error('Étiquette « ' + nom + ' » introuvable dans la fenêtre.'); }
   choix().click();
-  // le site peut être lent sur une grosse sélection
-  if (!(await attendre(() => bouton(/^Terminé$/), 90000))) {
+  // le site peut être lent sur une grosse sélection ; il peut aussi refuser (« Impossible d'appliquer l'étiquette »),
+  // la fenêtre reste alors ouverte avec la sélection : on réessaie une fois
+  const refus = () => /Impossible d'appliquer/.test(texte());
+  if (!(await attendre(() => bouton(/^Terminé$/) || refus(), 90000))) {
     await fermerFenetre();
     throw new Error('Le site n\'a pas confirmé « ' + nom + ' » après 90 s. Vérifie quelques cartes puis relance : ce qui est fait reste fait.');
+  }
+  if (!bouton(/^Terminé$/)) {
+    await sleep(3000);
+    if (choix()) choix().click();
+    if (!(await attendre(() => bouton(/^Terminé$/), 30000))) {
+      await fermerFenetre();
+      throw new Error('Le site a refusé deux fois de poser « ' + nom + ' » (« Impossible d\'appliquer l\'étiquette ») : rien n\'a été posé sur ces cartes. Attends une minute puis relance : ce qui est fait reste fait.');
+    }
   }
   const m = texte().match(/(\d+)\s*cartes?\s*étiquetées?\.?\s*(?:\((\d+)\s*déjà)?/);
   await fermerFenetre();
@@ -422,6 +455,10 @@ const appliquerSurPage = async (plan, fait, journal, num = null) => {
     const [tag, cles] = [...parTag.entries()].sort((a, b) => b[1].size - a[1].size)[0];
     await modeSelection(true);
     await viderSelection();
+    // page entière à poser (fréquent en rangement groupé) : un clic au lieu de 50
+    const visibles = cartesDom();
+    const tout = bouton(/^Tout sélectionner \(page\)$/);
+    if (tout && visibles.length > 1 && visibles.every((el) => cles.has(cle(lireCarte(el))))) { tout.click(); await sleep(300); }
     for (const el of cartesDom()) if (cles.has(cle(lireCarte(el))) && !estSelectionnee(el)) await basculer(el);
     const nb = cartesDom().filter(estSelectionnee).length;
     const attendu = cartesDom().filter((el) => cles.has(cle(lireCarte(el)))).length;
@@ -469,6 +506,56 @@ const planCarte = (c, anciennes = []) => {
   if (!doms.length && r.statut === 'a_traiter') tags.push(A_TRAITER);
   const statut = doms.length ? 'classee' : r.statut === 'a_traiter' ? 'a_traiter' : r.statut;
   return { tags, statut, source: r.source };
+};
+
+// ── Rangement groupé, pour un gros stock de cartes à ranger ──
+// La barre de recherche du site trouve une sous-chaîne du titre ou de la description, sans casse ni accents,
+// et se combine avec « Sans étiquette ». Pour chaque domaine (première étiquette des cartes), on retient les mots
+// qui ramènent le plus de cartes de ce domaine, tant qu'un mot en ramène au moins MOTS_MIN_CARTES
+// et que les autres cartes trouvées (les intrus, jamais cochées) restent minoritaires.
+// Mesuré le 2026-10-12 : ≈ ×1,5 plus rapide sur 1 100 cartes ; rien à gagner sur quelques dizaines.
+const SEUIL_RANGEMENT_GROUPE = 200;
+const MOTS_MIN_CARTES = 5;
+const MOTS_PRECISION = 0.6;
+const motsGroupes = (cartes, plans) => {
+  const textes = new Map(cartes.map((c) => [cle(c), norm(c.t + '\n' + c.d)]));
+  const tete = (c) => plans.get(cle(c)).tags[0];
+  // index des groupes de 4 lettres : on ne teste un mot que sur les cartes qui contiennent son début
+  const index = new Map();
+  for (const c of cartes) {
+    const tx = textes.get(cle(c));
+    for (let i = 0; i + 4 <= tx.length; i++) { const g = tx.slice(i, i + 4); if (!index.has(g)) index.set(g, new Set()); index.get(g).add(c); }
+  }
+  const groupes = new Map();
+  for (const c of cartes) if (tete(c)) { if (!groupes.has(tete(c))) groupes.set(tete(c), []); groupes.get(tete(c)).push(c); }
+  const choix = [];
+  for (const [dom, groupe] of [...groupes].sort((a, b) => b[1].length - a[1].length)) {
+    // candidats : les mots de 4 lettres ou plus, et leurs débuts de 6 lettres ou plus (« footballe » → footballeur, footballeuse)
+    const candidats = new Set();
+    for (const c of groupe) for (const w of textes.get(cle(c)).split(/[^a-z0-9'-]+/)) {
+      const m = w.replace(/^['-]+|['-]+$/g, '');
+      if (m.length < 4) continue;
+      candidats.add(m);
+      for (let n = 6; n < m.length; n++) candidats.add(m.slice(0, n));
+    }
+    const mesures = [...candidats].map((mot) => {
+      const trouvees = [...(index.get(mot.slice(0, 4)) || [])].filter((c) => textes.get(cle(c)).includes(mot));
+      return { mot, cles: trouvees.filter((c) => tete(c) === dom).map(cle), total: trouvees.length };
+    }).filter((x) => x.cles.length >= MOTS_MIN_CARTES && x.cles.length / x.total >= MOTS_PRECISION);
+    const reste = new Set(groupe.map(cle));
+    for (;;) {
+      let mieux = null;
+      for (const x of mesures) {
+        const n = x.cles.filter((k) => reste.has(k)).length;
+        const intrus = x.total - x.cles.length;
+        if (!mieux || n > mieux.n || (n === mieux.n && intrus < mieux.intrus)) mieux = { ...x, n, intrus };
+      }
+      if (!mieux || mieux.n < MOTS_MIN_CARTES) break;
+      mieux.cles.forEach((k) => reste.delete(k));
+      choix.push({ dom, mot: mieux.mot, cles: mieux.cles, n: mieux.n });
+    }
+  }
+  return choix;
 };
 
 const rapportSuppression = (lecture, plans) => {
@@ -664,8 +751,14 @@ const afficherRanger = (cartes, depuis, viaApi) => {
   const plans = new Map(cartes.map((c) => [cle(c), planCarte(c)]));
   const cibles = cartes.filter((c) => plans.get(cle(c)).tags.length);
   const plusRecente = cartes.reduce((m, c) => (c.obtenu && c.obtenu > m ? c.obtenu : m), depuis || '');
+  // gros stock : d'abord des recherches qui rangent les cartes par groupes, puis page par page
+  const groupes = cibles.length >= SEUIL_RANGEMENT_GROUPE ? motsGroupes(cartes, plans) : [];
+  const groupees = groupes.reduce((s, g) => s + g.n, 0);
   ui.statut(`${cartes.length} carte(s) ${depuis ? 'nouvelle(s)' : 'sans étiquette'}, dont ${cibles.length} à ranger.`);
-  ui.out.innerHTML = resumePlan(cartes, plans) + `<div class="row" style="margin-top:12px">
+  ui.out.innerHTML = (groupes.length ? `<h4>Rangement groupé</h4>
+      <p class="hint">Beaucoup de cartes à ranger : ${groupes.length} recherche(s) en rangent d'abord ${groupees} par groupes, puis le reste page par page.</p>
+      ${listeCartes('Recherches prévues', groupes.map((g) => ({ t: `« ${g.mot} » → #${g.dom}`, d: `${g.n} carte(s)` })))}` : '')
+    + resumePlan(cartes, plans) + `<div class="row" style="margin-top:12px">
       ${cibles.length ? '<button class="b p" data-go>Appliquer</button>' : ''}
       ${depuis ? '<button class="b" data-tout>Revoir toutes les cartes sans étiquette</button>' : ''}</div>`;
   const marquer = () => {
@@ -674,7 +767,7 @@ const afficherRanger = (cartes, depuis, viaApi) => {
   };
   if (!cibles.length) marquer(); // rien à poser : ces cartes ne seront plus relues
   const go = ui.out.querySelector('[data-go]');
-  if (go) go.onclick = () => { go.remove(); lancer(async () => { await appliquerRanger(cibles, plans); marquer(); }); };
+  if (go) go.onclick = () => { go.remove(); lancer(async () => { await appliquerRanger(cibles, plans, groupes); marquer(); }); };
   const tt = ui.out.querySelector('[data-tout]');
   if (tt) tt.onclick = () => lancer(() => modeRanger(true));
 };
@@ -688,7 +781,8 @@ const proposerReprise = () => {
   ui.out.querySelector('[data-reprise]').onclick = () => lancer(async () => { afficherRanger(l.cartes, l.depuis, l.viaApi); });
 };
 
-const appliquerRanger = async (cibles, plans) => {
+const appliquerRanger = async (cibles, plans, groupes = []) => {
+  // Passe 0 (gros stock seulement) : recherches groupées, voir motsGroupes.
   // Passe 1 : dans « Sans étiquette », chaque carte reçoit sa première étiquette.
   // Les cartes rangées disparaissent de la vue et les suivantes remontent : on reste sur la page
   // tant qu'elle contient des cartes à ranger, puis on avance.
@@ -702,6 +796,16 @@ const appliquerRanger = async (cibles, plans) => {
   const restants = () => [...premier.keys()].filter((k) => !fait.has(k + '§' + premier.get(k)[0])).length;
   await choisirFiltre('');
   await choisirTri('Date d\'ajout');
+  for (const [i, g] of groupes.entries()) {
+    arret();
+    // seules les cartes du plan sont cochées : les intrus de la recherche restent intacts
+    const plan = new Map(g.cles.filter((k) => premier.has(k) && !fait.has(k + '§' + g.dom)).map((k) => [k, [g.dom]]));
+    if (!plan.size) continue;
+    ui.statut(`Rangement groupé : « ${g.mot} » (${i + 1}/${groupes.length}) — ${plan.size} carte(s) en #${g.dom}`);
+    await rechercher(g.mot);
+    await appliquerSurPage(plan, fait, (t) => ui.journal(`« ${g.mot} » ${t}`));
+  }
+  if (groupes.length) await rechercher('');
   for (let num = 1; ; ) {
     arret();
     await attendre(() => cartesDom().length > 0 && !enChargement(), 30000);
@@ -852,7 +956,7 @@ if (window.__WMR_TEST__ || store.get('debug', false)) {
   window.__WMR = {
     classer, planCarte, norm, cle, store, cartesDom, lireCarte, pageInfo,
     lireVue, lireApi, parcourirVue, changerPage, choisirFiltre, choisirTri, listerEtiquettes,
-    modeSelection, poserEtiquette, appliquerSurPage, appliquerRanger, modeRanger, modeMigration,
+    modeSelection, poserEtiquette, appliquerSurPage, appliquerRanger, modeRanger, modeMigration, motsGroupes, rechercher,
     supprimerEtiquette, rapportSuppression, monterUI, ui: () => ui, stop: () => { STOP = true; },
   };
 }

@@ -40,14 +40,14 @@ const installerInnerText = (window) => {
  *   fermetureAuto (true)        : la fenêtre « Appliquer une étiquette » se ferme seule après le bilan
  *   retourPage1 (true)          : la liste revient en page 1 après un étiquetage
  *   echecsPose (0)              : nombre de poses refusées (« Impossible d'appliquer l'étiquette »)
- *   echecsRecherche (0)         : nombre de chargements de liste en échec
+ *   chargementsEnEchec ([])     : numéros des chargements de liste qui échouent (le 1er = l'ouverture de la page)
  *   apiEnPanne (false)          : toute requête /api/ répond 500
  *   messageConfirm              : texte du `confirm` natif de suppression (sinon il nomme l'étiquette)
  */
 const creerSite = async (config = {}) => {
   const o = {
     paginationTardive: 40, pagesFantomes: 2, chargement: 15, pose: 20,
-    fermetureAuto: true, retourPage1: true, echecsPose: 0, echecsRecherche: 0, apiEnPanne: false, ...config,
+    fermetureAuto: true, retourPage1: true, echecsPose: 0, chargementsEnEchec: [], apiEnPanne: false, ...config,
   };
   const dom = new JSDOM('<!doctype html><html><body></body></html>', { url: 'https://www.wiki-masters.com/collection', runScripts: 'outside-only', pretendToBeVisual: true });
   const { window } = dom;
@@ -58,7 +58,7 @@ const creerSite = async (config = {}) => {
   const cartes = (o.cartes || []).map((c) => ({ id: prochainId++, t: c.t, d: c.d || '', r: c.r || 'C', tags: [...(c.tags || [])], obtenu: c.obtenu || '2026-01-01T00:00:00+00:00' }));
   const etiquettes = [...new Set([...(o.etiquettes || []), ...cartes.flatMap((c) => c.tags)])];
   const actions = [];
-  const etat = { filtre: null, tri: 'Rareté', q: '', page: 0, selection: false, choisies: new Set(), affichees: [], jeton: 0, paginationVisible: false, erreur: false, echecsRecherche: o.echecsRecherche, echecsPose: o.echecsPose };
+  const etat = { filtre: null, tri: 'Rareté', q: '', page: 0, selection: false, choisies: new Set(), affichees: [], jeton: 0, paginationVisible: false, erreur: false, chargements: 0, echecsPose: o.echecsPose };
 
   // ── la vue : filtre d'étiquette + recherche + tri ──
   const vue = ({ filtre = etat.filtre, q = etat.q, tri = etat.tri } = {}) => {
@@ -158,8 +158,7 @@ const creerSite = async (config = {}) => {
     await attente(o.chargement);
     if (jeton !== etat.jeton) return;
     etat.chargement = false;
-    if (etat.echecsRecherche > 0) {
-      etat.echecsRecherche--;
+    if (o.chargementsEnEchec.includes(++etat.chargements)) {
       etat.erreur = true; etat.affichees = [];
     } else {
       etat.erreur = false;
