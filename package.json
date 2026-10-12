@@ -1,6 +1,6 @@
 {
   "name": "wikimasters-rangement",
-  "version": "1.8.3",
+  "version": "1.8.4",
   "private": true,
   "description": "Userscript Tampermonkey qui étiquette les cartes WikiMasters par domaine.",
   "scripts": {

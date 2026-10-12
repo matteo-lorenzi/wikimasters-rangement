@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WikiMasters — Rangement des cartes
 // @namespace    wikimasters-rangement
-// @version      1.8.3
+// @version      1.8.4
 // @description  Étiquette tes cartes WikiMasters par domaine (aperçu avant application, jamais de défausse).
 // @match        https://www.wiki-masters.com/*
 // @match        https://wiki-masters.com/*
@@ -958,6 +958,9 @@ const rapportSuppression = (lecture, plans) => {
       const p = plans.get(k);
       if (def.remplacee) { if (!p.tags.includes(def.remplacee)) bloque.push({ c, pourquoi: 'pas encore copiée' }); continue; }
       if (!p.tags.some((t) => DOMAINES[t])) bloque.push({ c, pourquoi: 'pas de domaine' });
+      // étiquette de métier, de lieu… : son domaine la remplace (décidé avec la personne le 2026-10-13, le détail se perd)
+      else if (def.d.length) { if (!def.d.some((d) => p.tags.includes(d))) bloque.push({ c, pourquoi: 'domaine ' + def.d.join(' ou ') + ' absent' }); }
+      // nationalité, ou étiquette non prévue : seule la barre de recherche la remplace, il faut donc son mot sur la carte
       else if (!contientMot(c, def.r)) bloque.push({ c, pourquoi: 'mot absent de la description' });
     }
     lignes.push({ nom, n: cles.length, connu: !!ANCIENNES[nom], bloque, ok: !bloque.length });
@@ -1409,7 +1412,7 @@ const modeMigration = async () => {
     ui.out.innerHTML = resumePlan(cartes, plans) + `
       <div class="row" style="margin-top:12px"><button class="b p" data-go>${applique ? 'Réappliquer' : 'Appliquer les étiquettes'}</button></div>
       <h4>Anciennes étiquettes</h4>
-      <p class="hint">${applique ? 'Supprimable = toutes ses cartes ont leur domaine ET le mot dans leur description.' : 'La suppression se débloque une fois les étiquettes appliquées.'}</p>
+      <p class="hint">${applique ? 'Supprimable = toutes ses cartes ont le domaine de l\'étiquette ; pour une nationalité, le mot doit aussi être dans leur titre ou leur description.' : 'La suppression se débloque une fois les étiquettes appliquées.'}</p>
       <table>${sup.map((l) => `<tr><td>${l.ok ? '<span class="ok">✔</span>' : '<span class="ko">●</span>'} #${esc(l.nom)}${l.connu ? '' : ' <i>(non prévue)</i>'}
         ${l.bloque.length ? `<details><summary>${l.bloque.length} carte(s) à garder</summary>${l.bloque.slice(0, 50).map((x) => `<div class="li">${esc(x.c.t)} — ${x.pourquoi}</div>`).join('')}</details>` : ''}</td>
         <td class="n">${l.n}</td><td class="n">${l.ok && applique ? `<button class="b d" data-del="${esc(l.nom)}">Suppr.</button>` : ''}</td></tr>`).join('')}</table>

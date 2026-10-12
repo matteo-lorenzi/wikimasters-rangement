@@ -385,6 +385,35 @@ test('ratés espacés, avec des cartes rangées entre deux : la séance va jusqu
 
 // ── suppression d'étiquette (Migration) ──
 
+test('migration : une étiquette de métier ou de lieu est supprimable dès que ses cartes ont son domaine ; une nationalité exige son mot', async () => {
+  const site = await creerSite({ cartes: [] });
+  const w = site.wmr;
+  // cas du rapport de la personne (2026-10-13) : « Kashihara » (#Commune) et « Cherry (film, 2021) » (#Américain), sans le mot
+  const cartes = [
+    { t: 'Kashihara', d: 'ville du Japon', r: 'Commune' },
+    { t: 'Cherry (film, 2021)', d: '', r: 'Rare' },
+    { t: 'Tom Holland', d: 'acteur américain', r: 'Rare' },
+    { t: 'Truc', d: 'objet', r: 'Commune' },
+  ];
+  const anciennes = [['Commune'], ['Américain'], ['Américain'], ['Bidule']];
+  const lecture = { cartes: {}, membres: { Commune: [], 'Américain': [], Bidule: [] } };
+  const plans = new Map();
+  cartes.forEach((c, i) => {
+    const k = w.cle(c);
+    lecture.cartes[k] = c;
+    for (const a of anciennes[i]) lecture.membres[a].push(k);
+    plans.set(k, w.planCarte(c, anciennes[i]));
+  });
+  const rapport = Object.fromEntries(w.rapportSuppression(lecture, plans).map((l) => [l.nom, l]));
+  assert.ok(plans.get(w.cle(cartes[0])).tags.includes('Géographie'), 'la migration donne le domaine de #Commune');
+  assert.equal(rapport.Commune.ok, true, 'Commune : ' + JSON.stringify(rapport.Commune.bloque.map((b) => b.pourquoi)));
+  assert.equal(rapport['Américain'].ok, false);
+  assert.deepEqual(Array.from(rapport['Américain'].bloque, (b) => [b.c.t, b.pourquoi]), [['Cherry (film, 2021)', 'mot absent de la description']]);
+  // étiquette non prévue (pas de domaine connu) : son nom doit se trouver sur la carte
+  assert.equal(rapport.Bidule.ok, false);
+  site.fermer();
+});
+
 test('suppression : la confirmation native qui nomme l\'étiquette est acceptée', async () => {
   const site = await creerSite({ cartes: [{ t: 'A', d: 'x', tags: ['Vieux'] }], etiquettes: ['Vieux', 'Sport'] });
   assert.equal(await site.wmr.supprimerEtiquette('Vieux'), 'supprimée');

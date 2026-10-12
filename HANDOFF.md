@@ -1,10 +1,10 @@
 # Passation — userscript WikiMasters
 
-Mis à jour le 2026-10-12. Les instructions durables sont dans `CLAUDE.md` ; ce fichier ne garde que l'état et la suite.
+Mis à jour le 2026-10-13. Les instructions durables sont dans `CLAUDE.md` ; ce fichier ne garde que l'état et la suite.
 
 ## État
 
-- Version livrée : **v1.8.3** (à installer par la personne ; premier vrai rangement fait en v1.8.2, voir plus bas).
+- Version livrée : **v1.8.4** (à installer par la personne ; v1.8.4 assouplit la suppression des anciennes étiquettes ; premier vrai rangement fait en v1.8.2, voir plus bas).
 - Dépôt sur GitHub (`matteo-lorenzi/wikimasters-rangement`, branche `main`), copie durable.
 - **Tests recréés** (`docs/tests.md`) : moteur sur 51 cartes réelles + pièges, faux site jsdom (rechargement de page compris), automatisation de la page, `scripts/regressions.py` (15 mutations, toutes détectées en v1.8.3 ; ~2 min 30, chaque mutation ne lance que son test).
 - v1.8.2, demandé par la personne le 2026-10-12 :
@@ -28,9 +28,11 @@ Mis à jour le 2026-10-12. Les instructions durables sont dans `CLAUDE.md` ; ce 
 - 1 collection : `★Village Polonais`. Gestion : `!Doublon`, `!À vendre`, `!À garder` (posées à la main), `!À traiter` (posée par le script quand seul un mot ambigu est trouvé).
 - Nationalités et métiers précis → la barre de recherche du site, qui se combine avec le filtre d'étiquette ; pas d'étiquette.
 - Plafond 30 étiquettes. Sans règle, la carte reste « Sans étiquette » : le script ne devine pas.
+- Suppression des anciennes étiquettes (décidé le 2026-10-13, d'après le rapport de Migration) : une étiquette de métier ou de lieu (`d` non vide dans `ANCIENNES`) est supprimable dès que ses cartes ont son domaine, le détail se perd. Une nationalité (`d` vide) ou une étiquette non prévue exige toujours son mot dans le titre ou la description ; celles qui bloquent sont **gardées pour l'instant** (ex. `#Américain` 52/116, `#Français` 40/163, `#Anglais` 26/31), décision à reprendre plus tard avec la personne.
 
 ## Suite
 
+0. **Cartes « pas de domaine » du rapport de Migration** (2026-10-13), à classer par les règles (cas réel dans `test/classement.test.js` d'abord, il faut leur description) : Saison 2015 des Astros de Houston, McLaren MP4-28, Hippodrome de Dieppe, Borough de Denali, Stanley Benham, David B. Samadi, John L. Lewis, Raymond Montaner, Jean de Croonders, Mary Butters, The Irish Press, TM Racing, Wilfried Huber, Radiorama, Guido Capello Vincentinus, Hanabie., Iouri Matvéïévitch Sokolov, Xenia Gueorguievna de Russie, Pierre Fehlmann, Français de Corse, Bourboulon. Les 16 de `#Nom de famille` restent ignorées (pages de nom).
 1. **Finir le premier rangement en v1.8.3** avec la personne et relire son journal des bugs. Vérifié sur le vrai site en v1.8.2 : saisie dans la barre de recherche, poses groupées, reprise après un vrai `location.reload()`.
 2. **Cartes mal classées repérées en recréant les tests**, à trancher avec la personne avant de toucher aux règles (cas réel dans `test/classement.test.js` d'abord) :
    - « Armed Forces Bowl 2017 — match de football universitaire américain… à Fort Worth » → Sport, **Sciences** (universitaire), **Patrimoine** (Fort Worth) ;
