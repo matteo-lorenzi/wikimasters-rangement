@@ -2,7 +2,10 @@
 """Réintroduit chaque bug déjà livré, un à la fois, dans une copie des sources,
 lance les tests, et exige qu'ils le DÉTECTENT (sortie en échec).
 
-    python scripts/regressions.py
+    python scripts/regressions.py             toutes les mutations (~15 min)
+    python scripts/regressions.py recherche   seulement celles dont le nom contient « recherche »
+    python scripts/regressions.py --ancres    vérifie seulement que chaque texte d'origine est
+                                              présent une fois (instantané, lancé par build.sh)
 
 Les tests lisent les sources dans le dossier indiqué par WMR_SRC (voir test/charger.js).
 Un bug corrigé ajoute ici sa mutation : (nom, fichier, texte d'origine, texte fautif).
@@ -73,14 +76,34 @@ def tests(src):
     return r.returncode, int(n)
 
 
-def main():
+def ancres_perimees(mutations):
+    perimees = []
+    for nom, fichier, origine, _ in mutations:
+        with open(os.path.join(SRC, fichier), encoding='utf-8') as f:
+            n = f.read().count(origine)
+        if n != 1:
+            print(f'  ?  {nom} : texte d\'origine trouvé {n} fois dans {fichier}, mutation à mettre à jour')
+            perimees.append(nom)
+    return perimees
+
+
+def main(args):
+    if args == ['--ancres']:
+        perimees = ancres_perimees(MUTATIONS)
+        if not perimees:
+            print(f'Mutations : {len(MUTATIONS)} textes d\'origine trouvés.')
+        return 1 if perimees else 0
+    mutations = [m for m in MUTATIONS if not args or any(a.lower() in m[0].lower() for a in args)]
+    if not mutations:
+        print('Aucune mutation ne correspond à : ' + ' '.join(args))
+        return 1
     code, n = tests(SRC)
     if code != 0 or n == 0:
         print(f'Les tests doivent être verts sur les sources intactes (code {code}, {n} test(s)).')
         return 1
     print(f'Sources intactes : {n} tests verts.')
     ratees = []
-    for nom, fichier, origine, fautif in MUTATIONS:
+    for nom, fichier, origine, fautif in mutations:
         with open(os.path.join(SRC, fichier), encoding='utf-8') as f:
             texte = f.read()
         if texte.count(origine) != 1:
@@ -98,9 +121,9 @@ def main():
             ratees.append(nom)
         else:
             print(f'  ✓  {nom} : détecté')
-    print(f'{len(MUTATIONS) - len(ratees)}/{len(MUTATIONS)} mutations détectées.')
+    print(f'{len(mutations) - len(ratees)}/{len(mutations)} mutations détectées.')
     return 1 if ratees else 0
 
 
 if __name__ == '__main__':
-    sys.exit(main())
+    sys.exit(main(sys.argv[1:]))

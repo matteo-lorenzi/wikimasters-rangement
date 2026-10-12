@@ -9,3 +9,4 @@ Choix de conception qu'aucun test ne vérifie à lui seul. Tout ce qui se vérif
 5. **Échec bruyant** : une situation inattendue (fenêtre absente, sélection incohérente, site bloqué) arrête le script avec un message qui dit quoi faire, plutôt que de continuer avec des données incomplètes.
 6. **Ne jamais se fier au compteur de pages du site** : une vue se termine sur la première page incomplète ou vide (voir `docs/wikimasters.md`).
 7. **Messages du panneau en français, adressés à la personne** : ce qui s'est passé et quoi faire ensuite, sans jargon technique.
+8. **Un test de repli vérifie le chemin pris, pas seulement le résultat** : quand un repli (mot abandonné, rangement page par page, rechargement) aboutit au même état final que le chemin voulu, le test regarde aussi les actions du faux site ou le journal des bugs. Sinon le bug qui fait passer par le repli reste vert.

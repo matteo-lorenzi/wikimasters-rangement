@@ -51,4 +51,6 @@ Couvre : panneau ouvrir/fermer ; lecture (pagination tardive, pages fantômes, c
 14. menu des étiquettes encore vide : options pas attendues ;
 15. « Tout sélectionner (page) » sans décocher les cartes en trop.
 
-Un nouveau bug corrigé y ajoute sa mutation. Quand le code autour change, une mutation dont le texte n'est plus trouvé est signalée « à mettre à jour » et compte comme ratée.
+Un nouveau bug corrigé y ajoute sa mutation. Quand le code autour change, une mutation dont le texte n'est plus trouvé est signalée « à mettre à jour » et compte comme ratée ; `build.sh` le vérifie à chaque build (`--ancres`, instantané).
+
+Pour rejouer une seule mutation (après avoir durci son test) : `python scripts/regressions.py <bout du nom>`.

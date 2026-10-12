@@ -7,6 +7,8 @@ cd "$(dirname "$0")"
 node --check src/regles.js
 node --check src/app.js
 npm test --silent
+# une mutation dont le texte d'origine a disparu du code ne vérifie plus rien
+"$(command -v python3 || command -v python)" scripts/regressions.py --ancres
 
 VERSION=$(node -p "require('./package.json').version")
 OUT=dist/wikimasters-rangement.user.js
