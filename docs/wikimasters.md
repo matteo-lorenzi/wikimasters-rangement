@@ -10,6 +10,8 @@ Vocabulaire : une **vue** est la liste affichée pour un filtre d'étiquette («
 - Réseau : armer `read_network_requests` **puis recharger** la page, la surveillance ne capte que la suite.
 - Crochet de débogage du script installé : `localStorage.setItem('wmr_debug','true')`, recharger, puis `window.__WMR`.
 - Un onglet en arrière-plan est fortement ralenti par Chrome : garder l'onglet de la Collection au premier plan.
+- Claude in Chrome ne fonctionne pas dans Opera GX (« No group with id » à chaque appel : pas de groupes d'onglets) : utiliser Chrome.
+- La réponse de l'outil JavaScript est coupée vers 1 000 caractères : pour rapatrier un export, le faire télécharger en fichier (Blob), avec l'accord de la personne, ou le renvoyer par morceaux avec une somme de contrôle.
 
 ## API de lecture
 
@@ -18,8 +20,9 @@ La même que la page Collection, avec les cookies de session de la page. Lecture
 `GET /api/my-collection?sort=<rarity|added>&page=<n>&stats=0[&untagged=1][&tag_id=<id>][&q=<texte>]`
 
 - `page` commence à **0** ; **50** cartes par page ; ~**5 s** par requête ; **3** requêtes en parallèle au maximum.
-- `sort=added` : la plus récente d'abord.
-- `q` = la barre de recherche (« Rechercher par titre ou catégorie… »), filtrée côté serveur, combinable avec `untagged=1` (vérifié : `q=footballeur&untagged=1` → 17 cartes).
+- **Erreurs 500 passagères** (vues le 2026-10-12, aussi bien sur la liste que sur `stats`) : relire la même page quelques secondes plus tard a toujours suffi. Toujours vérifier `r.ok`.
+- `sort=added` : la plus récente d'abord. La page Collection, elle, demande `sort=rarity` par défaut.
+- `q` = la barre de recherche (« Rechercher par titre ou catégorie… »), filtrée côté serveur, combinable avec `untagged=1` (vérifié : `q=footballeur&untagged=1` → 17 cartes). C'est une **sous-chaîne** du titre ou de la catégorie, **sans casse ni accents** (vérifié : `espece` = `espèce`, `cinema` = `cinéma`, `FOOTBALL` = `football` donnent exactement les mêmes cartes ; `football` en trouve 59, `footballeur` 17).
 - Réponse : `collection[]` avec `obtained_at`, `tags[{id,name,color}]`, `card{wikipedia_title, category, rarity}`. Titre = `wikipedia_title`, description = `category`. La clé `titre|description|rareté` identifie la carte affichée, dans le même ordre que l'écran.
 
 `GET /api/my-collection/stats?<mêmes filtres>` → `{ total, rarityCounts, tagOptions }`.
@@ -30,6 +33,15 @@ La même que la page Collection, avec les cookies de session de la page. Lecture
 - « Page X / Y » arrive plusieurs secondes **après** les cartes, et son total est faux (64 pages annoncées, 53 réelles). Une vue se termine sur la première page incomplète ou vide.
 - Changer de page prend ~6 s ; « Chargement… » remplace l'indicateur. La page a changé quand l'**empreinte** (titres affichés, dans l'ordre) a changé.
 - Après un étiquetage, la liste se recharge et peut revenir en page 1. Dans « Sans étiquette », les cartes étiquetées disparaissent et les suivantes remontent.
+- Le total « Y » vient de `/api/my-collection/stats`. Quand cette requête échoue (500), la pagination **reste celle de la vue précédente** (« Page 1 / 38 » affiché sur une recherche de 2 pages) ou **disparaît** entièrement, alors que les cartes sont là.
+- Une vue d'une seule page (moins de 50 cartes, ex. une recherche) n'a **aucune** barre de pagination.
+- Un rechargement peut aussi s'annoncer par une roue et « Actualisation… » dans la barre de sélection, sans le texte « Chargement… » (vu après avoir vidé la recherche).
+
+**Recherche**
+- Champ `input[placeholder*="Rechercher"]` (« Rechercher par titre ou catégorie… »). Se combine avec le filtre d'étiquette (« Sans étiquette » + `footballeur` → 17 cartes) ; le filtre garde son libellé.
+- La requête part ~0,3 s après la saisie (« Chargement… ») ; la liste filtrée arrive **7 à 10 s** après. Retaper la **même** valeur ne relance rien : pour réessayer, changer la valeur.
+- **Échec de chargement** : « Le chargement de la collection a échoué. Réessaie dans un instant. » au-dessus d'une liste vide (« Aucune carte trouvée avec ces filtres. », ou sans filtre « Aucune carte pour l'instant. Ouvrez un paquet ! ») et d'une pagination périmée. Ça ressemble à une vue vide : chercher ce texte avant de conclure qu'une vue est terminée.
+- La recherche, le filtre et le mode sélection **restent en place après un étiquetage** ; seule la sélection est vidée. Un rechargement de l'onglet remet tout à zéro (« Toutes les étiquettes », recherche vide).
 
 **Carte**
 - Bloc `div[class*="glow-"]` : `h3` = titre, `p` = description (**absent** si vide), badge de rareté `div.absolute.top-2.left-2`, étiquettes `span.rounded-full` (2 visibles + « +N »).
@@ -37,10 +49,19 @@ La même que la page Collection, avec les cookies de session de la page. Lecture
 **Sélection**
 - En mode sélection, c'est **la carte** qui reçoit le clic ; le calque `ring-4` qui l'entoure est purement visuel (il dit si elle est cochée).
 - Hors mode sélection, un clic sur une carte ouvre sa fiche, avec « Défausser » : vérifier le mode avant chaque clic.
+- En mode sélection, une barre en bas de page affiche « N carte(s) sélectionnée(s) » (le nombre et le texte sont sur deux lignes : `\s*` entre eux) et les boutons « Tout sélectionner (page) » (devient « Désélectionner la page »), « Étiqueter », « Retirer l'étiquette », « Mettre en favori (N) », « Retirer des favoris (N) », « Défausser (+N) ».
+- « Tout sélectionner (page) » coche toutes les cartes affichées, et seulement elles (vérifié sur 50/50 et 17/17).
+- **La sélection ne survit pas à un changement de page** : 2 cartes cochées en page 1 → page 2 « 0 carte sélectionnée » → retour page 1, plus rien de coché.
+- Après une pose suivie d'un échec de `stats`, le bouton du haut (« Sélectionner » / « Quitter la sélection ») a **disparu** alors que la barre du bas restait affichée ; il n'est pas revenu après fermeture du bandeau. Cause non établie.
+- La page peut être défilée : relire la position d'un élément (`getBoundingClientRect`) avant tout clic par coordonnées.
 
 **Étiqueter**
 - « Étiqueter » ouvre la fenêtre « Appliquer une étiquette » : champ « Chercher ou créer une étiquette… » (setter natif de `value` + événement `input`), un bouton par étiquette, sinon « Créer <nom> » (créer applique aussi).
-- Après application, la fenêtre **reste** ouverte et affiche « N carte(s) étiquetée(s). (M déjà étiquetée) » puis **« Terminé »**, parfois après plusieurs secondes.
+- Après application, la fenêtre affiche « N carte(s) étiquetée(s). (M déjà étiquetée) » et **« Terminé »**, parfois après plusieurs secondes.
+- Observé le 2026-10-12 : la fenêtre **se ferme ensuite toute seule**, ~5 s après le bilan, en même temps que la liste se recharge ; un bandeau « Étiquette appliquée à N cartes. » reste en haut de page, avec un bouton de fermeture `aria-label="Fermer"` (le même libellé que la croix de la fenêtre). Chronométré du clic sur l'étiquette : 50 cartes → bilan à 6,8 s, liste rechargée à 11,9 s ; 17 cartes → 5,5 s et 10,7 s. Le temps dépend donc peu du nombre de cartes.
+- Une pose = **une** requête du site pour toute la sélection (`POST …/rest/v1/user_card_tags?on_conflict=user_card_id,tag_id`, Supabase). Observée dans le réseau seulement : le script ne l'appelle jamais (règle 1).
+- **Échec de pose** : la requête a répondu une fois 503 → « Impossible d'appliquer l'étiquette » en rouge dans la fenêtre, qui reste ouverte avec la sélection, sans « Terminé » ; rien n'est écrit. Un second clic sur l'étiquette a réussi.
+- Le champ filtre les étiquettes par sous-chaîne : « Sport » propose « Sport » **et** « Transports ». Choisir le bouton au texte exact.
 
 **Filtres et étiquettes**
 - Le bouton du filtre actif affiche « #Nom (n) » : comparer les libellés sans le « (n) ».
