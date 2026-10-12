@@ -32,9 +32,10 @@ Mis à jour le 2026-10-13. Les instructions durables sont dans `CLAUDE.md` ; ce 
 
 ## Suite
 
-0. **Cartes « pas de domaine » du rapport de Migration** (2026-10-13), à classer par les règles (cas réel dans `test/classement.test.js` d'abord, il faut leur description) : Saison 2015 des Astros de Houston, McLaren MP4-28, Hippodrome de Dieppe, Borough de Denali, Stanley Benham, David B. Samadi, John L. Lewis, Raymond Montaner, Jean de Croonders, Mary Butters, The Irish Press, TM Racing, Wilfried Huber, Radiorama, Guido Capello Vincentinus, Hanabie., Iouri Matvéïévitch Sokolov, Xenia Gueorguievna de Russie, Pierre Fehlmann, Français de Corse, Bourboulon. Les 16 de `#Nom de famille` restent ignorées (pages de nom).
-1. **Finir le premier rangement en v1.8.3** avec la personne et relire son journal des bugs. Vérifié sur le vrai site en v1.8.2 : saisie dans la barre de recherche, poses groupées, reprise après un vrai `location.reload()`.
-2. **Cartes mal classées repérées en recréant les tests**, à trancher avec la personne avant de toucher aux règles (cas réel dans `test/classement.test.js` d'abord) :
+1. **Finir la Migration en v1.8.4** (session du 2026-10-13 arrêtée là) : la personne installe la v1.8.4, relance « Migration » en répondant **Annuler** (relire la collection), puis supprime **une seule** étiquette ✔ avec « Suppr. » pour vérifier la fenêtre de confirmation native (voir Points ouverts), et seulement ensuite « Supprimer les N sûres ».
+2. **Cartes « pas de domaine » du rapport de Migration** (2026-10-13), à classer par les règles (accord de la personne obtenu) : Saison 2015 des Astros de Houston, McLaren MP4-28, Hippodrome de Dieppe, Borough de Denali, Stanley Benham, David B. Samadi, John L. Lewis, Raymond Montaner, Jean de Croonders, Mary Butters, The Irish Press, TM Racing, Wilfried Huber, Radiorama, Guido Capello Vincentinus, Hanabie., Iouri Matvéïévitch Sokolov, Xenia Gueorguievna de Russie, Pierre Fehlmann, Français de Corse, Bourboulon. Il faut d'abord leur **description réelle** (cas réel dans `test/classement.test.js`, puis la règle) : la personne les colle, ou accepte qu'on les lise dans son Chrome en lecture seule (API `q=<titre>`, voir `docs/wikimasters.md`). Les 16 de `#Nom de famille` restent ignorées (pages de nom).
+3. **Finir le premier rangement** avec la personne et relire son journal des bugs. Vérifié sur le vrai site en v1.8.2 : saisie dans la barre de recherche, poses groupées, reprise après un vrai `location.reload()`.
+4. **Cartes mal classées repérées en recréant les tests**, à trancher avec la personne avant de toucher aux règles (cas réel dans `test/classement.test.js` d'abord) :
    - « Armed Forces Bowl 2017 — match de football universitaire américain… à Fort Worth » → Sport, **Sciences** (universitaire), **Patrimoine** (Fort Worth) ;
    - « Le Secret de la salamandre — album de bande dessinée » → **Musique** + Littérature ;
    - « Programmation spaghetti — code source… gestion des événements » → **Histoire** (événements) ;
@@ -45,7 +46,7 @@ Déjà refusé par la personne, à ne pas reproposer : écrire directement dans 
 ## Points ouverts
 
 - Suppression des anciennes étiquettes (101 au départ) : la réponse au `confirm` natif n'a jamais été vérifiée sur le vrai site. Si la fenêtre réapparaît, demander son texte exact et le noter dans `docs/wikimasters.md`.
-- Migration appliquée au moins en partie ; ce qui reste à supprimer est inconnu : relire par l'API avant d'agir. Des cartes portent encore d'anciennes étiquettes (vu le 2026-10-12 : « Footballeur », « Anglais », « Japon »…).
+- Rapport de Migration du 2026-10-13 (avant la v1.8.4) : une cinquantaine d'anciennes étiquettes bloquées (●). La v1.8.4 débloque celles de métier ou de lieu ; restent bloquées les nationalités (gardées pour l'instant, décision de la personne) et les cartes sans domaine (Suite, point 2). Toujours relire la collection avant de supprimer.
 - À revalider avec la personne : philosophes et historiens rangés en #Sciences.
 - Le bouton « Sélectionner / Quitter la sélection » a disparu une fois après une pose suivie d'un échec de `stats` (cause inconnue) : `modeSelection` lève alors une PanneSite, donc rechargement et reprise. Non rejoué dans le faux site.
 - Pagination absente quand `stats` échoue : `allerA` lève une PanneSite (rechargement et reprise). Non rejoué dans le faux site.
