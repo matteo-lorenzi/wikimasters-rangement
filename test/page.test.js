@@ -158,6 +158,32 @@ test('le site revient en page 1 après un étiquetage : le script retourne sur s
   site.fermer();
 });
 
+// ── sélection : le moins de clics possible, jamais une carte de trop ──
+
+const pageMixte = (n) => serie(50, (i) => ({ t: `Carte ${i}`, d: i < n ? 'footballeur' : 'xyz sans règle', obtenu: date(i) }));
+const planDe = (site, cartes) => new Map(cartes.filter((c) => c.d === 'footballeur').map((c) => [site.wmr.cle({ t: c.t, d: c.d, r: 'C' }), ['Sport']]));
+const clics = (site) => site.actions.filter((a) => a.type === 'clic').length;
+
+test('plus de la moitié de la page à poser : tout cocher puis décocher le reste (11 clics au lieu de 40)', async () => {
+  const cartes = pageMixte(40);
+  const site = await creerSite({ cartes, etiquettes: ['Sport'] });
+  await site.wmr.appliquerSurPage(planDe(site, cartes), new Set(), () => {});
+  assert.equal(clics(site), 11, '1 « Tout sélectionner (page) » + 10 cartes décochées');
+  assert.equal(site.poses().length, 1);
+  assert.deepEqual(site.poses()[0].titres.length, 40);
+  for (const c of site.cartes) assert.deepEqual(c.tags, c.d === 'footballeur' ? ['Sport'] : [], c.t);
+  site.fermer();
+});
+
+test('moins de la moitié de la page à poser : une carte cochée par clic', async () => {
+  const cartes = pageMixte(10);
+  const site = await creerSite({ cartes, etiquettes: ['Sport'] });
+  await site.wmr.appliquerSurPage(planDe(site, cartes), new Set(), () => {});
+  assert.equal(clics(site), 10);
+  for (const c of site.cartes) assert.deepEqual(c.tags, c.d === 'footballeur' ? ['Sport'] : [], c.t);
+  site.fermer();
+});
+
 // ── mode Ranger ──
 
 // 150 cartes déjà rangées, plus récentes ; puis 90 sans étiquette, dont 30 sans règle.
@@ -250,7 +276,8 @@ const toutRange = (site) => {
 };
 const journalBugs = async (p) => {
   p.cliquer('[data-a=bugs]');
-  return p.root.querySelector('.out textarea').value;
+  const zone = p.root.querySelector('.out textarea'); // journal vide : « Aucun bug noté », sans zone de texte
+  return zone ? zone.value : p.root.querySelector('.out').textContent;
 };
 
 test('lecture API : une erreur passagère est réessayée, sans lecture par l\'écran', async () => {
@@ -303,6 +330,46 @@ test('ratés à répétition : 3 rechargements au plus, puis arrêt avec un mess
   assert.match(bugs, /Journal :/);
   p.cliquer('[data-vider]');
   assert.match(p.root.querySelector('.out').textContent, /Aucun bug noté/);
+  site.fermer();
+});
+
+// Journal des bugs de la personne, 2026-10-12 : recherches ratées par le serveur, menu vide après rechargement.
+
+test('recherche ratée pendant le rangement groupé : relancée sur place, sans recharger la page', async () => {
+  const site = await creerSite({ cartes: grosStock(), etiquettes: ['Sport', 'Nature'], echecsRecherche: 2 });
+  const p = await rangerTout(site);
+  assert.match(p.statut(), /✅ 231 carte\(s\) rangée\(s\)/);
+  assert.equal(site.rechargements(), 0);
+  // relancée en MAJUSCULES, et aucun mot abandonné (sinon ses cartes seraient rangées page par page)
+  assert.ok(site.actions.some((a) => a.type === 'recherche' && /[A-Z]/.test(a.q) && a.q === a.q.toUpperCase()));
+  assert.doesNotMatch(await journalBugs(p), /abandonnée/);
+  site.fermer();
+});
+
+test('recherche toujours impossible : le mot est abandonné et noté, ses cartes sont rangées page par page', async () => {
+  const site = await creerSite({ cartes: grosStock(), etiquettes: ['Sport', 'Nature'], recherchesImpossibles: ['footba'] });
+  const p = await rangerTout(site);
+  assert.match(p.statut(), /✅ 231 carte\(s\) rangée\(s\)/);
+  assert.equal(site.rechargements(), 0);
+  assert.deepEqual(site.cartes.find((c) => c.t === nom(7)).tags, ['Sport']);
+  assert.match(await journalBugs(p), /« footba » abandonnée/);
+  site.fermer();
+});
+
+test('menu des étiquettes encore vide juste après l\'ouverture de la page : le script attend ses options', async () => {
+  const site = await creerSite({ cartes: collection(), etiquettes: ['Sport'], menuTardif: 300 });
+  await site.wmr.choisirFiltre('');
+  assert.equal(site.document.querySelector('[aria-label="Filtrer par étiquette"]').textContent, 'Sans étiquette');
+  site.fermer();
+});
+
+test('ratés espacés, avec des cartes rangées entre deux : la séance va jusqu\'au bout', async () => {
+  // une séance propre fait ~15 chargements de liste ; après chaque rechargement, la reprise pose au moins une carte avant le raté suivant
+  const site = await creerSite({ cartes: collection(), etiquettes: ['Sport'], chargementsEnEchec: [6, 11, 16, 21] });
+  const p = await rangerTout(site);
+  assert.match(p.statut(), /✅ 75 carte\(s\) rangée\(s\)/);
+  assert.ok(site.rechargements() > 3, `${site.rechargements()} rechargement(s) : plus que la limite de 3 d'affilée`);
+  toutRange(site);
   site.fermer();
 });
 

@@ -132,7 +132,8 @@ const arret = () => { if (STOP) throw new Error('Arrêté.'); };
 // Raté passager du site (API en erreur, chargement raté, pose refusée…) : un rechargement de la page
 // suffit en général. Le mode Ranger recharge alors la page et reprend où il en était (voir lancer).
 class PanneSite extends Error {}
-const MAX_RECHARGEMENTS = 3;
+const MAX_RECHARGEMENTS = 3; // de suite, sans aucune carte rangée entre deux
+const MAX_RECHARGEMENTS_SEANCE = 20;
 // les tests remplacent le rechargement, que jsdom ne sait pas faire
 const rechargerPage = () => (window.__WMR_RECHARGER__ ? window.__WMR_RECHARGER__() : location.reload());
 const VERSION = typeof GM_info !== 'undefined' ? GM_info.script.version : '?';
@@ -248,9 +249,16 @@ const choisirFiltre = async (nom) => {
   const actuel = f ? f.innerText.trim().replace(/ \(\d+\)$/, '') : '';
   const voulu = libelleFiltre(nom);
   if (actuel !== voulu) {
-    await ouvrirFiltre();
-    const b = [...document.querySelectorAll('button')].find((x) => x.innerText.trim().replace(/ \(\d+\)$/, '') === voulu);
-    if (!b) throw new Error('Option de filtre introuvable : ' + voulu);
+    // juste après l'ouverture de la page, le menu peut rester vide un moment : on attend ses options,
+    // puis on le referme et le rouvre une fois
+    const option = () => [...document.querySelectorAll('button')].find((x) => x !== f && x.innerText.trim().replace(/ \(\d+\)$/, '') === voulu);
+    for (let essai = 0; essai < 2 && !option(); essai++) {
+      if (essai) { f.click(); await sleep(500); }
+      await ouvrirFiltre();
+      await attendre(option, 10000);
+    }
+    const b = option();
+    if (!b) throw new PanneSite('Option de filtre introuvable : ' + voulu + ' (le menu des étiquettes ne s\'affiche pas).');
     const avant = empreinte();
     b.click();
     // on attend que les cartes du nouveau filtre remplacent les anciennes
@@ -388,14 +396,25 @@ const setValeur = (inp, v) => {
 const champEtiquette = () => [...document.querySelectorAll('input')].find((x) => /créer une étiquette/i.test(x.placeholder || ''));
 const champRecherche = () => [...document.querySelectorAll('input')].find((x) => /Rechercher par titre/i.test(x.placeholder || ''));
 // Tape un mot dans la barre de recherche du site et attend la liste filtrée (7 à 10 s sur le vrai site).
+// Le serveur rate parfois une recherche : on la relance sur place, 3 essais en tout. Retaper la même valeur
+// ne relancerait rien, et la recherche ignore la casse : on retape le mot en MAJUSCULES, puis avec une Majuscule.
 const rechercher = async (mot) => {
   const inp = champRecherche();
   if (!inp) throw new Error('Barre de recherche introuvable : es-tu sur la page Collection ?');
-  if (inp.value === mot) return;
-  const avant = empreinte();
-  setValeur(inp, mot);
-  await attendre(() => !enChargement() && (empreinte() !== avant || echecChargement()), 30000);
-  await attendrePageStable();
+  if (inp.value === mot && !echecChargement()) return;
+  const variantes = [mot, mot.toUpperCase(), mot.charAt(0).toUpperCase() + mot.slice(1)];
+  for (let essai = 0; ; essai++) {
+    const avant = empreinte();
+    setValeur(inp, variantes[essai]);
+    await attendre(() => !enChargement() && (empreinte() !== avant || echecChargement()), 30000);
+    try {
+      await attendrePageStable();
+      return;
+    } catch (e) {
+      if (!(e instanceof PanneSite) || !mot || essai >= 2) throw e;
+      await sleep(3000);
+    }
+  }
 };
 const fenetreOuverte = () => /Appliquer une étiquette/.test(texte());
 const fermerFenetre = async () => {
@@ -474,14 +493,17 @@ const appliquerSurPage = async (plan, fait, journal, num = null) => {
     const [tag, cles] = [...parTag.entries()].sort((a, b) => b[1].size - a[1].size)[0];
     await modeSelection(true);
     await viderSelection();
-    // page entière à poser (fréquent en rangement groupé) : un clic au lieu de 50
+    // Le moins de clics : plus de la moitié de la page à poser (fréquent en rangement groupé) → « Tout sélectionner (page) »
+    // puis on décoche les autres ; sinon, une carte par clic.
     const visibles = cartesDom();
+    const aCocher = visibles.filter((el) => cles.has(cle(lireCarte(el)))).length;
     const tout = bouton(/^Tout sélectionner \(page\)$/);
-    if (tout && visibles.length > 1 && visibles.every((el) => cles.has(cle(lireCarte(el))))) { tout.click(); await sleep(300); }
-    for (const el of cartesDom()) if (cles.has(cle(lireCarte(el))) && !estSelectionnee(el)) await basculer(el);
+    if (tout && 1 + (visibles.length - aCocher) < aCocher) { tout.click(); await sleep(300); }
+    for (const el of cartesDom()) if (cles.has(cle(lireCarte(el))) !== estSelectionnee(el)) await basculer(el);
+    // vérification carte par carte : chaque carte cochée est prévue, chaque carte prévue est cochée
     const nb = cartesDom().filter(estSelectionnee).length;
-    const attendu = cartesDom().filter((el) => cles.has(cle(lireCarte(el)))).length;
-    if (nb !== attendu) throw new Error(`Sélection incohérente pour « ${tag} » (${nb} cochée(s) au lieu de ${attendu}) : rien n'a été posé.`);
+    const ecarts = cartesDom().filter((el) => estSelectionnee(el) !== cles.has(cle(lireCarte(el))));
+    if (ecarts.length) throw new Error(`Sélection incohérente pour « ${tag} » (${ecarts.length} carte(s) cochée(s) à tort ou oubliée(s), dont « ${ecarts[0].h.textContent.trim()} ») : rien n'a été posé.`);
     if (!nb) throw new Error('Impossible de sélectionner les cartes pour « ' + tag + ' ».');
     const avantTag = empreinte();
     const bilan = await poserEtiquette(tag);
@@ -729,18 +751,24 @@ const lancer = async (fn, reprise = null) => {
     store.set('ranger_reprise', null);
   } catch (e) {
     if (STOP) { ui.statut('⚠️ ' + e.message); return; }
-    const r = store.get('ranger_reprise', null);
-    const essais = reprise && r && r.etape === reprise.etape ? r.essais : 0;
-    if (reprise && e instanceof PanneSite && essais < MAX_RECHARGEMENTS) {
+    // On compte les rechargements successifs SANS progrès : une pose depuis le dernier remet le compte à zéro.
+    // Un plafond par séance évite de boucler sur un site qui ne tient jamais longtemps.
+    const r = reprise && store.get('ranger_reprise', null);
+    const meme = r && r.etape === reprise.etape;
+    const poses = store.get('ranger_fait', []).length;
+    const essais = meme && poses <= (r.poses || 0) ? r.essais : 0;
+    const total = meme ? r.total || r.essais : 0;
+    if (reprise && e instanceof PanneSite && essais < MAX_RECHARGEMENTS && total < MAX_RECHARGEMENTS_SEANCE) {
       noterBug(e, `rechargement automatique ${essais + 1}/${MAX_RECHARGEMENTS}`);
-      store.set('ranger_reprise', { ...reprise, essais: essais + 1, at: Date.now() });
+      store.set('ranger_reprise', { ...reprise, essais: essais + 1, total: total + 1, poses, at: Date.now() });
       ui.statut(`Le site a eu un raté : rechargement de la page puis reprise automatique (${essais + 1}/${MAX_RECHARGEMENTS})…\n${e.message}`);
       setTimeout(rechargerPage, 1500 * ECHELLE);
       return;
     }
     store.set('ranger_reprise', null);
-    noterBug(e, essais ? `arrêt après ${essais} rechargement(s)` : 'arrêt');
-    ui.statut('⚠️ ' + e.message + (essais ? ` Le site a été rechargé ${essais} fois sans succès : attends quelques minutes avant de relancer.` : ''));
+    const n = total >= MAX_RECHARGEMENTS_SEANCE ? total : essais;
+    noterBug(e, n ? `arrêt après ${n} rechargement(s)` : 'arrêt');
+    ui.statut('⚠️ ' + e.message + (n ? ` Le site a été rechargé ${n} fois sans succès : attends quelques minutes avant de relancer, ce qui est fait reste fait.` : ''));
   } finally {
     STOP = false; ui.occupe(false);
     try { await modeSelection(false); } catch (e) { /* rien */ }
@@ -923,13 +951,24 @@ const appliquerRanger = async (cibles, plans, groupes = []) => {
   const restants = () => [...premier.keys()].filter((k) => !fait.has(k + '§' + premier.get(k)[0])).length;
   await choisirFiltre('');
   await choisirTri('Date d\'ajout');
+  let abandons = 0;
   for (const [i, g] of groupes.entries()) {
     arret();
     // seules les cartes du plan sont cochées : les intrus de la recherche restent intacts
     const plan = new Map(g.cles.filter((k) => premier.has(k) && !fait.has(k + '§' + g.dom)).map((k) => [k, [g.dom]]));
     if (!plan.size) continue;
     ui.statut(`Rangement groupé : « ${g.mot} » (${i + 1}/${groupes.length}) — ${plan.size} carte(s) en #${g.dom}`);
-    await rechercher(g.mot);
+    try {
+      await rechercher(g.mot);
+      abandons = 0;
+    } catch (e) {
+      // une recherche que le serveur rate à chaque fois : ses cartes seront rangées page par page.
+      // Plusieurs de suite : c'est le site qui flanche, on laisse lancer recharger la page.
+      if (!(e instanceof PanneSite) || ++abandons >= 3) throw e;
+      noterBug(e, `recherche « ${g.mot} » abandonnée`);
+      ui.journal(`« ${g.mot} » : recherche impossible, ces cartes seront rangées page par page.`);
+      continue;
+    }
     await appliquerSurPage(plan, fait, noter(`« ${g.mot} » `));
   }
   if (groupes.length) await rechercher('');

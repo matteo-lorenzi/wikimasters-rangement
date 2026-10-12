@@ -4,9 +4,9 @@ Mis à jour le 2026-10-12. Les instructions durables sont dans `CLAUDE.md` ; ce 
 
 ## État
 
-- Version livrée : **v1.8.2** (à installer par la personne ; elle avait v1.8.0).
+- Version livrée : **v1.8.3** (à installer par la personne ; premier vrai rangement fait en v1.8.2, voir plus bas).
 - Dépôt sur GitHub (`matteo-lorenzi/wikimasters-rangement`, branche `main`), copie durable.
-- **Tests recréés** (`docs/tests.md`) : moteur sur 51 cartes réelles + pièges, faux site jsdom (rechargement de page compris), automatisation de la page, `scripts/regressions.py` (11 mutations, toutes détectées).
+- **Tests recréés** (`docs/tests.md`) : moteur sur 51 cartes réelles + pièges, faux site jsdom (rechargement de page compris), automatisation de la page, `scripts/regressions.py` (15 mutations, toutes détectées).
 - v1.8.2, demandé par la personne le 2026-10-12 :
   - **Journal des bugs** (bouton du panneau) : chaque erreur et chaque rechargement automatique y sont notés (version, message, état de la page, fin du journal) ; la personne le copie et le colle dans la conversation. Lire d'abord « Page : » et « Journal : ».
   - **Raté du site → rechargement et reprise** : erreur API passagère réessayée (3 essais) ; serveur toujours en erreur, chargement raté, pose refusée, page bloquée → la page est rechargée et l'étape (lecture ou application) reprend seule, 3 fois au plus. Ce qui est posé est enregistré au fil de l'eau (`ranger_fait`). La lecture par l'écran ne sert plus que si l'API répond dans un format inconnu.
@@ -15,7 +15,12 @@ Mis à jour le 2026-10-12. Les instructions durables sont dans `CLAUDE.md` ; ce 
   - Pose refusée par le site (« Impossible d'appliquer l'étiquette ») : un réessai, puis arrêt avec un message clair.
   - Chargement raté (« Le chargement de la collection a échoué ») : arrêt avec un message, au lieu de prendre la liste vide pour la fin de la vue.
   - « Tout sélectionner (page) » quand toute la page est à poser.
-- Le 2026-10-12, 1 854 cartes sans étiquette, dont 1 112 rangeables.
+- v1.8.3, d'après le premier journal des bugs de la personne (v1.8.2, 2026-10-12 : ~330 cartes rangées par recherche, puis arrêt après 3 rechargements) :
+  - recherche ratée par le serveur → relancée sur place (`ALBUM`, puis `Album`) ; toujours ratée → mot abandonné (noté), ses cartes rangées page par page ; 3 abandons de suite → rechargement ;
+  - la limite de 3 rechargements ne compte plus que les rechargements **de suite sans aucune pose** (plafond 20 par séance) ;
+  - menu des étiquettes vide juste après un rechargement → le script attend ses options ;
+  - sélection : plus de la moitié de la page à poser → « Tout sélectionner (page) » puis décocher le reste (demande de la personne) ; vérification carte par carte avant « Étiqueter ».
+- Le 2026-10-12, 1 854 cartes sans étiquette, dont 1 112 rangeables (avant le premier vrai rangement).
 
 ## Système d'étiquettes (décidé avec la personne)
 
@@ -26,7 +31,7 @@ Mis à jour le 2026-10-12. Les instructions durables sont dans `CLAUDE.md` ; ce 
 
 ## Suite
 
-1. **Premier rangement réel en v1.8.2** avec la personne : le rangement groupé et la reprise après rechargement n'ont tourné que sur le faux site. Points à regarder : la saisie dans la barre de recherche (setter natif + `input`), le temps par recherche, le bandeau après la pose, la reprise après un vrai `location.reload()`. Demander le journal des bugs à la personne.
+1. **Finir le premier rangement en v1.8.3** avec la personne et relire son journal des bugs. Vérifié sur le vrai site en v1.8.2 : saisie dans la barre de recherche, poses groupées, reprise après un vrai `location.reload()`.
 2. **Cartes mal classées repérées en recréant les tests**, à trancher avec la personne avant de toucher aux règles (cas réel dans `test/classement.test.js` d'abord) :
    - « Armed Forces Bowl 2017 — match de football universitaire américain… à Fort Worth » → Sport, **Sciences** (universitaire), **Patrimoine** (Fort Worth) ;
    - « Le Secret de la salamandre — album de bande dessinée » → **Musique** + Littérature ;
