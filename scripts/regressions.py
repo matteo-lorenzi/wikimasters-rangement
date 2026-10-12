@@ -2,7 +2,10 @@
 """Réintroduit chaque bug déjà livré, un à la fois, dans une copie des sources,
 lance le test qui le surveille, et exige qu'il le DÉTECTE (sortie en échec).
 
-    python scripts/regressions.py
+    python scripts/regressions.py             toutes les mutations (~2 min)
+    python scripts/regressions.py recherche   seulement celles dont le nom contient « recherche »
+    python scripts/regressions.py --ancres    vérifie seulement que chaque texte d'origine est
+                                              présent une fois (instantané, lancé par build.sh)
 
 Les tests lisent les sources dans le dossier indiqué par WMR_SRC (voir test/charger.js).
 Un bug corrigé ajoute ici sa mutation : (nom, fichier, texte d'origine, texte fautif, test).
@@ -40,8 +43,8 @@ MUTATIONS = [
      "const montrer = (el, oui) => { el.hidden = !oui; };",
      "le panneau s'ouvre et se ferme"),
     ('rangement dans « Toutes les étiquettes » au lieu de « Sans étiquette »', 'app.js',
-     "await choisirFiltre('');\n  await choisirTri('Date d\\'ajout');\n  for (const [i, g] of groupes.entries()) {",
-     "await choisirFiltre(null);\n  await choisirTri('Date d\\'ajout');\n  for (const [i, g] of groupes.entries()) {",
+     "await choisirFiltre('');\n  await choisirTri('Date d\\'ajout');\n  let abandons = 0;\n  for (const [i, g] of groupes.entries()) {",
+     "await choisirFiltre(null);\n  await choisirTri('Date d\\'ajout');\n  let abandons = 0;\n  for (const [i, g] of groupes.entries()) {",
      "Ranger : chaque carte reçoit ses étiquettes"),
     ('lecture qui suit le total de pages annoncé', 'app.js',
      "if (attendu != null ? vus >= attendu : n < PAR_PAGE) return;",
@@ -63,33 +66,72 @@ MUTATIONS = [
      "const fait = new Set(store.get('ranger_fait', []));",
      "const fait = new Set();",
      "raté du site pendant le rangement"),
+    ('rechargements comptés sur toute la séance, même quand des cartes sont rangées entre deux', 'app.js',
+     "const essais = meme && poses <= (r.poses || 0) ? r.essais : 0;",
+     "const essais = meme ? r.essais : 0;",
+     "ratés espacés, avec des cartes rangées entre deux"),
+    ('recherche ratée par le serveur : pas de relance sur place', 'app.js',
+     "if (!(e instanceof PanneSite) || !mot || essai >= 2) throw e;",
+     "throw e;",
+     "recherche ratée pendant le rangement groupé"),
+    ('menu des étiquettes encore vide : options pas attendues', 'app.js',
+     "      await attendre(option, 10000);\n",
+     "",
+     "menu des étiquettes encore vide"),
+    ('« Tout sélectionner (page) » sans décocher les cartes en trop', 'app.js',
+     "if (cles.has(cle(lireCarte(el))) !== estSelectionnee(el)) await basculer(el);",
+     "if (cles.has(cle(lireCarte(el))) && !estSelectionnee(el)) await basculer(el);",
+     "plus de la moitié de la page à poser"),
 ]
 
 
 def tests(src, debut=None):
     """Lance les tests (tous, ou ceux dont le nom commence par `debut`).
     Renvoie (code de sortie, nombre de tests lancés)."""
+    # TAP imposé : depuis Node 23, la sortie par défaut écrit « ℹ tests N » au lieu de « # tests N »
     commande = ['node', '--test', '--test-reporter=tap']
     if debut:
+        # avant le motif des fichiers : placé après, Node le passe aux fichiers de test et l'ignore
         commande.append('--test-name-pattern=^' + re.sub(r'[\\^$.*+?()[\]{}|/]', r'\\\g<0>', debut))
+    commande.append('test/**/*.test.js')
     env = dict(os.environ, WMR_SRC=src)
     r = subprocess.run(commande, cwd=RACINE, env=env, capture_output=True, text=True, encoding='utf-8')
     if debut:
-        # le total « # tests » compte aussi les fichiers sans test : on compte les tests visés eux-mêmes
+        # on compte les tests visés eux-mêmes : un nom de test changé en laisse zéro
         noms = [l.split(' - ', 1)[1] for l in r.stdout.splitlines() if re.match(r'\s*(not )?ok \d+ - ', l)]
         return r.returncode, sum(nom.startswith(debut) for nom in noms)
     n = next((l.split()[-1] for l in r.stdout.splitlines() if l.startswith('# tests ')), '0')
     return r.returncode, int(n)
 
 
-def main():
+def ancres_perimees(mutations):
+    perimees = []
+    for nom, fichier, origine, *_ in mutations:
+        with open(os.path.join(SRC, fichier), encoding='utf-8') as f:
+            n = f.read().count(origine)
+        if n != 1:
+            print(f'  ?  {nom} : texte d\'origine trouvé {n} fois dans {fichier}, mutation à mettre à jour')
+            perimees.append(nom)
+    return perimees
+
+
+def main(args):
+    if args == ['--ancres']:
+        perimees = ancres_perimees(MUTATIONS)
+        if not perimees:
+            print(f'Mutations : {len(MUTATIONS)} textes d\'origine trouvés.')
+        return 1 if perimees else 0
+    mutations = [m for m in MUTATIONS if not args or any(a.lower() in m[0].lower() for a in args)]
+    if not mutations:
+        print('Aucune mutation ne correspond à : ' + ' '.join(args))
+        return 1
     code, n = tests(SRC)
     if code != 0 or n == 0:
         print(f'Les tests doivent être verts sur les sources intactes (code {code}, {n} test(s)).')
         return 1
     print(f'Sources intactes : {n} tests verts.')
     ratees = []
-    for nom, fichier, origine, fautif, debut in MUTATIONS:
+    for nom, fichier, origine, fautif, debut in mutations:
         with open(os.path.join(SRC, fichier), encoding='utf-8') as f:
             texte = f.read()
         if texte.count(origine) != 1:
@@ -110,9 +152,9 @@ def main():
             ratees.append(nom)
         else:
             print(f'  ✓  {nom} : détecté')
-    print(f'{len(MUTATIONS) - len(ratees)}/{len(MUTATIONS)} mutations détectées.')
+    print(f'{len(mutations) - len(ratees)}/{len(mutations)} mutations détectées.')
     return 1 if ratees else 0
 
 
 if __name__ == '__main__':
-    sys.exit(main())
+    sys.exit(main(sys.argv[1:]))

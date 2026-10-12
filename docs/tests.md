@@ -1,6 +1,6 @@
 # Tests
 
-`npm test` lance `node --test`, qui prend tous les `test/*.test.js` (et les autres fichiers de `test/`, sans test dedans). Une modification est prouvée quand le test concerné passe au rouge sans elle et au vert avec.
+`npm test` lance `node --test` sur les `test/**/*.test.js` seulement (sans ce motif, les fichiers d'aide comme `faux-site.js` comptent chacun pour un test, et `# tests N` reste au-dessus de 0 même sans vrai test). `build.sh` refuse un build où aucun test n'a tourné. La CI (`.github/workflows/tests.yml`) lance `npm run build` à chaque push ; les mutations complètes se lancent à la main depuis l'onglet Actions (Tests → Run workflow). Une modification est prouvée quand le test concerné passe au rouge sans elle et au vert avec.
 
 `test/charger.js` charge les sources comme le build ; la variable `WMR_SRC` lui fait lire une autre copie de `src/` (c'est ce qu'utilise `scripts/regressions.py`).
 
@@ -21,7 +21,7 @@ Le script se charge dans un contexte `vm` séparé : recopier ses tableaux (`[..
 Une page jsdom qui rejoue **chaque piège** de `docs/wikimasters.md` et l'API via un `window.fetch` simulé :
 pagination tardive et au total faux (pages fantômes), absente sur une vue d'une page ; « Chargement… » ; cartes sans `p` ; « #Nom (n) » dans le filtre ; barre de recherche (sous-chaîne sans casse ni accents, même valeur = rien ne part) ; mode sélection, calque `ring-4`, « Tout sélectionner (page) », sélection perdue au changement de page ; fenêtre « Appliquer une étiquette » avec bilan et « Terminé », qui se ferme seule ou non, bandeau à croix « Fermer » ; retour en page 1 ; `confirm` natif ; fiche ouverte hors sélection et « Défausser » (notés dans `site.actions` pour vérifier qu'ils n'arrivent jamais).
 
-Options de panne : `echecsPose` (« Impossible d'appliquer l'étiquette »), `chargementsEnEchec` (« Le chargement de la collection a échoué »), `apiEchecs` (les N premières requêtes en 500), `apiEnPanne`, `apiIllisible`, `messageConfirm`.
+Options de panne : `echecsPose` (« Impossible d'appliquer l'étiquette »), `chargementsEnEchec` (« Le chargement de la collection a échoué »), `echecsRecherche` (les N premières recherches ratées), `recherchesImpossibles`, `menuTardif` (menu des étiquettes vide juste après l'ouverture), `apiEchecs` (les N premières requêtes en 500), `apiEnPanne`, `apiIllisible`, `messageConfirm`. Le faux site note aussi chaque clic de sélection (`clic`) et compte ses chargements de liste (`site.chargements()`).
 
 **Rechargement de la page** : le script appelle `window.__WMR_RECHARGER__` au lieu de `location.reload()` (absent de jsdom). Le faux site ouvre alors une nouvelle page sur le même compte, recopie le `localStorage` et monte le panneau, comme le ferait la surveillance d'URL. `site.window`, `site.document` et `site.wmr` désignent toujours la page ouverte ; `site.rechargements()` les compte.
 
@@ -30,11 +30,11 @@ Options de panne : `echecsPose` (« Impossible d'appliquer l'étiquette »), `ch
 
 ## `test/page.test.js` — l'automatisation sur le faux site
 
-Couvre : panneau ouvrir/fermer ; lecture (pagination tardive, pages fantômes, cartes sans `p`, chargement en échec) ; filtre avec compteur dans le libellé (le menu n'est pas rouvert) ; bilan « Terminé », fenêtre qui se ferme seule ou non ; pose lente (« Terminé » après ~50 s, pas pris pour un refus) ; pose refusée une fois (réessai) ou deux (arrêt rapide) ; étiquette créée ; retour en page 1 ; Ranger dans « Sans étiquette » en ≤ 2 changements de page ; lecture API complète, incrémentale, et repli sur l'écran si l'API est illisible ; erreur API passagère réessayée ; panne prolongée → rechargement et relecture ; raté pendant le rangement → rechargement, reprise, rien de perdu ; ratés à répétition → 3 rechargements puis arrêt ; journal des bugs (contenu, vider) ; **Ranger sur un gros stock** (recherches groupées, intrus jamais cochés, recherche vidée à la fin) ; suppression avec `confirm` accepté et refusé.
+Couvre : panneau ouvrir/fermer ; lecture (pagination tardive, pages fantômes, cartes sans `p`, chargement en échec) ; filtre avec compteur dans le libellé (le menu n'est pas rouvert) ; bilan « Terminé », fenêtre qui se ferme seule ou non ; pose lente (« Terminé » après ~50 s, pas pris pour un refus) ; pose refusée une fois (réessai) ou deux (arrêt rapide) ; étiquette créée ; retour en page 1 ; Ranger dans « Sans étiquette » en ≤ 2 changements de page ; lecture API complète, incrémentale, et repli sur l'écran si l'API est illisible ; erreur API passagère réessayée ; panne prolongée → rechargement et relecture ; raté pendant le rangement → rechargement, reprise, rien de perdu ; ratés à répétition → 3 rechargements puis arrêt ; ratés espacés avec du progrès entre deux → la séance va au bout ; recherche ratée → relancée sur place, ou abandonnée et notée ; menu des étiquettes vide après l'ouverture ; sélection en peu de clics (tout cocher puis décocher) ; journal des bugs (contenu, vider) ; **Ranger sur un gros stock** (recherches groupées, intrus jamais cochés, recherche vidée à la fin) ; suppression avec `confirm` accepté et refusé.
 
 ## `scripts/regressions.py` — les bugs déjà livrés
 
-`python scripts/regressions.py` lance d'abord toute la suite sur les sources intactes, puis réintroduit chaque bug passé, un à la fois, dans une copie des sources, lance **seulement le test qui le surveille** (`--test-name-pattern`), et exige qu'il le **détecte** (rouge). Environ 2 minutes. Les 11 actuels :
+`python scripts/regressions.py` lance d'abord toute la suite sur les sources intactes, puis réintroduit chaque bug passé, un à la fois, dans une copie des sources, lance **seulement le test qui le surveille** (`--test-name-pattern`), et exige qu'il le **détecte** (rouge). Environ 2 minutes. Les 15 actuels :
 1. carte sans `p` ignorée ;
 2. « Terminé » non géré ;
 3. compteur « (n) » gardé dans le libellé du filtre ;
@@ -45,8 +45,14 @@ Couvre : panneau ouvrir/fermer ; lecture (pagination tardive, pages fantômes, c
 8. pose refusée par le site : 90 s d'attente puis message trompeur ;
 9. chargement raté pris pour la fin de la vue ;
 10. pose réussie oubliée quand la liste ne se recharge pas ensuite ;
-11. reprise après rechargement qui oublie ce qui était déjà posé.
+11. reprise après rechargement qui oublie ce qui était déjà posé ;
+12. rechargements comptés sur toute la séance, même quand des cartes sont rangées entre deux ;
+13. recherche ratée par le serveur : pas de relance sur place ;
+14. menu des étiquettes encore vide : options pas attendues ;
+15. « Tout sélectionner (page) » sans décocher les cartes en trop.
 
-Un nouveau bug corrigé y ajoute sa mutation : `(nom, fichier, texte d'origine, texte fautif, test)`, où `test` est le début du nom du test qui passe au rouge. Choisir un test qui échoue **à coup sûr**, pas selon la charge de la machine : vérifier qu'il échoue lancé seul (`node --test --test-name-pattern="^début du nom"` avec `WMR_SRC` sur la copie mutée). Quand le code autour change, une mutation dont le texte n'est plus trouvé, ou dont le test a été renommé, est signalée « à mettre à jour » et compte comme ratée.
+Un nouveau bug corrigé y ajoute sa mutation : `(nom, fichier, texte d'origine, texte fautif, test)`, où `test` est le début du nom du test qui passe au rouge. Choisir un test qui échoue **à coup sûr**, pas selon la charge de la machine : vérifier qu'il échoue lancé seul (`node --test --test-name-pattern="^début du nom"` avec `WMR_SRC` sur la copie mutée). Quand le code autour change, une mutation dont le texte n'est plus trouvé, ou dont le test a été renommé, est signalée « à mettre à jour » et compte comme ratée ; `build.sh` vérifie les textes à chaque build (`--ancres`, instantané).
 
 Le script lit la sortie au format TAP (`--test-reporter=tap`) : depuis Node 23, `node --test` affiche par défaut `ℹ tests N` au lieu de `# tests N`.
+
+Pour rejouer une seule mutation (après avoir durci son test) : `python scripts/regressions.py <bout du nom>`.

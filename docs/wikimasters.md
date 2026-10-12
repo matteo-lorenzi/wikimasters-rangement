@@ -35,11 +35,13 @@ La même que la page Collection, avec les cookies de session de la page. Lecture
 - Après un étiquetage, la liste se recharge et peut revenir en page 1. Dans « Sans étiquette », les cartes étiquetées disparaissent et les suivantes remontent.
 - Le total « Y » vient de `/api/my-collection/stats`. Quand cette requête échoue (500), la pagination **reste celle de la vue précédente** (« Page 1 / 38 » affiché sur une recherche de 2 pages) ou **disparaît** entièrement, alors que les cartes sont là.
 - Une vue d'une seule page (moins de 50 cartes, ex. une recherche) n'a **aucune** barre de pagination.
+- Juste après l'ouverture (ou le rechargement) de la page, le menu des étiquettes peut s'ouvrir **sans ses options** : « Sans étiquette » n'y était pas encore (journal des bugs de la personne, 2026-10-12). Attendre les options, refermer et rouvrir au besoin.
 - Un rechargement peut aussi s'annoncer par une roue et « Actualisation… » dans la barre de sélection, sans le texte « Chargement… » (vu après avoir vidé la recherche).
 
 **Recherche**
 - Champ `input[placeholder*="Rechercher"]` (« Rechercher par titre ou catégorie… »). Se combine avec le filtre d'étiquette (« Sans étiquette » + `footballeur` → 17 cartes) ; le filtre garde son libellé.
-- La requête part ~0,3 s après la saisie (« Chargement… ») ; la liste filtrée arrive **7 à 10 s** après. Retaper la **même** valeur ne relance rien : pour réessayer, changer la valeur.
+- La requête part ~0,3 s après la saisie (« Chargement… ») ; la liste filtrée arrive **7 à 10 s** après. Retaper la **même** valeur ne relance rien : pour réessayer, changer la valeur (la recherche ignore la casse : `album` → `ALBUM` donne les mêmes cartes).
+- Le serveur **rate des recherches** au hasard, environ une toutes les 2 à 3 minutes pendant un rangement (journal des bugs de la personne, 2026-10-12 : `album`, `musicien`, `espece`) ; la même recherche relancée passe en général.
 - **Échec de chargement** : « Le chargement de la collection a échoué. Réessaie dans un instant. » au-dessus d'une liste vide (« Aucune carte trouvée avec ces filtres. », ou sans filtre « Aucune carte pour l'instant. Ouvrez un paquet ! ») et d'une pagination périmée. Ça ressemble à une vue vide : chercher ce texte avant de conclure qu'une vue est terminée.
 - La recherche, le filtre et le mode sélection **restent en place après un étiquetage** ; seule la sélection est vidée. Un rechargement de l'onglet remet tout à zéro (« Toutes les étiquettes », recherche vide).
 

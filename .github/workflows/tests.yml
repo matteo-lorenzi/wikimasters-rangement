@@ -1,0 +1,43 @@
+# Garde-fou : à chaque push et pull request, le build complet (tests, textes des mutations, assemblage).
+# Les mutations complètes (~2 min) se lancent à la main : onglet Actions → Tests → Run workflow, case « mutations ».
+name: Tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      mutations:
+        description: Rejouer aussi les mutations de scripts/regressions.py (~2 min)
+        type: boolean
+        default: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Le userscript commité correspond aux sources
+        run: git diff --exit-code dist/
+
+  mutations:
+    if: github.event_name == 'workflow_dispatch' && inputs.mutations
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: npm ci
+      - run: python scripts/regressions.py
