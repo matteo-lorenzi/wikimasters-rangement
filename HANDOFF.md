@@ -6,7 +6,7 @@ Mis à jour le 2026-10-12. Les instructions durables sont dans `CLAUDE.md` ; ce 
 
 - Version livrée : **v1.8.3** (à installer par la personne ; premier vrai rangement fait en v1.8.2, voir plus bas).
 - Dépôt sur GitHub (`matteo-lorenzi/wikimasters-rangement`, branche `main`), copie durable.
-- **Tests recréés** (`docs/tests.md`) : moteur sur 51 cartes réelles + pièges, faux site jsdom (rechargement de page compris), automatisation de la page, `scripts/regressions.py` (15 mutations, toutes détectées).
+- **Tests recréés** (`docs/tests.md`) : moteur sur 51 cartes réelles + pièges, faux site jsdom (rechargement de page compris), automatisation de la page, `scripts/regressions.py` (15 mutations, toutes détectées en v1.8.3).
 - v1.8.2, demandé par la personne le 2026-10-12 :
   - **Journal des bugs** (bouton du panneau) : chaque erreur et chaque rechargement automatique y sont notés (version, message, état de la page, fin du journal) ; la personne le copie et le colle dans la conversation. Lire d'abord « Page : » et « Journal : ».
   - **Raté du site → rechargement et reprise** : erreur API passagère réessayée (3 essais) ; serveur toujours en erreur, chargement raté, pose refusée, page bloquée → la page est rechargée et l'étape (lecture ou application) reprend seule, 3 fois au plus. Ce qui est posé est enregistré au fil de l'eau (`ranger_fait`). La lecture par l'écran ne sert plus que si l'API répond dans un format inconnu.
