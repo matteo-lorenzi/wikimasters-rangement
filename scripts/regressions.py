@@ -50,6 +50,18 @@ MUTATIONS = [
     ('reprise après rechargement qui oublie ce qui était déjà posé', 'app.js',
      "const fait = new Set(store.get('ranger_fait', []));",
      "const fait = new Set();"),
+    ('rechargements comptés sur toute la séance, même quand des cartes sont rangées entre deux', 'app.js',
+     "const essais = meme && poses <= (r.poses || 0) ? r.essais : 0;",
+     "const essais = meme ? r.essais : 0;"),
+    ('recherche ratée par le serveur : pas de relance sur place', 'app.js',
+     "if (!(e instanceof PanneSite) || !mot || essai >= 2) throw e;",
+     "throw e;"),
+    ('menu des étiquettes encore vide : options pas attendues', 'app.js',
+     "      await attendre(option, 10000);\n",
+     ""),
+    ('« Tout sélectionner (page) » sans décocher les cartes en trop', 'app.js',
+     "if (cles.has(cle(lireCarte(el))) !== estSelectionnee(el)) await basculer(el);",
+     "if (cles.has(cle(lireCarte(el))) && !estSelectionnee(el)) await basculer(el);"),
 ]
 
 

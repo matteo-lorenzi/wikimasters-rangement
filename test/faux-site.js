@@ -42,6 +42,9 @@ const installerInnerText = (window) => {
  *   retourPage1 (true)          : la liste revient en page 1 après un étiquetage
  *   echecsPose (0)              : nombre de poses refusées (« Impossible d'appliquer l'étiquette »)
  *   chargementsEnEchec ([])     : numéros des chargements de liste qui échouent (le 1er = l'ouverture de la page)
+ *   echecsRecherche (0)         : les N premiers chargements d'une recherche échouent
+ *   recherchesImpossibles ([])  : mots dont la recherche échoue toujours
+ *   menuTardif (0)              : ms après l'ouverture de la page pendant lesquelles le menu des étiquettes reste vide
  *   apiEchecs (0)               : les N premières requêtes /api/ répondent 500
  *   apiEnPanne (false)          : toute requête /api/ répond 500
  *   apiIllisible (false)        : l'API répond, mais dans un format inconnu
@@ -50,13 +53,13 @@ const installerInnerText = (window) => {
 const creerSite = async (config = {}) => {
   const o = {
     paginationTardive: 40, pagesFantomes: 2, chargement: 15, pose: 20,
-    fermetureAuto: true, retourPage1: true, echecsPose: 0, chargementsEnEchec: [], apiEchecs: 0, apiEnPanne: false, ...config,
+    fermetureAuto: true, retourPage1: true, echecsPose: 0, chargementsEnEchec: [], echecsRecherche: 0, recherchesImpossibles: [], menuTardif: 0, apiEchecs: 0, apiEnPanne: false, ...config,
   };
   let prochainId = 1;
   const cartes = (o.cartes || []).map((c) => ({ id: prochainId++, t: c.t, d: c.d || '', r: c.r || 'C', tags: [...(c.tags || [])], obtenu: c.obtenu || '2026-01-01T00:00:00+00:00' }));
   const etiquettes = [...new Set([...(o.etiquettes || []), ...cartes.flatMap((c) => c.tags)])];
   const actions = [];
-  const compteurs = { chargements: 0, echecsPose: o.echecsPose, apiEchecs: o.apiEchecs, rechargements: 0 };
+  const compteurs = { chargements: 0, echecsPose: o.echecsPose, echecsRecherche: o.echecsRecherche, apiEchecs: o.apiEchecs, rechargements: 0 };
   let ouverte = null; // la page ouverte : { window, document, etat }
 
   // Ouvre la page Collection ; « stockage » = le localStorage gardé d'un rechargement à l'autre.
@@ -67,7 +70,7 @@ const creerSite = async (config = {}) => {
     installerInnerText(window);
     for (const [k, v] of Object.entries(stockage)) window.localStorage.setItem(k, v);
 
-    const etat = { filtre: null, tri: 'Rareté', q: '', page: 0, selection: false, choisies: new Set(), affichees: [], jeton: 0, paginationVisible: false, erreur: false };
+    const etat = { filtre: null, tri: 'Rareté', q: '', page: 0, selection: false, choisies: new Set(), affichees: [], jeton: 0, paginationVisible: false, erreur: false, ouverture: Date.now() };
 
     // ── la vue : filtre d'étiquette + recherche + tri ──
     const vue = ({ filtre = etat.filtre, q = etat.q, tri = etat.tri } = {}) => {
@@ -125,6 +128,7 @@ const creerSite = async (config = {}) => {
         const calque = document.createElement('div'); calque.className = 'pointer-events-none absolute inset-0';
         card.addEventListener('click', () => {
           if (!etat.selection) { actions.push({ type: 'fiche', t: c.t }); return; }
+          actions.push({ type: 'clic', t: c.t });
           if (etat.choisies.has(c.id)) etat.choisies.delete(c.id); else etat.choisies.add(c.id);
           majGrilleSelection(); majBarre();
         });
@@ -167,7 +171,8 @@ const creerSite = async (config = {}) => {
       await attente(o.chargement);
       if (jeton !== etat.jeton || !$('#site')) return; // chargement dépassé, ou page fermée
       etat.chargement = false;
-      if (o.chargementsEnEchec.includes(++compteurs.chargements)) {
+      const numero = ++compteurs.chargements;
+      if (o.chargementsEnEchec.includes(numero) || rechercheEnEchec()) {
         etat.erreur = true; etat.affichees = [];
       } else {
         etat.erreur = false;
@@ -184,6 +189,14 @@ const creerSite = async (config = {}) => {
       dessinerPagination();
     };
     const recharger = (page = etat.page) => { etat.page = page; etat.choisies.clear(); return charger(); };
+    // le serveur rate parfois une recherche (vu sur le vrai site le 2026-10-12)
+    const rechercheEnEchec = () => {
+      const q = sansAccents(etat.q.trim());
+      if (!q) return false;
+      if (o.recherchesImpossibles.some((m) => q.includes(sansAccents(m)))) return true;
+      if (compteurs.echecsRecherche > 0) { compteurs.echecsRecherche--; return true; }
+      return false;
+    };
 
     // ── recherche (attente ~0,3 s ; même valeur = rien ne part) ──
     let minuterie = null;
@@ -205,13 +218,19 @@ const creerSite = async (config = {}) => {
       if (!menu.hidden && menu.dataset.type === 'filtre') { menu.hidden = true; return; }
       menu.dataset.type = 'filtre';
       menu.innerHTML = '';
+      menu.hidden = false;
+      // juste après l'ouverture de la page, le menu reste vide un moment (vu sur le vrai site)
+      const attendreMenu = o.menuTardif - (Date.now() - etat.ouverture);
+      if (attendreMenu > 0) { setTimeout(() => { if (!menu.hidden && menu.dataset.type === 'filtre' && !menu.children.length) remplirFiltre(); }, attendreMenu); return; }
+      remplirFiltre();
+    });
+    const remplirFiltre = () => {
       const opt = (texte, valeur) => { const b = bouton(texte); b.addEventListener('click', () => { menu.hidden = true; etat.filtre = valeur; $('#b-filtre').textContent = libelleFiltre(); actions.push({ type: 'filtre', filtre: valeur }); recharger(0); }); menu.appendChild(b); };
       opt('Toutes les étiquettes', null);
       opt('Sans étiquette', '');
       for (const t of [...etiquettes].sort()) opt(`#${t} (${cartes.filter((c) => c.tags.includes(t)).length})`, t);
       const g = bouton('Gérer les étiquettes…'); g.addEventListener('click', () => { menu.hidden = true; ouvrirGestion(); }); menu.appendChild(g);
-      menu.hidden = false;
-    });
+    };
     const ouvrirGestion = () => {
       const f = $('#fenetre');
       f.innerHTML = '<div role="dialog"><h2>Mes étiquettes</h2><p>Créez, renommez et supprimez vos étiquettes.</p><div class="lignes"></div></div>';
@@ -254,7 +273,7 @@ const creerSite = async (config = {}) => {
       barre.innerHTML = `<div><span>${n}</span><span> ${n > 1 ? 'cartes sélectionnées' : 'carte sélectionnée'}</span></div>`;
       const toutes = etat.affichees.length && etat.affichees.every((c) => etat.choisies.has(c.id));
       const tout = bouton(toutes ? 'Désélectionner la page' : 'Tout sélectionner (page)');
-      tout.addEventListener('click', () => { for (const c of etat.affichees) toutes ? etat.choisies.delete(c.id) : etat.choisies.add(c.id); majGrilleSelection(); majBarre(); });
+      tout.addEventListener('click', () => { actions.push({ type: 'clic', t: '(page)' }); for (const c of etat.affichees) toutes ? etat.choisies.delete(c.id) : etat.choisies.add(c.id); majGrilleSelection(); majBarre(); });
       const etq = bouton('Étiqueter'); etq.disabled = !n; etq.addEventListener('click', ouvrirEtiqueter);
       const retirer = bouton('Retirer l\'étiquette'); retirer.disabled = !n;
       const defausser = bouton(`Défausser (+${n})`); defausser.addEventListener('click', () => actions.push({ type: 'DÉFAUSSER' }));
@@ -362,6 +381,7 @@ const creerSite = async (config = {}) => {
     get wmr() { return ouverte.window.__WMR; },
     cartes, actions, etiquettes, attente,
     rechargements: () => compteurs.rechargements,
+    chargements: () => compteurs.chargements,
     pagesVisitees: () => actions.filter((a) => a.type === 'page').length,
     poses: () => actions.filter((a) => a.type === 'pose'),
     fermer: () => ouverte.window.close(),
