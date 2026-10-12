@@ -129,6 +129,14 @@ const cle = (c) => c.t + '|' + c.d + '|' + c.r;
 let STOP = false;
 const arret = () => { if (STOP) throw new Error('Arrêté.'); };
 
+// Raté passager du site (API en erreur, chargement raté, pose refusée…) : un rechargement de la page
+// suffit en général. Le mode Ranger recharge alors la page et reprend où il en était (voir lancer).
+class PanneSite extends Error {}
+const MAX_RECHARGEMENTS = 3;
+// les tests remplacent le rechargement, que jsdom ne sait pas faire
+const rechargerPage = () => (window.__WMR_RECHARGER__ ? window.__WMR_RECHARGER__() : location.reload());
+const VERSION = typeof GM_info !== 'undefined' ? GM_info.script.version : '?';
+
 // ── lecture de la page ──
 // Le site est lent : le compteur « Page X / Y » arrive plusieurs secondes après les cartes,
 // et son total peut être faux (pages vides en fin de collection). On ne s'y fie donc pas :
@@ -172,7 +180,7 @@ const bouton = (re) => [...document.querySelectorAll('button')].find((b) => !b.c
 // Un chargement raté affiche une liste vide : sans ce contrôle, il passerait pour la fin de la vue.
 const echecChargement = () => /chargement de la collection a échoué/i.test(texte());
 const verifierChargement = () => {
-  if (echecChargement()) throw new Error('Le site n\'a pas pu charger la liste (« Le chargement de la collection a échoué »). Recharge la page puis relance : ce qui est fait reste fait.');
+  if (echecChargement()) throw new PanneSite('Le site n\'a pas pu charger la liste (« Le chargement de la collection a échoué »). Recharge la page puis relance : ce qui est fait reste fait.');
 };
 
 // Attend que la page affichée soit stable (même empreinte pendant 1,5 s, rien en chargement).
@@ -201,7 +209,7 @@ const changerPage = async (sens) => {
   if (!ok) {
     verifierChargement();
     if (!cartesDom().length && !enChargement()) return false; // page vide : fin réelle de la vue
-    throw new Error('Le site ne répond plus (page bloquée sur « Chargement… »). Recharge la page puis relance : ce qui est fait reste fait.');
+    throw new PanneSite('Le site ne répond plus (page bloquée sur « Chargement… »). Recharge la page puis relance : ce qui est fait reste fait.');
   }
   await attendrePageStable();
   return true;
@@ -302,10 +310,22 @@ const lireVue = async (progression, attendu = null) => {
 // Lecture seule. Le site met ~5 s par page : on en demande jusqu'à 3 à la fois.
 // En cas d'échec, les modes reviennent à la lecture par l'écran.
 const PARALLELE = 3;
-const apiCollection = async (params, page) => {
-  const r = await fetch('/api/my-collection?' + new URLSearchParams({ ...params, page: String(page), stats: '0' }), { credentials: 'same-origin' });
+// Le serveur renvoie parfois une erreur 500 passagère : on réessaie la même requête (3 essais, 3 s d'écart).
+// Une erreur serveur qui dure devient une PanneSite (rechargement puis reprise) ; une autre erreur, un repli sur l'écran.
+const lireUrl = async (url) => {
+  let r;
+  for (let essai = 1; essai <= 3; essai++) {
+    arret();
+    r = await fetch(url, { credentials: 'same-origin' });
+    if (r.ok || r.status < 500) break;
+    if (essai < 3) await sleep(3000);
+  }
+  if (r.status >= 500) throw new PanneSite(`Le serveur du site répond en erreur (${r.status}) depuis 3 essais.`);
   if (!r.ok) throw new Error('API ' + r.status);
-  const j = await r.json();
+  return r.json();
+};
+const apiCollection = async (params, page) => {
+  const j = await lireUrl('/api/my-collection?' + new URLSearchParams({ ...params, page: String(page), stats: '0' }));
   if (!Array.isArray(j.collection)) throw new Error('réponse inattendue');
   return j.collection.map((x) => ({
     t: (x.card?.wikipedia_title || '').trim(), d: (x.card?.category || '').trim(), r: (x.card?.rarity || '').trim(),
@@ -313,9 +333,7 @@ const apiCollection = async (params, page) => {
   }));
 };
 const apiTotal = async (params) => {
-  const r = await fetch('/api/my-collection/stats?' + new URLSearchParams(params), { credentials: 'same-origin' });
-  if (!r.ok) throw new Error('API stats ' + r.status);
-  const j = await r.json();
+  const j = await lireUrl('/api/my-collection/stats?' + new URLSearchParams(params));
   return typeof j.total === 'number' ? j.total : null;
 };
 // depuis (date ISO) : ne lit que les cartes obtenues après cette date (vue triée par date d'ajout).
@@ -353,7 +371,7 @@ const modeSelection = async (oui) => {
   if (enSelection() === oui) return;
   const b = bouton(oui ? /^Sélectionner$/ : /Quitter la sélection/);
   if (b) { b.click(); await sleep(500); }
-  if (enSelection() !== oui) throw new Error('Impossible de ' + (oui ? 'passer en' : 'quitter le') + ' mode sélection.');
+  if (enSelection() !== oui) throw new PanneSite('Impossible de ' + (oui ? 'passer en' : 'quitter le') + ' mode sélection.');
 };
 // Hors mode sélection, cliquer une carte ouvrirait sa fiche : on vérifie avant chaque clic.
 const basculer = async (el) => {
@@ -395,9 +413,9 @@ const fermerFenetre = async () => {
 // (« N cartes étiquetées (M déjà étiquetées) ») et un bouton « Terminé ».
 const poserEtiquette = async (nom) => {
   const b = bouton(/^Étiqueter$/);
-  if (!b || b.disabled) throw new Error('Bouton « Étiqueter » indisponible.');
+  if (!b || b.disabled) throw new PanneSite('Bouton « Étiqueter » indisponible.');
   b.click();
-  if (!(await attendre(() => champEtiquette(), 10000))) throw new Error('Fenêtre « Appliquer une étiquette » introuvable.');
+  if (!(await attendre(() => champEtiquette(), 10000))) throw new PanneSite('Fenêtre « Appliquer une étiquette » introuvable.');
   setValeur(champEtiquette(), nom);
   const choix = () => {
     const inp = champEtiquette(); if (!inp) return null;
@@ -412,19 +430,20 @@ const poserEtiquette = async (nom) => {
   const refus = () => /Impossible d'appliquer/.test(texte());
   if (!(await attendre(() => bouton(/^Terminé$/) || refus(), 90000))) {
     await fermerFenetre();
-    throw new Error('Le site n\'a pas confirmé « ' + nom + ' » après 90 s. Vérifie quelques cartes puis relance : ce qui est fait reste fait.');
+    throw new PanneSite('Le site n\'a pas confirmé « ' + nom + ' » après 90 s. Vérifie quelques cartes puis relance : ce qui est fait reste fait.');
   }
   if (!bouton(/^Terminé$/)) {
     await sleep(3000);
     if (choix()) choix().click();
     if (!(await attendre(() => bouton(/^Terminé$/), 30000))) {
       await fermerFenetre();
-      throw new Error('Le site a refusé deux fois de poser « ' + nom + ' » (« Impossible d\'appliquer l\'étiquette ») : rien n\'a été posé sur ces cartes. Attends une minute puis relance : ce qui est fait reste fait.');
+      throw new PanneSite('Le site a refusé deux fois de poser « ' + nom + ' » (« Impossible d\'appliquer l\'étiquette ») : rien n\'a été posé sur ces cartes. Attends une minute puis relance : ce qui est fait reste fait.');
     }
   }
   const m = texte().match(/(\d+)\s*cartes?\s*étiquetées?\.?\s*(?:\((\d+)\s*déjà)?/);
   await fermerFenetre();
-  await attendrePageStable();
+  // la liste se recharge ensuite : c'est à l'appelant de l'attendre, une fois la pose notée
+  // (un rechargement raté ne doit pas faire oublier une pose réussie)
   return m ? { poses: +m[1], deja: +(m[2] || 0) } : null;
 };
 
@@ -436,9 +455,9 @@ const allerA = async (num) => {
     arret();
     if (!pageInfo()) await attendre(() => pageInfo(), 20000);
     const pi = pageInfo();
-    if (!pi) { if (num === 1) return; throw new Error('Pagination introuvable : impossible de revenir à la page ' + num + '.'); }
+    if (!pi) { if (num === 1) return; throw new PanneSite('Pagination introuvable : impossible de revenir à la page ' + num + '.'); }
     if (pi[0] === num) return;
-    if (!(await changerPage(pi[0] < num ? 1 : -1))) throw new Error('Impossible de revenir à la page ' + num + '.');
+    if (!(await changerPage(pi[0] < num ? 1 : -1))) throw new PanneSite('Impossible de revenir à la page ' + num + '.');
   }
 };
 
@@ -469,6 +488,7 @@ const appliquerSurPage = async (plan, fait, journal, num = null) => {
     for (const k of cles) fait.add(k + '§' + tag);
     poses += nb;
     journal(`  ${tag} → ${bilan ? `${bilan.poses} posée(s)${bilan.deja ? `, ${bilan.deja} déjà là` : ''}` : nb + ' carte(s)'}`);
+    await attendrePageStable();
     await viderSelection();
     // le site recharge parfois la liste après un étiquetage : on vérifie qu'on est toujours sur la bonne page
     if (num != null && empreinte() !== avantTag) {
@@ -654,6 +674,7 @@ details{margin:4px 0}summary{cursor:pointer;color:#cfd4d1}
 .li{color:#b9bfbb;font-size:12px;padding:2px 0 2px 10px}
 .ok{color:#34d399}.ko{color:#fbbf24}.log{font-family:ui-monospace,monospace;font-size:11px;color:#9aa19d;white-space:pre-wrap;max-height:140px;overflow:auto;background:#0e100f;border-radius:6px;padding:6px;margin-top:8px}
 .hint{font-size:12px;color:#9aa19d;margin:0 0 10px}
+textarea{width:100%;background:#0e100f;color:#cfd4d1;border:1px solid #2a2e2c;border-radius:6px;padding:6px;font-family:ui-monospace,monospace;font-size:11px;margin-bottom:8px}
 `;
 
 let ui;
@@ -675,6 +696,7 @@ const monterUI = () => {
         <button class="b p" data-a="ranger">Ranger les nouvelles cartes</button>
         <button class="b" data-a="migration">Migration (une fois)</button>
         <button class="b d" data-a="stop" disabled>Arrêter</button>
+        <button class="b" data-a="bugs">Journal des bugs</button>
       </div>
       <div class="st"></div>
       <div class="out"></div>
@@ -691,17 +713,83 @@ const monterUI = () => {
   $('.fab').onclick = () => montrer($('.pan'), $('.pan').hidden);
   $('.x').onclick = () => montrer($('.pan'), false);
   root.querySelector('[data-a=stop]').onclick = () => { STOP = true; ui.statut('Arrêt demandé…'); };
-  root.querySelector('[data-a=ranger]').onclick = () => lancer(modeRanger);
+  root.querySelector('[data-a=ranger]').onclick = () => lancer(() => modeRanger(false), { etape: 'lecture', tout: false });
   root.querySelector('[data-a=migration]').onclick = () => lancer(modeMigration);
+  root.querySelector('[data-a=bugs]').onclick = afficherBugs;
+  majBoutonBugs();
   proposerReprise();
 };
 
-const lancer = async (fn) => {
+// Lance un mode. reprise ({ etape, tout }) : en cas de raté du site (PanneSite), la page est rechargée
+// et l'étape reprend toute seule (proposerReprise), MAX_RECHARGEMENTS fois au plus ; ensuite, arrêt avec un message.
+const lancer = async (fn, reprise = null) => {
   STOP = false; ui.occupe(true); ui.log.textContent = ''; montrer(ui.log, false);
-  try { await fn(); } catch (e) { ui.statut('⚠️ ' + e.message); } finally {
+  try {
+    await fn();
+    store.set('ranger_reprise', null);
+  } catch (e) {
+    if (STOP) { ui.statut('⚠️ ' + e.message); return; }
+    const r = store.get('ranger_reprise', null);
+    const essais = reprise && r && r.etape === reprise.etape ? r.essais : 0;
+    if (reprise && e instanceof PanneSite && essais < MAX_RECHARGEMENTS) {
+      noterBug(e, `rechargement automatique ${essais + 1}/${MAX_RECHARGEMENTS}`);
+      store.set('ranger_reprise', { ...reprise, essais: essais + 1, at: Date.now() });
+      ui.statut(`Le site a eu un raté : rechargement de la page puis reprise automatique (${essais + 1}/${MAX_RECHARGEMENTS})…\n${e.message}`);
+      setTimeout(rechargerPage, 1500 * ECHELLE);
+      return;
+    }
+    store.set('ranger_reprise', null);
+    noterBug(e, essais ? `arrêt après ${essais} rechargement(s)` : 'arrêt');
+    ui.statut('⚠️ ' + e.message + (essais ? ` Le site a été rechargé ${essais} fois sans succès : attends quelques minutes avant de relancer.` : ''));
+  } finally {
     STOP = false; ui.occupe(false);
     try { await modeSelection(false); } catch (e) { /* rien */ }
   }
+};
+
+// ── Journal des bugs : gardé dans le navigateur, à copier pour Claude ──
+const noterBug = (e, contexte) => {
+  const pi = pageInfo();
+  const filtre = document.querySelector('button[aria-label="Filtrer par étiquette"]')?.innerText.trim() || '?';
+  const bugs = store.get('bugs', []);
+  bugs.push({
+    quand: new Date().toLocaleString(), version: VERSION, contexte, message: e.message,
+    code: String(e.stack || '').split('\n').slice(0, 4).map((s) => s.trim()).join(' ← '),
+    page: `${location.pathname} · Filtre : ${filtre} · Recherche : « ${champRecherche()?.value || ''} » · Pagination : ${pi ? pi.join(' / ') : 'absente'}`
+      + ` · ${cartesDom().length} carte(s) affichée(s)${enChargement() ? ' · en chargement' : ''}${echecChargement() ? ' · « chargement a échoué » affiché' : ''}`
+      + `${fenetreOuverte() ? ' · fenêtre « Appliquer une étiquette » ouverte' : ''}${enSelection() ? ' · mode sélection' : ''}`,
+    journal: ui ? ui.log.textContent.trim().split('\n').filter(Boolean).slice(-25) : [],
+  });
+  store.set('bugs', bugs.slice(-30));
+  majBoutonBugs();
+};
+const texteBugs = () => store.get('bugs', []).map((b, i) => [
+  `#${i + 1} — ${b.quand} — ${b.contexte}`,
+  `Version : ${b.version}`,
+  `Erreur : ${b.message}`,
+  `Page : ${b.page}`,
+  `Code : ${b.code}`,
+  'Journal :', ...b.journal.map((l) => '  ' + l),
+].join('\n')).join('\n\n');
+const majBoutonBugs = () => {
+  const b = ui && ui.root.querySelector('[data-a=bugs]');
+  const n = store.get('bugs', []).length;
+  if (b) b.textContent = 'Journal des bugs' + (n ? ` (${n})` : '');
+};
+const afficherBugs = () => {
+  const t = texteBugs();
+  ui.out.innerHTML = '<h4>Journal des bugs</h4>' + (t ? `<p class="hint">Copie ce texte et colle-le dans la conversation avec Claude.</p>
+    <textarea readonly rows="12">${esc(t)}</textarea>
+    <div class="row"><button class="b p" data-copier>Copier</button><button class="b d" data-vider>Vider le journal</button></div>`
+    : '<p class="hint">Aucun bug noté.</p>');
+  const ta = ui.out.querySelector('textarea');
+  const copier = ui.out.querySelector('[data-copier]');
+  if (copier) copier.onclick = () => {
+    const echec = () => { ta.select(); ui.statut('Copie impossible ici : le texte est sélectionné, fais Ctrl+C.'); };
+    try { navigator.clipboard.writeText(t).then(() => ui.statut('Journal copié : colle-le dans la conversation avec Claude.'), echec); } catch (e) { echec(); }
+  };
+  const vider = ui.out.querySelector('[data-vider]');
+  if (vider) vider.onclick = () => { store.set('bugs', []); majBoutonBugs(); afficherBugs(); };
 };
 
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -734,8 +822,10 @@ const modeRanger = async (tout = false) => {
   try {
     cartes = await lireApi({ sort: 'added', untagged: '1' }, { depuis, progression: (n, tot) => ui.statut(`Lecture : ${n}${tot ? ' / ' + tot : ''} carte(s)…`) });
   } catch (e) {
-    if (STOP) throw e;
+    // serveur en erreur : mieux vaut recharger la page et relire (lancer s'en charge) que lire 20 min par l'écran
+    if (STOP || e instanceof PanneSite) throw e;
     viaApi = false;
+    noterBug(e, 'lecture rapide indisponible, lecture par l\'écran');
     ui.journal('Lecture rapide indisponible (' + e.message + ') : lecture par l\'écran.');
     await choisirFiltre('');
     cartes = await lireVue((p) => ui.statut(`Lecture des cartes sans étiquette : page ${p}…`));
@@ -747,12 +837,26 @@ const modeRanger = async (tout = false) => {
   afficherRanger(cartes, depuis, viaApi);
 };
 
-const afficherRanger = (cartes, depuis, viaApi) => {
+// Ce que le mode Ranger fera d'une lecture : le même calcul pour l'aperçu et pour une reprise après rechargement.
+const preparerRanger = (cartes, depuis) => {
   const plans = new Map(cartes.map((c) => [cle(c), planCarte(c)]));
   const cibles = cartes.filter((c) => plans.get(cle(c)).tags.length);
   const plusRecente = cartes.reduce((m, c) => (c.obtenu && c.obtenu > m ? c.obtenu : m), depuis || '');
   // gros stock : d'abord des recherches qui rangent les cartes par groupes, puis page par page
   const groupes = cibles.length >= SEUIL_RANGEMENT_GROUPE ? motsGroupes(cartes, plans) : [];
+  return { plans, cibles, plusRecente, groupes };
+};
+// Applique une lecture enregistrée (store « ranger_lecture »), au clic sur « Appliquer » ou en reprise automatique.
+const appliquerLecture = async (l) => {
+  const { plans, cibles, plusRecente, groupes } = preparerRanger(l.cartes, l.depuis);
+  await appliquerRanger(cibles, plans, groupes);
+  if (l.viaApi && plusRecente) store.set('ranger_depuis', plusRecente);
+  store.set('ranger_lecture', null);
+  store.set('ranger_fait', null);
+};
+
+const afficherRanger = (cartes, depuis, viaApi) => {
+  const { plans, cibles, plusRecente, groupes } = preparerRanger(cartes, depuis);
   const groupees = groupes.reduce((s, g) => s + g.n, 0);
   ui.statut(`${cartes.length} carte(s) ${depuis ? 'nouvelle(s)' : 'sans étiquette'}, dont ${cibles.length} à ranger.`);
   ui.out.innerHTML = (groupes.length ? `<h4>Rangement groupé</h4>
@@ -761,20 +865,40 @@ const afficherRanger = (cartes, depuis, viaApi) => {
     + resumePlan(cartes, plans) + `<div class="row" style="margin-top:12px">
       ${cibles.length ? '<button class="b p" data-go>Appliquer</button>' : ''}
       ${depuis ? '<button class="b" data-tout>Revoir toutes les cartes sans étiquette</button>' : ''}</div>`;
-  const marquer = () => {
+  if (!cibles.length) { // rien à poser : ces cartes ne seront plus relues
     if (viaApi && plusRecente) store.set('ranger_depuis', plusRecente);
     store.set('ranger_lecture', null);
-  };
-  if (!cibles.length) marquer(); // rien à poser : ces cartes ne seront plus relues
+  }
   const go = ui.out.querySelector('[data-go]');
-  if (go) go.onclick = () => { go.remove(); lancer(async () => { await appliquerRanger(cibles, plans, groupes); marquer(); }); };
+  if (go) go.onclick = () => {
+    go.remove();
+    store.set('ranger_fait', null);
+    lancer(() => appliquerLecture({ cartes, depuis, viaApi }), { etape: 'application' });
+  };
   const tt = ui.out.querySelector('[data-tout]');
-  if (tt) tt.onclick = () => lancer(() => modeRanger(true));
+  if (tt) tt.onclick = () => lancer(() => modeRanger(true), { etape: 'lecture', tout: true });
 };
 
-// Au chargement du panneau : proposer de reprendre une lecture interrompue par un rechargement.
+// Au chargement du panneau : reprendre tout seul après un rechargement demandé par le script (lancer),
+// sinon proposer de reprendre une lecture interrompue.
 const proposerReprise = () => {
-  const l = store.get('ranger_lecture', null);
+  const r = store.get('ranger_reprise', null);
+  const lu = store.get('ranger_lecture', null);
+  if (r && Date.now() - r.at < 15 * 60e3 && (r.etape === 'lecture' || lu)) {
+    montrer(ui.$('.pan'), true);
+    lancer(async () => {
+      ui.journal(`Reprise automatique après rechargement de la page (${r.essais}/${MAX_RECHARGEMENTS}).`);
+      // la page vient d'être rechargée : attendre qu'elle affiche ses cartes
+      if (!(await attendre(() => document.querySelector('button[aria-label="Filtrer par étiquette"]') && cartesDom().length && !enChargement(), 60000))) {
+        verifierChargement();
+        throw new PanneSite('La page Collection ne s\'est pas affichée après le rechargement.');
+      }
+      if (r.etape === 'lecture') await modeRanger(r.tout);
+      else await appliquerLecture(lu);
+    }, { etape: r.etape, tout: r.tout });
+    return;
+  }
+  const l = lu;
   if (!l || !l.cartes || Date.now() - l.at > 6 * 3600e3) return;
   ui.out.innerHTML = `<p class="hint">Une lecture de ${l.cartes.length} carte(s) faite à ${new Date(l.at).toLocaleTimeString()} n'a pas encore été appliquée.</p>
     <div class="row"><button class="b p" data-reprise>Reprendre cette lecture</button></div>`;
@@ -792,7 +916,10 @@ const appliquerRanger = async (cibles, plans, groupes = []) => {
     premier.set(cle(c), [tags[0]]);
     if (tags.length > 1) suite.set(cle(c), { tete: tags[0], reste: tags.slice(1) });
   }
-  const fait = new Set();
+  // ce qui est posé est enregistré au fil de l'eau : une reprise après rechargement repart de là
+  const fait = new Set(store.get('ranger_fait', []));
+  // appliquerSurPage appelle le journal juste après chaque pose, « fait » à jour
+  const noter = (prefixe) => (t) => { ui.journal(prefixe + t); store.set('ranger_fait', [...fait]); };
   const restants = () => [...premier.keys()].filter((k) => !fait.has(k + '§' + premier.get(k)[0])).length;
   await choisirFiltre('');
   await choisirTri('Date d\'ajout');
@@ -803,7 +930,7 @@ const appliquerRanger = async (cibles, plans, groupes = []) => {
     if (!plan.size) continue;
     ui.statut(`Rangement groupé : « ${g.mot} » (${i + 1}/${groupes.length}) — ${plan.size} carte(s) en #${g.dom}`);
     await rechercher(g.mot);
-    await appliquerSurPage(plan, fait, (t) => ui.journal(`« ${g.mot} » ${t}`));
+    await appliquerSurPage(plan, fait, noter(`« ${g.mot} » `));
   }
   if (groupes.length) await rechercher('');
   for (let num = 1; ; ) {
@@ -811,7 +938,7 @@ const appliquerRanger = async (cibles, plans, groupes = []) => {
     await attendre(() => cartesDom().length > 0 && !enChargement(), 30000);
     await attendrePageStable();
     ui.statut(`Passe 1 : page ${num} — reste ${restants()} carte(s)`);
-    await appliquerSurPage(premier, fait, (t) => ui.journal(`p${num} ${t}`), num);
+    await appliquerSurPage(premier, fait, noter(`p${num} `), num);
     if (!restants() || cartesDom().length < PAR_PAGE) break;
     if (!(await changerPage(1))) break;
     num++;
@@ -833,7 +960,7 @@ const appliquerRanger = async (cibles, plans, groupes = []) => {
     await choisirTri('Date d\'ajout');
     const enAttente = () => [...plan].some(([k, tags]) => tags.some((t) => !fait.has(k + '§' + t)));
     await parcourirVue(async (num) => {
-      await appliquerSurPage(plan, fait, (t) => ui.journal(`#${tete} p${num} ${t}`), num);
+      await appliquerSurPage(plan, fait, noter(`#${tete} p${num} `), num);
       return enAttente();
     });
   }

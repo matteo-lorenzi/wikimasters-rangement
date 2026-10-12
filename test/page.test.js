@@ -11,18 +11,21 @@ const attendreQue = async (cond, ms = 15000) => {
 const serie = (n, f) => Array.from({ length: n }, (_, i) => f(i));
 const date = (i) => new Date(Date.UTC(2026, 0, 1) + i * 60000).toISOString();
 
-// Le panneau du script, dans son shadow root.
+// Le panneau du script, dans son shadow root (relu à chaque fois : la page peut avoir été rechargée).
 const panneau = (site) => {
   site.wmr.monterUI();
-  const root = site.document.getElementById('wmr-host').shadowRoot;
-  return {
-    root,
-    statut: () => root.querySelector('.st').textContent,
-    cliquer: (sel) => root.querySelector(sel).click(),
-    ranger: () => root.querySelector('[data-a=ranger]').click(),
-    appliquer: () => root.querySelector('[data-go]').click(),
+  const p = {
+    // pendant un rechargement, plus de panneau : un élément vide en attendant
+    get root() { return site.document.getElementById('wmr-host')?.shadowRoot || site.document.createElement('div'); },
+    statut: () => p.root.querySelector('.st')?.textContent || '',
+    journal: () => p.root.querySelector('.log')?.textContent || '',
+    cliquer: (sel) => p.root.querySelector(sel).click(),
+    ranger: () => p.root.querySelector('[data-a=ranger]').click(),
+    appliquer: () => p.root.querySelector('[data-go]').click(),
   };
+  return p;
 };
+const BILAN = /✅|⚠️|Terminé, mais/;
 // Lance « Ranger » puis « Appliquer », et attend le bilan final.
 const rangerTout = async (site) => {
   const p = panneau(site);
@@ -30,7 +33,7 @@ const rangerTout = async (site) => {
   assert.ok(await attendreQue(() => p.root.querySelector('[data-go]') || /⚠️/.test(p.statut())), 'aperçu : ' + p.statut());
   assert.ok(p.root.querySelector('[data-go]'), p.statut());
   p.appliquer();
-  assert.ok(await attendreQue(() => /✅|⚠️|Terminé, mais/.test(p.statut()), 60000), 'bilan : ' + p.statut());
+  assert.ok(await attendreQue(() => BILAN.test(p.statut()), 60000), 'bilan : ' + p.statut());
   return p;
 };
 const sansIncident = (site) => {
@@ -233,10 +236,73 @@ test('Ranger : lecture API complète, puis seulement les cartes obtenues depuis'
   site.fermer();
 });
 
-test('Ranger : sans API, lecture par l\'écran', async () => {
-  const site = await creerSite({ cartes: collection(), etiquettes: ['Sport'], apiEnPanne: true });
+test('Ranger : API illisible, lecture par l\'écran', async () => {
+  const site = await creerSite({ cartes: collection(), etiquettes: ['Sport'], apiIllisible: true });
   const p = await rangerTout(site);
   assert.match(p.statut(), /✅ 75 carte\(s\) rangée\(s\)/);
+  site.fermer();
+});
+
+// ── ratés du site : réessai, rechargement et reprise, journal des bugs ──
+
+const toutRange = (site) => {
+  for (const c of site.cartes.filter((x) => x.t.startsWith('Nouvelle'))) assert.deepEqual(c.tags, attendues[c.d], c.t);
+};
+const journalBugs = async (p) => {
+  p.cliquer('[data-a=bugs]');
+  return p.root.querySelector('.out textarea').value;
+};
+
+test('lecture API : une erreur passagère est réessayée, sans lecture par l\'écran', async () => {
+  const site = await creerSite({ cartes: collection(), etiquettes: ['Sport'], apiEchecs: 2 });
+  const p = panneau(site);
+  p.ranger();
+  assert.ok(await attendreQue(() => p.root.querySelector('[data-go]')), p.statut());
+  assert.match(p.statut(), /dont 75 à ranger/);
+  assert.ok(!site.actions.some((a) => a.type === 'filtre'), 'lecture par l\'API, pas par l\'écran : ' + p.journal());
+  assert.equal(site.rechargements(), 0);
+  site.fermer();
+});
+
+test('lecture API en panne prolongée : la page est rechargée et la lecture relancée', async () => {
+  const site = await creerSite({ cartes: collection(), etiquettes: ['Sport'], apiEchecs: 3 });
+  const p = panneau(site);
+  p.ranger();
+  assert.ok(await attendreQue(() => site.rechargements() === 1 && p.root.querySelector('[data-go]')), 'aperçu après rechargement : ' + p.statut());
+  assert.match(p.statut(), /dont 75 à ranger/);
+  p.appliquer();
+  assert.ok(await attendreQue(() => BILAN.test(p.statut()), 60000), p.statut());
+  assert.match(p.statut(), /✅ 75 carte\(s\) rangée\(s\)/);
+  toutRange(site);
+  site.fermer();
+});
+
+test('raté du site pendant le rangement : rechargement, reprise automatique, et tout est rangé', async () => {
+  // chargement n° 6 de la liste : en pleine passe 1
+  const site = await creerSite({ cartes: collection(), etiquettes: ['Sport'], chargementsEnEchec: [6] });
+  const p = await rangerTout(site);
+  assert.equal(site.rechargements(), 1);
+  assert.match(p.statut(), /✅ 75 carte\(s\) rangée\(s\)/);
+  toutRange(site); // y compris la 2e étiquette des cartes à deux domaines : ce qui était fait n'est pas perdu
+  const bugs = await journalBugs(p);
+  assert.match(bugs, /chargement de la collection a échoué/);
+  assert.match(bugs, /rechargement automatique 1\/3/);
+  sansIncident(site);
+  site.fermer();
+});
+
+test('ratés à répétition : 3 rechargements au plus, puis arrêt avec un message ; le journal des bugs se copie et se vide', async () => {
+  const site = await creerSite({ cartes: collection(), etiquettes: ['Sport'], chargementsEnEchec: serie(200, (i) => i + 6) });
+  const p = await rangerTout(site);
+  assert.equal(site.rechargements(), 3);
+  assert.match(p.statut(), /⚠️ .*chargement de la collection a échoué.*rechargé 3 fois/s);
+  const bugs = await journalBugs(p);
+  assert.equal((bugs.match(/^#\d+ /gm) || []).length, 4, bugs);
+  assert.match(bugs, /Version : /);
+  assert.match(bugs, /Filtre : Sans étiquette/);
+  assert.match(bugs, /Journal :/);
+  p.cliquer('[data-vider]');
+  assert.match(p.root.querySelector('.out').textContent, /Aucun bug noté/);
   site.fermer();
 });
 

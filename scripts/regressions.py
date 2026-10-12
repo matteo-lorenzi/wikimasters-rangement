@@ -44,6 +44,12 @@ MUTATIONS = [
     ('chargement raté pris pour la fin de la vue', 'app.js',
      "const echecChargement = () => /chargement de la collection a échoué/i.test(texte());",
      "const echecChargement = () => false;"),
+    ('pose réussie oubliée quand la liste ne se recharge pas ensuite', 'app.js',
+     "    const bilan = await poserEtiquette(tag);\n",
+     "    const bilan = await poserEtiquette(tag);\n    await attendrePageStable();\n"),
+    ('reprise après rechargement qui oublie ce qui était déjà posé', 'app.js',
+     "const fait = new Set(store.get('ranger_fait', []));",
+     "const fait = new Set();"),
 ]
 
 

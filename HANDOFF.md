@@ -4,9 +4,12 @@ Mis à jour le 2026-10-12. Les instructions durables sont dans `CLAUDE.md` ; ce 
 
 ## État
 
-- Version livrée : **v1.8.1** (à installer par la personne ; elle avait v1.8.0).
+- Version livrée : **v1.8.2** (à installer par la personne ; elle avait v1.8.0).
 - Dépôt sur GitHub (`matteo-lorenzi/wikimasters-rangement`, branche `main`), copie durable.
-- **Tests recréés** (`docs/tests.md`) : moteur sur 51 cartes réelles + pièges, faux site jsdom, automatisation de la page, `scripts/regressions.py` (9 mutations, toutes détectées).
+- **Tests recréés** (`docs/tests.md`) : moteur sur 51 cartes réelles + pièges, faux site jsdom (rechargement de page compris), automatisation de la page, `scripts/regressions.py` (11 mutations, toutes détectées).
+- v1.8.2, demandé par la personne le 2026-10-12 :
+  - **Journal des bugs** (bouton du panneau) : chaque erreur et chaque rechargement automatique y sont notés (version, message, état de la page, fin du journal) ; la personne le copie et le colle dans la conversation. Lire d'abord « Page : » et « Journal : ».
+  - **Raté du site → rechargement et reprise** : erreur API passagère réessayée (3 essais) ; serveur toujours en erreur, chargement raté, pose refusée, page bloquée → la page est rechargée et l'étape (lecture ou application) reprend seule, 3 fois au plus. Ce qui est posé est enregistré au fil de l'eau (`ranger_fait`). La lecture par l'écran ne sert plus que si l'API répond dans un format inconnu.
 - v1.8.1 :
   - **Ranger choisit sa stratégie** : à partir de 200 cartes à ranger, recherches groupées d'abord (piste 1, `docs/piste-1.md`), puis page par page ; en dessous, comme avant. Décidé avec la personne le 2026-10-12.
   - Pose refusée par le site (« Impossible d'appliquer l'étiquette ») : un réessai, puis arrêt avec un message clair.
@@ -23,7 +26,7 @@ Mis à jour le 2026-10-12. Les instructions durables sont dans `CLAUDE.md` ; ce 
 
 ## Suite
 
-1. **Premier rangement réel en v1.8.1** avec la personne : le rangement groupé n'a tourné que sur le faux site. Points à regarder : la saisie dans la barre de recherche (setter natif + `input`), le temps par recherche, le bandeau après la pose.
+1. **Premier rangement réel en v1.8.2** avec la personne : le rangement groupé et la reprise après rechargement n'ont tourné que sur le faux site. Points à regarder : la saisie dans la barre de recherche (setter natif + `input`), le temps par recherche, le bandeau après la pose, la reprise après un vrai `location.reload()`. Demander le journal des bugs à la personne.
 2. **Cartes mal classées repérées en recréant les tests**, à trancher avec la personne avant de toucher aux règles (cas réel dans `test/classement.test.js` d'abord) :
    - « Armed Forces Bowl 2017 — match de football universitaire américain… à Fort Worth » → Sport, **Sciences** (universitaire), **Patrimoine** (Fort Worth) ;
    - « Le Secret de la salamandre — album de bande dessinée » → **Musique** + Littérature ;
@@ -37,5 +40,5 @@ Déjà refusé par la personne, à ne pas reproposer : écrire directement dans 
 - Suppression des anciennes étiquettes (101 au départ) : la réponse au `confirm` natif n'a jamais été vérifiée sur le vrai site. Si la fenêtre réapparaît, demander son texte exact et le noter dans `docs/wikimasters.md`.
 - Migration appliquée au moins en partie ; ce qui reste à supprimer est inconnu : relire par l'API avant d'agir. Des cartes portent encore d'anciennes étiquettes (vu le 2026-10-12 : « Footballeur », « Anglais », « Japon »…).
 - À revalider avec la personne : philosophes et historiens rangés en #Sciences.
-- Le bouton « Sélectionner / Quitter la sélection » a disparu une fois après une pose suivie d'un échec de `stats` (cause inconnue) : `modeSelection` échouerait alors, avec un message. Non rejoué dans le faux site.
-- Pagination absente quand `stats` échoue : `allerA` s'arrête avec un message. Non rejoué dans le faux site.
+- Le bouton « Sélectionner / Quitter la sélection » a disparu une fois après une pose suivie d'un échec de `stats` (cause inconnue) : `modeSelection` lève alors une PanneSite, donc rechargement et reprise. Non rejoué dans le faux site.
+- Pagination absente quand `stats` échoue : `allerA` lève une PanneSite (rechargement et reprise). Non rejoué dans le faux site.
