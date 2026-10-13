@@ -10,7 +10,7 @@ Vocabulaire : une **vue** est la liste affichée pour un filtre d'étiquette («
 - Réseau : armer `read_network_requests` **puis recharger** la page, la surveillance ne capte que la suite.
 - Crochet de débogage du script installé : `localStorage.setItem('wmr_debug','true')`, recharger, puis `window.__WMR`.
 - Un onglet en arrière-plan est fortement ralenti par Chrome : garder l'onglet de la Collection au premier plan.
-- Claude in Chrome ne fonctionne pas dans Opera GX (« No group with id » à chaque appel : pas de groupes d'onglets) : utiliser Chrome.
+- Claude in Chrome ne fonctionne pas dans Opera GX (« No group with id » à chaque appel : pas de groupes d'onglets) : utiliser Chrome. Quand Opera GX et Chrome sont connectés tous les deux, `list_connected_browsers` puis `select_browser` sur Chrome (le plus récemment connecté, le 2026-10-13).
 - La réponse de l'outil JavaScript est coupée vers 1 000 caractères : pour rapatrier un export, le faire télécharger en fichier (Blob), avec l'accord de la personne, ou le renvoyer par morceaux avec une somme de contrôle.
 
 ## API de lecture
@@ -64,6 +64,12 @@ La même que la page Collection, avec les cookies de session de la page. Lecture
 - Une pose = **une** requête du site pour toute la sélection (`POST …/rest/v1/user_card_tags?on_conflict=user_card_id,tag_id`, Supabase). Observée dans le réseau seulement : le script ne l'appelle jamais (règle 1).
 - **Échec de pose** : la requête a répondu une fois 503 → « Impossible d'appliquer l'étiquette » en rouge dans la fenêtre, qui reste ouverte avec la sélection, sans « Terminé » ; rien n'est écrit. Un second clic sur l'étiquette a réussi.
 - Le champ filtre les étiquettes par sous-chaîne : « Sport » propose « Sport » **et** « Transports ». Choisir le bouton au texte exact.
+
+**Retirer l'étiquette** (observé le 2026-10-13 sur une carte, « Cour d'appel de Besançon », avec l'accord de la personne)
+- « Retirer l'étiquette » (barre du bas, mode sélection) ouvre la fenêtre « Retirer une étiquette » / « Sur N carte(s) sélectionnée(s). » : champ « Chercher une étiquette… » et **un bouton par étiquette portée par la sélection**, texte « nom » puis le nombre de cartes sélectionnées qui la portent (`innerText` : `!À traiter\n1`). Pas d'élément `role=dialog`. Le bouton est grisé quand la sélection ne porte aucune étiquette.
+- Un clic sur l'étiquette la retire **tout de suite**, sans `confirm` natif : bilan « N carte désétiquetée. » et bouton « Terminé » ; bandeau « Étiquette retirée des cartes sélectionnées. » en haut ; « Actualisation… » dans la barre du bas.
+- Contrairement à « Étiqueter », la fenêtre **ne se ferme pas seule** (encore ouverte après 7 s) : cliquer « Terminé ». Après « Terminé », la **sélection est gardée** (« 1 carte sélectionnée »).
+- La requête d'écriture n'est pas apparue dans la surveillance réseau (seulement la relecture des étiquettes, `GET …/rest/v1/tags`). Le script ne l'appelle jamais (règle 1).
 
 **Filtres et étiquettes**
 - Le bouton du filtre actif affiche « #Nom (n) » : comparer les libellés sans le « (n) ».
