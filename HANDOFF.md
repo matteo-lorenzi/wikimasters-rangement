@@ -33,12 +33,7 @@ Si Claude doit regarder le vrai site (observer un bouton, lire une carte) : Chro
   - **Journal des bugs** : la personne le copie dans la conversation ; lire d'abord « Page : » et « Journal : ».
 - Moteur (`src/regles.js`) : la description d'abord ; **si elle ne donne aucun domaine (et n'est pas une page à ignorer), le titre en secours** (v1.9.2). Une page à ignorer l'emporte sur un mot ambigu (v1.9.2).
 - Dernier compteur (Suggestions, v1.9.2, 2026-10-13 16:49) : 875 sans étiquette = 449 sans règle, 0 à traiter, 240 ignorées, **186 rangeables** (pas encore rangées : bug corrigé en v1.9.3) ; 50 portent `!À traiter` (18 que les règles rangent maintenant). Depuis, ~35 mots ajoutés (v1.9.3) et « Cour d'appel de Besançon » a perdu son `!À traiter` (test de « Retirer l'étiquette »).
-
-### Actions de la personne (avant la prochaine session de code)
-
-1. Installer la v1.9.3 (`dist/wikimasters-rangement.user.js`).
-2. Lancer « Ranger les nouvelles cartes » : il annonce « Les règles ont changé » et relit **toutes** les cartes sans étiquette (une fois) ; « Appliquer ».
-3. Lancer « Suggestions » → « Relire », et garder les deux textes copiés (mots, cartes sans règle) pour la prochaine session.
+- La première fois que la personne suit « Avant tout » avec la v1.9.3, Ranger annonce « Les règles ont changé » et range, entre autres, les 186 cartes en attente.
 
 ## Système d'étiquettes (décidé avec la personne)
 
