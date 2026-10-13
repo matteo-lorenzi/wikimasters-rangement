@@ -930,10 +930,21 @@ const resumePlan = (cartes, plans) => {
 // ── Mode Ranger : les nouvelles cartes sans étiquette ──
 // Le script retient la date de la dernière carte rangée et ne relit que les cartes obtenues depuis.
 // La dernière lecture est sauvegardée : après un rechargement de la page, on peut la reprendre.
+// Si les règles ont changé depuis cette date (nouvelle version, regles.js modifié), toutes les cartes
+// sans étiquette sont relues : les anciennes que les nouvelles règles savent ranger ne restent pas de côté.
+const EMPREINTE_REGLES = (() => {
+  const s = JSON.stringify([DOMAINES, AMBIGUS, IGNORER, COLLECTIONS, SEULEMENT_EN_PREMIER, MAX_DOMAINES]) + classer + scan + kwRegex;
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619) >>> 0;
+  return h.toString(36);
+})();
+const retenirDepuis = (date) => { store.set('ranger_depuis', date); store.set('ranger_regles', EMPREINTE_REGLES); };
 const modeRanger = async (tout = false) => {
-  const depuis = tout ? null : store.get('ranger_depuis', null);
+  const changees = !tout && store.get('ranger_depuis', null) && store.get('ranger_regles', null) !== EMPREINTE_REGLES;
+  const depuis = tout || changees ? null : store.get('ranger_depuis', null);
   let cartes, viaApi = true;
-  ui.statut(depuis ? `Lecture des cartes obtenues depuis le ${new Date(depuis).toLocaleString()}…` : 'Lecture de toutes les cartes sans étiquette (≈ 1 min 30, garde l\'onglet ouvert)…');
+  ui.statut(depuis ? `Lecture des cartes obtenues depuis le ${new Date(depuis).toLocaleString()}…`
+    : `${changees ? 'Les règles ont changé : l' : 'L'}ecture de toutes les cartes sans étiquette (≈ 1 min 30, garde l'onglet ouvert)…`);
   try {
     cartes = await lireApi({ sort: 'added', untagged: '1' }, { depuis, progression: (n, tot) => ui.statut(`Lecture : ${n}${tot ? ' / ' + tot : ''} carte(s)…`) });
   } catch (e) {
@@ -966,7 +977,7 @@ const appliquerLecture = async (l) => {
   const { plans, cibles, plusRecente, groupes } = preparerRanger(l.cartes, l.depuis);
   await appliquerRanger(cibles, plans, groupes);
   store.set('lecture2_perimee', true);
-  if (l.viaApi && plusRecente) store.set('ranger_depuis', plusRecente);
+  if (l.viaApi && plusRecente) retenirDepuis(plusRecente);
   store.set('ranger_lecture', null);
   store.set('ranger_fait', null);
 };
@@ -982,7 +993,7 @@ const afficherRanger = (cartes, depuis, viaApi) => {
       ${cibles.length ? '<button class="b p" data-go>Appliquer</button>' : ''}
       ${depuis ? '<button class="b" data-tout>Revoir toutes les cartes sans étiquette</button>' : ''}</div>`;
   if (!cibles.length) { // rien à poser : ces cartes ne seront plus relues
-    if (viaApi && plusRecente) store.set('ranger_depuis', plusRecente);
+    if (viaApi && plusRecente) retenirDepuis(plusRecente);
     store.set('ranger_lecture', null);
   }
   const go = ui.out.querySelector('[data-go]');

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WikiMasters — Rangement des cartes
 // @namespace    wikimasters-rangement
-// @version      1.9.2
+// @version      1.9.3
 // @description  Étiquette tes cartes WikiMasters par domaine (aperçu avant application, jamais de défausse).
 // @match        https://www.wiki-masters.com/*
 // @match        https://wiki-masters.com/*
@@ -36,6 +36,8 @@ const DOMAINES = {
     'série de télévision', 'thriller', 'télévision',
     // Suggestions du 2026-10-13
     'western', 'filmographie', 'telenovela',
+    // Suggestions du 2026-10-13 (3e tour)
+    'golden globe', 'prix génie',
   ],
   'Musique': [
     'chanteur', 'chanteuse', 'compositeur', 'compositrice', 'auteur-compositeur', 'autrice-compositrice',
@@ -50,6 +52,8 @@ const DOMAINES = {
     'auteure-compositrice-interprète', 'autrice-compositrice-interprète', 'auteure-compositrice', 'girls band', 'boys band', 'chant', 'composition', 'piano', 'manager musical', 'discographie', 'concert', 'tournée',
     // Suggestions du 2026-10-13
     'musical', 'instrumental', 'jazz', 'trio à cordes',
+    // Suggestions du 2026-10-13 (3e tour)
+    'grammy',
   ],
   'Littérature': [
     'écrivain', 'écrivaine', 'romancier', 'romancière', 'poète', 'poétesse', 'auteur', 'autrice',
@@ -72,6 +76,8 @@ const DOMAINES = {
     'aquarelle', 'estampe', 'art', 'arts', 'esthétique',
     // Suggestions du 2026-10-13
     'architecture', 'enlumineur', 'coloriste', 'costume',
+    // Suggestions du 2026-10-13 (3e tour)
+    'designeuse',
   ],
   'Sport': [
     'footballeur', 'footballeuse', 'football', 'joueur de football', 'cycliste', 'coureur cycliste',
@@ -97,6 +103,8 @@ const DOMAINES = {
     // Suggestions du 2026-10-13
     'taekwondo*', 'canoéiste', 'céiste', 'skipper', 'orienteur', 'nfl', 'wnba', 'bowl', 'coupe davis', 'double messieurs',
     'étape du tour',
+    // Suggestions du 2026-10-13 (3e tour)
+    'randonnée', 'lhjmq', 'piha',
   ],
   'Politique & Droit': [
     'homme politique', 'femme politique', 'personnalité politique', 'politicien', 'politicienne', 'ministre',
@@ -113,6 +121,9 @@ const DOMAINES = {
     // Suggestions du 2026-10-13
     'fonctionnaire', 'ambassade', 'consulaire', 'consulat', 'conseil de sécurité', 'nations unies', 'unesco',
     'humanitaire', 'grève', 'syndicat', 'sanction', 'décret', 'lgbt', 'pacifiste', 'mondialiste',
+    // Suggestions du 2026-10-13 (3e tour)
+    'doctrine politique', 'cdu', 'condition des femmes', 'état d\'urgence', 'châtiment', 'professeur de droit',
+    'cia', 'haut-commissariat',
   ],
   'Économie': [
     'homme d\'affaires', 'femme d\'affaires', 'entrepreneur', 'entrepreneuse', 'chef d\'entreprise',
@@ -126,6 +137,8 @@ const DOMAINES = {
     'pain', 'pâtisserie', 'gâteau', 'dessert', 'confiserie', 'cuisine', 'spécialité culinaire', 'centre commercial', 'appellation d\'origine', 'épice', 'économie', 'hôtel', 'hôtels', 'chaîne d\'hôtels',
     // Suggestions du 2026-10-13
     'culinaire', 'sidérurgi*', 'charbonnage', 'taxe', 'taxation',
+    // Suggestions du 2026-10-13 (3e tour)
+    'capitalisme', 'amande', 'pâtes alimentaires',
   ],
   'Médias': [
     'journaliste', 'humoriste', 'animateur', 'animatrice', 'présentateur', 'présentatrice', 'chroniqueur',
@@ -158,6 +171,8 @@ const DOMAINES = {
     // Suggestions du 2026-10-13
     'agronome', 'herpétologiste', 'politologue', 'linguistique', 'diacritique', 'ponctuation', 'unicode', 'lettre arabe',
     'protocole', 'chiffrement', 'sismi*', 'galvanique', 'enseignement',
+    // Suggestions du 2026-10-13 (3e tour)
+    'mots de passe', 'scolaire',
   ],
   'Espace': [
     'astéroïde', 'galaxie', 'constellation', 'nébuleuse', 'étoile', 'planète', 'exoplanète', 'planète mineure',
@@ -202,6 +217,8 @@ const DOMAINES = {
     // Suggestions du 2026-10-13
     'année', 'mois', 'chronologie', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche',
     'consul', 'tribun', 'doge', 'sénéchal', 'romain', 'révolte', 'soulèvement',
+    // Suggestions du 2026-10-13 (3e tour)
+    'armoiries', 'obusier', 'famille patricienne', 'fusilier',
   ],
   'Religion & Mythes': [
     'mythologie', 'personnage de la mythologie', 'homme d\'église', 'femme d\'église', 'dieu', 'déesse', 'divinité', 'saint', 'sainte', 'pape',
@@ -214,6 +231,8 @@ const DOMAINES = {
     'prélat', 'archidiocèse', 'catholique', 'protestant', 'orthodoxe', 'missionnaire', 'jésuite', 'prédicateur', 'chartreuse', 'liturgie', 'vierge marie', 'apparition mariale', 'mahomet', 'jésus', 'islamique',
     // Suggestions du 2026-10-13
     'gourou', 'sikhisme', 'bouddh*', 'soufisme', 'islam', 'aumônier', 'kabbale', 'concile', 'confucianisme',
+    // Suggestions du 2026-10-13 (3e tour)
+    'marie de nazareth', 'procession', 'musulman', 'buddha',
   ],
   'Géographie': [
     'commune', 'village', 'ville', 'municipalité', 'localité', 'hameau', 'lieu-dit', 'département',
@@ -230,6 +249,8 @@ const DOMAINES = {
     // Suggestions du 2026-10-13
     'upazila', 'unité urbaine', 'banlieue', 'bourg', 'oasis', 'îlot', 'chutes d\'eau',
     'census designated place', 'secteur communautaire', 'découpage administratif', 'micro-région', 'microrégion', 'méridien',
+    // Suggestions du 2026-10-13 (3e tour)
+    'sous-préfecture',
   ],
   'Patrimoine': [
     'château', 'château fort', 'monument', 'monument historique', 'musée', 'cathédrale', 'chapelle', 'abbaye',
@@ -253,6 +274,8 @@ const DOMAINES = {
     // Suggestions du 2026-10-13
     'hydravion', 'ferry', 'sloop', 'torpilleur', 'écluse', 'vélopartage', 'unterseeboot', 'limitations de vitesse',
     'chemins de fer',
+    // Suggestions du 2026-10-13 (3e tour)
+    'chariot', 'aéronaval',
   ],
   'Fiction & Jeux': [
     'personnage de fiction', 'personnage', 'de fiction', 'fictif', 'fictive', 'univers de fiction',
@@ -1360,10 +1383,21 @@ const resumePlan = (cartes, plans) => {
 // ── Mode Ranger : les nouvelles cartes sans étiquette ──
 // Le script retient la date de la dernière carte rangée et ne relit que les cartes obtenues depuis.
 // La dernière lecture est sauvegardée : après un rechargement de la page, on peut la reprendre.
+// Si les règles ont changé depuis cette date (nouvelle version, regles.js modifié), toutes les cartes
+// sans étiquette sont relues : les anciennes que les nouvelles règles savent ranger ne restent pas de côté.
+const EMPREINTE_REGLES = (() => {
+  const s = JSON.stringify([DOMAINES, AMBIGUS, IGNORER, COLLECTIONS, SEULEMENT_EN_PREMIER, MAX_DOMAINES]) + classer + scan + kwRegex;
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619) >>> 0;
+  return h.toString(36);
+})();
+const retenirDepuis = (date) => { store.set('ranger_depuis', date); store.set('ranger_regles', EMPREINTE_REGLES); };
 const modeRanger = async (tout = false) => {
-  const depuis = tout ? null : store.get('ranger_depuis', null);
+  const changees = !tout && store.get('ranger_depuis', null) && store.get('ranger_regles', null) !== EMPREINTE_REGLES;
+  const depuis = tout || changees ? null : store.get('ranger_depuis', null);
   let cartes, viaApi = true;
-  ui.statut(depuis ? `Lecture des cartes obtenues depuis le ${new Date(depuis).toLocaleString()}…` : 'Lecture de toutes les cartes sans étiquette (≈ 1 min 30, garde l\'onglet ouvert)…');
+  ui.statut(depuis ? `Lecture des cartes obtenues depuis le ${new Date(depuis).toLocaleString()}…`
+    : `${changees ? 'Les règles ont changé : l' : 'L'}ecture de toutes les cartes sans étiquette (≈ 1 min 30, garde l'onglet ouvert)…`);
   try {
     cartes = await lireApi({ sort: 'added', untagged: '1' }, { depuis, progression: (n, tot) => ui.statut(`Lecture : ${n}${tot ? ' / ' + tot : ''} carte(s)…`) });
   } catch (e) {
@@ -1396,7 +1430,7 @@ const appliquerLecture = async (l) => {
   const { plans, cibles, plusRecente, groupes } = preparerRanger(l.cartes, l.depuis);
   await appliquerRanger(cibles, plans, groupes);
   store.set('lecture2_perimee', true);
-  if (l.viaApi && plusRecente) store.set('ranger_depuis', plusRecente);
+  if (l.viaApi && plusRecente) retenirDepuis(plusRecente);
   store.set('ranger_lecture', null);
   store.set('ranger_fait', null);
 };
@@ -1412,7 +1446,7 @@ const afficherRanger = (cartes, depuis, viaApi) => {
       ${cibles.length ? '<button class="b p" data-go>Appliquer</button>' : ''}
       ${depuis ? '<button class="b" data-tout>Revoir toutes les cartes sans étiquette</button>' : ''}</div>`;
   if (!cibles.length) { // rien à poser : ces cartes ne seront plus relues
-    if (viaApi && plusRecente) store.set('ranger_depuis', plusRecente);
+    if (viaApi && plusRecente) retenirDepuis(plusRecente);
     store.set('ranger_lecture', null);
   }
   const go = ui.out.querySelector('[data-go]');

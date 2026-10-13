@@ -30,7 +30,7 @@ Options de panne : `echecsPose` (« Impossible d'appliquer l'étiquette »), `ch
 
 ## `test/page.test.js` — l'automatisation sur le faux site
 
-Couvre : panneau ouvrir/fermer ; lecture (pagination tardive, pages fantômes, cartes sans `p`, chargement en échec) ; filtre avec compteur dans le libellé (le menu n'est pas rouvert) ; bilan « Terminé », fenêtre qui se ferme seule ou non ; pose lente (« Terminé » après ~50 s, pas pris pour un refus) ; pose refusée une fois (réessai) ou deux (arrêt rapide) ; étiquette créée ; retour en page 1 ; Ranger dans « Sans étiquette » en ≤ 2 changements de page ; lecture API complète, incrémentale, et repli sur l'écran si l'API est illisible ; erreur API passagère réessayée ; panne prolongée → rechargement et relecture ; raté pendant le rangement → rechargement, reprise, rien de perdu ; ratés à répétition → 3 rechargements puis arrêt ; ratés espacés avec du progrès entre deux → la séance va au bout ; recherche ratée → relancée sur place, ou abandonnée et notée ; menu des étiquettes vide après l'ouverture ; sélection en peu de clics (tout cocher puis décocher) ; journal des bugs (contenu, vider) ; rapport de Migration (étiquette de métier ou de lieu supprimable dès que ses cartes ont son domaine, nationalité seulement avec son mot sur la carte) ; **Ranger sur un gros stock** (recherches groupées, intrus jamais cochés, recherche vidée à la fin) ; suppression avec `confirm` accepté et refusé.
+Couvre : panneau ouvrir/fermer ; lecture (pagination tardive, pages fantômes, cartes sans `p`, chargement en échec) ; filtre avec compteur dans le libellé (le menu n'est pas rouvert) ; bilan « Terminé », fenêtre qui se ferme seule ou non ; pose lente (« Terminé » après ~50 s, pas pris pour un refus) ; pose refusée une fois (réessai) ou deux (arrêt rapide) ; étiquette créée ; retour en page 1 ; Ranger dans « Sans étiquette » en ≤ 2 changements de page ; lecture API complète, incrémentale (toutes les cartes relues si les règles ont changé), et repli sur l'écran si l'API est illisible ; erreur API passagère réessayée ; panne prolongée → rechargement et relecture ; raté pendant le rangement → rechargement, reprise, rien de perdu ; ratés à répétition → 3 rechargements puis arrêt ; ratés espacés avec du progrès entre deux → la séance va au bout ; recherche ratée → relancée sur place, ou abandonnée et notée ; menu des étiquettes vide après l'ouverture ; sélection en peu de clics (tout cocher puis décocher) ; journal des bugs (contenu, vider) ; rapport de Migration (étiquette de métier ou de lieu supprimable dès que ses cartes ont son domaine, nationalité seulement avec son mot sur la carte) ; **Ranger sur un gros stock** (recherches groupées, intrus jamais cochés, recherche vidée à la fin) ; suppression avec `confirm` accepté et refusé.
 
 ## `test/suggestions.test.js` — le bouton « Suggestions »
 
@@ -38,7 +38,7 @@ Le calcul (`suggestions`) sur une petite collection inventée : compteur des car
 
 ## `scripts/regressions.py` — les bugs déjà livrés
 
-`python scripts/regressions.py` lance d'abord toute la suite sur les sources intactes, puis réintroduit chaque bug passé, un à la fois, dans une copie des sources, lance **seulement le test qui le surveille** (`--test-name-pattern`), et exige qu'il le **détecte** (rouge). Environ 2 minutes. Les 15 actuels :
+`python scripts/regressions.py` lance d'abord toute la suite sur les sources intactes, puis réintroduit chaque bug passé, un à la fois, dans une copie des sources, lance **seulement le test qui le surveille** (`--test-name-pattern`), et exige qu'il le **détecte** (rouge). Environ 2 minutes. Les 16 actuels :
 1. carte sans `p` ignorée ;
 2. « Terminé » non géré ;
 3. compteur « (n) » gardé dans le libellé du filtre ;
@@ -53,7 +53,8 @@ Le calcul (`suggestions`) sur une petite collection inventée : compteur des car
 12. rechargements comptés sur toute la séance, même quand des cartes sont rangées entre deux ;
 13. recherche ratée par le serveur : pas de relance sur place ;
 14. menu des étiquettes encore vide : options pas attendues ;
-15. « Tout sélectionner (page) » sans décocher les cartes en trop.
+15. « Tout sélectionner (page) » sans décocher les cartes en trop ;
+16. règles changées depuis le dernier rangement : Ranger ne relit que les nouvelles cartes (186 cartes rangeables jamais relues, 2026-10-13).
 
 Un nouveau bug corrigé y ajoute sa mutation : `(nom, fichier, texte d'origine, texte fautif, test)`, où `test` est le début du nom du test qui passe au rouge. Choisir un test qui échoue **à coup sûr**, pas selon la charge de la machine : vérifier qu'il échoue lancé seul (`node --test --test-name-pattern="^début du nom"` avec `WMR_SRC` sur la copie mutée). Quand le code autour change, une mutation dont le texte n'est plus trouvé, ou dont le test a été renommé, est signalée « à mettre à jour » et compte comme ratée ; `build.sh` vérifie les textes à chaque build (`--ancres`, instantané).
 

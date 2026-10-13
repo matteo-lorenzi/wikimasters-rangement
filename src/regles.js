@@ -22,6 +22,8 @@ const DOMAINES = {
     'série de télévision', 'thriller', 'télévision',
     // Suggestions du 2026-10-13
     'western', 'filmographie', 'telenovela',
+    // Suggestions du 2026-10-13 (3e tour)
+    'golden globe', 'prix génie',
   ],
   'Musique': [
     'chanteur', 'chanteuse', 'compositeur', 'compositrice', 'auteur-compositeur', 'autrice-compositrice',
@@ -36,6 +38,8 @@ const DOMAINES = {
     'auteure-compositrice-interprète', 'autrice-compositrice-interprète', 'auteure-compositrice', 'girls band', 'boys band', 'chant', 'composition', 'piano', 'manager musical', 'discographie', 'concert', 'tournée',
     // Suggestions du 2026-10-13
     'musical', 'instrumental', 'jazz', 'trio à cordes',
+    // Suggestions du 2026-10-13 (3e tour)
+    'grammy',
   ],
   'Littérature': [
     'écrivain', 'écrivaine', 'romancier', 'romancière', 'poète', 'poétesse', 'auteur', 'autrice',
@@ -58,6 +62,8 @@ const DOMAINES = {
     'aquarelle', 'estampe', 'art', 'arts', 'esthétique',
     // Suggestions du 2026-10-13
     'architecture', 'enlumineur', 'coloriste', 'costume',
+    // Suggestions du 2026-10-13 (3e tour)
+    'designeuse',
   ],
   'Sport': [
     'footballeur', 'footballeuse', 'football', 'joueur de football', 'cycliste', 'coureur cycliste',
@@ -83,6 +89,8 @@ const DOMAINES = {
     // Suggestions du 2026-10-13
     'taekwondo*', 'canoéiste', 'céiste', 'skipper', 'orienteur', 'nfl', 'wnba', 'bowl', 'coupe davis', 'double messieurs',
     'étape du tour',
+    // Suggestions du 2026-10-13 (3e tour)
+    'randonnée', 'lhjmq', 'piha',
   ],
   'Politique & Droit': [
     'homme politique', 'femme politique', 'personnalité politique', 'politicien', 'politicienne', 'ministre',
@@ -99,6 +107,9 @@ const DOMAINES = {
     // Suggestions du 2026-10-13
     'fonctionnaire', 'ambassade', 'consulaire', 'consulat', 'conseil de sécurité', 'nations unies', 'unesco',
     'humanitaire', 'grève', 'syndicat', 'sanction', 'décret', 'lgbt', 'pacifiste', 'mondialiste',
+    // Suggestions du 2026-10-13 (3e tour)
+    'doctrine politique', 'cdu', 'condition des femmes', 'état d\'urgence', 'châtiment', 'professeur de droit',
+    'cia', 'haut-commissariat',
   ],
   'Économie': [
     'homme d\'affaires', 'femme d\'affaires', 'entrepreneur', 'entrepreneuse', 'chef d\'entreprise',
@@ -112,6 +123,8 @@ const DOMAINES = {
     'pain', 'pâtisserie', 'gâteau', 'dessert', 'confiserie', 'cuisine', 'spécialité culinaire', 'centre commercial', 'appellation d\'origine', 'épice', 'économie', 'hôtel', 'hôtels', 'chaîne d\'hôtels',
     // Suggestions du 2026-10-13
     'culinaire', 'sidérurgi*', 'charbonnage', 'taxe', 'taxation',
+    // Suggestions du 2026-10-13 (3e tour)
+    'capitalisme', 'amande', 'pâtes alimentaires',
   ],
   'Médias': [
     'journaliste', 'humoriste', 'animateur', 'animatrice', 'présentateur', 'présentatrice', 'chroniqueur',
@@ -144,6 +157,8 @@ const DOMAINES = {
     // Suggestions du 2026-10-13
     'agronome', 'herpétologiste', 'politologue', 'linguistique', 'diacritique', 'ponctuation', 'unicode', 'lettre arabe',
     'protocole', 'chiffrement', 'sismi*', 'galvanique', 'enseignement',
+    // Suggestions du 2026-10-13 (3e tour)
+    'mots de passe', 'scolaire',
   ],
   'Espace': [
     'astéroïde', 'galaxie', 'constellation', 'nébuleuse', 'étoile', 'planète', 'exoplanète', 'planète mineure',
@@ -188,6 +203,8 @@ const DOMAINES = {
     // Suggestions du 2026-10-13
     'année', 'mois', 'chronologie', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche',
     'consul', 'tribun', 'doge', 'sénéchal', 'romain', 'révolte', 'soulèvement',
+    // Suggestions du 2026-10-13 (3e tour)
+    'armoiries', 'obusier', 'famille patricienne', 'fusilier',
   ],
   'Religion & Mythes': [
     'mythologie', 'personnage de la mythologie', 'homme d\'église', 'femme d\'église', 'dieu', 'déesse', 'divinité', 'saint', 'sainte', 'pape',
@@ -200,6 +217,8 @@ const DOMAINES = {
     'prélat', 'archidiocèse', 'catholique', 'protestant', 'orthodoxe', 'missionnaire', 'jésuite', 'prédicateur', 'chartreuse', 'liturgie', 'vierge marie', 'apparition mariale', 'mahomet', 'jésus', 'islamique',
     // Suggestions du 2026-10-13
     'gourou', 'sikhisme', 'bouddh*', 'soufisme', 'islam', 'aumônier', 'kabbale', 'concile', 'confucianisme',
+    // Suggestions du 2026-10-13 (3e tour)
+    'marie de nazareth', 'procession', 'musulman', 'buddha',
   ],
   'Géographie': [
     'commune', 'village', 'ville', 'municipalité', 'localité', 'hameau', 'lieu-dit', 'département',
@@ -216,6 +235,8 @@ const DOMAINES = {
     // Suggestions du 2026-10-13
     'upazila', 'unité urbaine', 'banlieue', 'bourg', 'oasis', 'îlot', 'chutes d\'eau',
     'census designated place', 'secteur communautaire', 'découpage administratif', 'micro-région', 'microrégion', 'méridien',
+    // Suggestions du 2026-10-13 (3e tour)
+    'sous-préfecture',
   ],
   'Patrimoine': [
     'château', 'château fort', 'monument', 'monument historique', 'musée', 'cathédrale', 'chapelle', 'abbaye',
@@ -239,6 +260,8 @@ const DOMAINES = {
     // Suggestions du 2026-10-13
     'hydravion', 'ferry', 'sloop', 'torpilleur', 'écluse', 'vélopartage', 'unterseeboot', 'limitations de vitesse',
     'chemins de fer',
+    // Suggestions du 2026-10-13 (3e tour)
+    'chariot', 'aéronaval',
   ],
   'Fiction & Jeux': [
     'personnage de fiction', 'personnage', 'de fiction', 'fictif', 'fictive', 'univers de fiction',

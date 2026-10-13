@@ -82,6 +82,10 @@ MUTATIONS = [
      "if (cles.has(cle(lireCarte(el))) !== estSelectionnee(el)) await basculer(el);",
      "if (cles.has(cle(lireCarte(el))) && !estSelectionnee(el)) await basculer(el);",
      "plus de la moitié de la page à poser"),
+    ('règles changées : Ranger ne relit que les nouvelles cartes', 'app.js',
+     "const depuis = tout || changees ? null",
+     "const depuis = tout ? null",
+     "Ranger : les règles ont changé"),
 ]
 
 

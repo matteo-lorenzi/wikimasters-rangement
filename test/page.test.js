@@ -272,6 +272,24 @@ test('Ranger : lecture API complète, puis seulement les cartes obtenues depuis'
   site.fermer();
 });
 
+// Cas de la personne (v1.9.2, 2026-10-13) : 186 cartes rangeables par les nouvelles règles, jamais relues par Ranger.
+test('Ranger : les règles ont changé depuis le dernier rangement, toutes les cartes sans étiquette sont relues', async () => {
+  const site = await creerSite({ cartes: collection(), etiquettes: ['Sport'] });
+  await rangerTout(site);
+  // une règle ajoutée depuis : les 15 cartes « xyz sans règle » restées sans étiquette sont relues
+  site.wmr.store.set('ranger_regles', 'empreinte des anciennes règles');
+  const p = panneau(site);
+  p.ranger();
+  assert.ok(await attendreQue(() => /^\d+ carte/.test(p.statut())), p.statut());
+  assert.match(p.statut(), /^15 carte\(s\) sans étiquette/);
+  // relues avec les règles d'aujourd'hui : la prochaine fois, seulement les nouvelles cartes
+  site.wmr.ui().out.querySelector('[data-go]')?.click();
+  assert.ok(await attendreQue(() => /✅|⚠️|^15 carte/.test(p.statut())), p.statut());
+  p.ranger();
+  assert.ok(await attendreQue(() => /nouvelle/.test(p.statut())), p.statut());
+  site.fermer();
+});
+
 test('Ranger : API illisible, lecture par l\'écran', async () => {
   const site = await creerSite({ cartes: collection(), etiquettes: ['Sport'], apiIllisible: true });
   const p = await rangerTout(site);
