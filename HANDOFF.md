@@ -12,7 +12,7 @@ Mis à jour le 2026-10-13. Les instructions durables sont dans `CLAUDE.md` ; ce 
   - ~120 mots ajoutés aux 15 domaines (marqués « Suggestions du 2026-10-13 » dans `regles.js`), un cas réel par groupe dans `test/classement.test.js` ;
   - **mots risqués refusés** : date, conflit, industrie, commerce, justice, manifestation (cas « Friperie » et « 16 septembre » restent sans règle dans les tests).
 - **Wikipédia pour les cartes sans description** (première phrase de l'article, « est un/une … », API publique en lecture seule) : accord de principe, **à reparler en détail avec la personne pour optimiser les appels** avant d'écrire quoi que ce soit.
-- Effet de bord à trancher avec la personne : « Défilé de l'Écluse — défilé situé dans l'Ain, France » part en **Transports** (« écluse » dans le titre, lu en secours) ; options : `défilé` en Géographie (risque : défilé de mode, défilé militaire) ou accepter.
+- Effet de bord accepté par la personne (2026-10-13) : « Défilé de l'Écluse — défilé situé dans l'Ain, France » part en Transports (« écluse » dans le titre, lu en secours). Ne pas mettre « défilé » en Géographie (défilé de mode, défilé militaire).
 - Prochaine étape : la personne installe la v1.9.2, lance Ranger (les cartes que les nouvelles règles rangent), puis Suggestions (Relire) pour voir le nouveau compteur.
 - Avant : **v1.8.4** (à installer par la personne ; v1.8.4 assouplit la suppression des anciennes étiquettes ; premier vrai rangement fait en v1.8.2, voir plus bas).
 - Dépôt sur GitHub (`matteo-lorenzi/wikimasters-rangement`, branche `main`), copie durable.
