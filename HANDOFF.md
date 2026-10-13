@@ -32,14 +32,27 @@ Mis à jour le 2026-10-13. Les instructions durables sont dans `CLAUDE.md` ; ce 
 
 ## Suite
 
-1. **Finir la Migration en v1.8.4** (session du 2026-10-13 arrêtée là) : la personne installe la v1.8.4, relance « Migration » en répondant **Annuler** (relire la collection), puis supprime **une seule** étiquette ✔ avec « Suppr. » pour vérifier la fenêtre de confirmation native (voir Points ouverts), et seulement ensuite « Supprimer les N sûres ».
-2. **Cartes « pas de domaine » du rapport de Migration** (2026-10-13), à classer par les règles (accord de la personne obtenu) : Saison 2015 des Astros de Houston, McLaren MP4-28, Hippodrome de Dieppe, Borough de Denali, Stanley Benham, David B. Samadi, John L. Lewis, Raymond Montaner, Jean de Croonders, Mary Butters, The Irish Press, TM Racing, Wilfried Huber, Radiorama, Guido Capello Vincentinus, Hanabie., Iouri Matvéïévitch Sokolov, Xenia Gueorguievna de Russie, Pierre Fehlmann, Français de Corse, Bourboulon. Il faut d'abord leur **description réelle** (cas réel dans `test/classement.test.js`, puis la règle) : la personne les colle, ou accepte qu'on les lise dans son Chrome en lecture seule (API `q=<titre>`, voir `docs/wikimasters.md`). Les 16 de `#Nom de famille` restent ignorées (pages de nom).
-3. **Finir le premier rangement** avec la personne et relire son journal des bugs. Vérifié sur le vrai site en v1.8.2 : saisie dans la barre de recherche, poses groupées, reprise après un vrai `location.reload()`.
-4. **Cartes mal classées repérées en recréant les tests**, à trancher avec la personne avant de toucher aux règles (cas réel dans `test/classement.test.js` d'abord) :
+1. **Migration faite** par la personne (2026-10-13, en v1.8.4).
+2. **Chantier « moins de cartes sans étiquette »** (décidé avec la personne le 2026-10-13, détail plus bas) : v1.9.0 Suggestions, puis v1.9.1, puis v1.9.2. Entre deux versions, un tour réel Suggestions → règles → Ranger pour voir l'effet sur le compteur.
+3. Les **21 cartes « pas de domaine »** du rapport de Migration (Saison 2015 des Astros de Houston, McLaren MP4-28, Hippodrome de Dieppe, Borough de Denali, Stanley Benham, David B. Samadi, John L. Lewis, Raymond Montaner, Jean de Croonders, Mary Butters, The Irish Press, TM Racing, Wilfried Huber, Radiorama, Guido Capello Vincentinus, Hanabie., Iouri Matvéïévitch Sokolov, Xenia Gueorguievna de Russie, Pierre Fehlmann, Français de Corse, Bourboulon) et les **4 cartes mal classées** ci-dessous passent par le flux Suggestions (premiers cas réels) : cas réel dans `test/classement.test.js`, puis la règle. Les 16 de `#Nom de famille` restent ignorées.
    - « Armed Forces Bowl 2017 — match de football universitaire américain… à Fort Worth » → Sport, **Sciences** (universitaire), **Patrimoine** (Fort Worth) ;
    - « Le Secret de la salamandre — album de bande dessinée » → **Musique** + Littérature ;
    - « Programmation spaghetti — code source… gestion des événements » → **Histoire** (événements) ;
    - « Qué bonito amor — telenovela mexicaine » → rien (telenovela absent).
+4. **Finir le premier rangement** avec la personne et relire son journal des bugs.
+
+## Chantier : moins de cartes sans étiquette (décidé le 2026-10-13)
+
+- **But** : faire baisser les cartes `inconnue` et `!À traiter`. Les `ignoree` (homonymie, nom de famille…) restent sans étiquette, hors objectif. Un compteur du panneau le suit.
+- **Le script propose, la personne tranche** ; le script ne devine pas et ne crée rien. Les mots acceptés entrent dans `src/regles.js` (par Claude, en session), avec 1 à 2 cas réels dans `test/classement.test.js` ; pas de règles gardées dans le navigateur.
+- **v1.9.0 — bouton « Suggestions »** (lecture seule) :
+  - réutilise la lecture complète de Migration (`lecture2`) : date affichée, relecture proposée ; un « Appliquer » de Ranger la marque périmée (« Relire (recommandé) ») ;
+  - compteur : N sans étiquette → X inconnues, Y à traiter, Z ignorées, plus les cartes portant `!À traiter` ;
+  - sur les cartes `inconnue` et `a_traiter` (sans étiquette ou `!À traiter`) : mots seuls et expressions de 2-3 mots, sans mots vides ni mots déjà connus des règles, à partir de 5 cartes, top 50, 3 exemples chacun ;
+  - domaine proposé = celui que portent les cartes déjà étiquetées contenant ce mot, si ≥ 70 % sur au moins 5 cartes, sinon « ? » ; « nouvelle étiquette ? » à partir de 30 cartes sans domaine majoritaire ;
+  - « Copier pour Claude » : une ligne par candidat (mot, nb, domaine + %, 3 exemples `titre — description`).
+- **v1.9.1** : Ranger relit aussi les cartes `!À traiter`, leur pose leur domaine et **retire `!À traiter`, et seulement elle**, avec « Retirer l'étiquette » (aperçu + « Appliquer »). Avant : observer une fois ce bouton dans le Chrome de la personne (une carte, accord à chaque clic), le noter dans `docs/wikimasters.md` et le rejouer dans le faux site ; mettre à jour `docs/piste-1.md` (qui l'interdit) et `CODING_STANDARDS.md` ; un test vérifie qu'aucune autre étiquette n'est retirée.
+- **v1.9.2** : « Compléter les cartes rangées » dans Ranger : cartes portant au moins un domaine, ajout des domaines manquants trouvés par les règles (5 au total au plus), jamais de retrait ; aperçu groupé (« + #Sciences : 42 cartes »). Une carte rangée à la main en `#Arts` que les règles mettent en Musique finit avec les deux (accepté).
 
 Déjà refusé par la personne, à ne pas reproposer : écrire directement dans la base (Supabase) avec le jeton de session (règle 1 de `CODING_STANDARDS.md`). Une exploration des cookies a déjà été bloquée par le classificateur de sécurité.
 
