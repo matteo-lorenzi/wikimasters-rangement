@@ -11,7 +11,7 @@ Userscript Tampermonkey (Chrome) qui étiquette par domaine les cartes de la pag
 - **Concevoir ou relire** un changement → `CODING_STANDARDS.md`. Sa règle 1 tranche toute idée de raccourci : on écrit sur le compte uniquement par les boutons du site, l'API sert à lire.
 - **Automatisation du site** (sélecteurs, attentes, pagination, API, Chrome de la personne) → `docs/wikimasters.md`. Un comportement nouveau du site s'y note **et** se rejoue dans `test/faux-site.js`.
 - **Tests** (écrire, réparer, faux site, mutations) → `docs/tests.md`.
-- **Reprise de session** → `HANDOFF.md` : état, prochaine étape, points ouverts.
+- **Reprise de session** → `HANDOFF.md` : état, prochaine étape, questions en suspens. La personne demande par où commencer → lui donner « Avant tout, en début de session » de `HANDOFF.md`.
 
 ## Changer le code
 

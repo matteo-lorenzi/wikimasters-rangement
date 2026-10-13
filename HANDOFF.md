@@ -2,12 +2,26 @@
 
 Mis à jour le 2026-10-13, en fin de session : **la v1.9.3 est la version stable, figée à la demande de la personne**. Les instructions durables sont dans `CLAUDE.md` ; ce fichier garde l'état, les décisions, la suite et les questions en suspens.
 
-## Reprendre une session
+## Avant tout, en début de session : ce que la personne fait
+
+À donner tel quel quand la personne demande par où commencer (« Nouvelle session pour wikimasters rangement, que dois-je faire avant de commencer à travailler les questions en suspens ? »). Ces étapes donnent à Claude l'état réel de la collection : sans elles, un tour de Suggestions ou une décision sur les questions en suspens se ferait sur des chiffres périmés.
+
+1. **Installer la dernière version** : le fichier `dist/wikimasters-rangement.user.js` de `main` sur GitHub (`matteo-lorenzi/wikimasters-rangement`), dans Tampermonkey. Vérifier que le numéro de version affiché par Tampermonkey est celui de « État » ci-dessous (aujourd'hui **1.9.3**).
+2. **Ouvrir la page Collection** de wiki-masters.com dans **Chrome** (pas Opera GX), onglet au premier plan, et ouvrir le panneau « 🏷 Rangement ».
+3. **Ranger** : « Ranger les nouvelles cartes ». Si les règles ont changé depuis le dernier rangement, il l'annonce et relit toutes les cartes sans étiquette (≈ 1 min 30). Relire l'aperçu, puis « Appliquer » et laisser aller au bout.
+4. **Journal des bugs** : si le bouton affiche un nombre (« Journal des bugs (2) »), le copier pour Claude.
+5. **Suggestions** : « Suggestions » → « Relire » (la collection a changé avec le Ranger). Copier les deux textes : « Copier pour Claude » (compteur et mots) et « Copier les cartes sans règle ».
+6. **Coller à Claude**, dans le premier message de la session : les deux textes de Suggestions, le journal des bugs s'il y en a un, et ce qui a surpris pendant le Ranger.
+7. **Choisir avec Claude** par quoi commencer : un tour de Suggestions, une question en suspens (liste plus bas, chacune avec la recommandation de Claude), ou la suite du chantier.
+
+Si Claude doit regarder le vrai site (observer un bouton, lire une carte) : Chrome ouvert sur la page Collection avec l'extension Claude in Chrome connectée ; Claude demande l'accord avant toute action qui modifie le compte.
+
+## Reprendre une session (côté Claude)
 
 1. Lire `CLAUDE.md`, puis ce fichier en entier (surtout « Questions en suspens »).
 2. Dépôt absent → `git clone https://github.com/matteo-lorenzi/wikimasters-rangement`, puis `npm install`. `npm test` doit donner **194 tests verts** ; `PYTHONIOENCODING=utf-8 python scripts/regressions.py` **16/16 mutations détectées**.
 3. Travailler sur une nouvelle branche partie de `main` ; `main` n'avance qu'après le oui de la personne (`CLAUDE.md`).
-4. Demander à la personne où elle en est des « Actions de la personne » ci-dessous avant de coder.
+4. Si la personne n'a pas encore fait « Avant tout » (ci-dessus), le lui donner avant de coder ou de trancher quoi que ce soit.
 
 ## État
 
