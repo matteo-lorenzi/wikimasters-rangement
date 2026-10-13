@@ -6,13 +6,14 @@
 
 ## `test/classement.test.js` — le moteur de `src/regles.js`
 
-Des cas **réels** : description de carte → étiquettes attendues (51 cartes de la collection, lues le 2026-10-12 ; les cas d'origine ont été perdus). Les étiquettes attendues sont écrites d'après ce que la carte est, jamais recopiées du moteur. Chaque piège connu y a son cas :
+Des cas **réels** : description de carte → étiquettes attendues (51 cartes de la collection, lues le 2026-10-12 ; les cas d'origine ont été perdus ; puis une carte par groupe de mots ajouté lors des tours de Suggestions du 2026-10-13, et les cartes des mots refusés, qui doivent rester sans règle). Les étiquettes attendues sont écrites d'après ce que la carte est, jamais recopiées du moteur. Chaque piège connu y a son cas :
 - golfe ≠ golf, « facteurs » ≠ acteur, romane ≠ roman, partie ≠ parti ;
 - faute du site « stréréoisomères » ;
 - trait d'union (« Saint-Palais » ≠ saint) et Géographie seulement en premier ;
 - collection ★Village Polonais ;
 - carte sans description, lue par son titre (parenthèse d'abord : « Cherry (film, 2021) ») ;
-- mot ambigu seul → `!À traiter` ; page d'homonymie, liste, prénom → ignorées.
+- mot ambigu seul → `!À traiter` ; page d'homonymie, liste, prénom → ignorées, même avec un mot ambigu (« liste d'un projet Wikimedia ») ;
+- titre en secours : description sans domaine → le titre range la carte (« Cour d'appel de Besançon — service de l'État français »), mais jamais une page à ignorer ni une carte dont la description a déjà un domaine.
 
 Le script se charge dans un contexte `vm` séparé : recopier ses tableaux (`[...x]`) avant `deepEqual`, sinon la comparaison échoue sur le prototype.
 

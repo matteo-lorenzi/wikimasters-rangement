@@ -1,76 +1,108 @@
 # Passation — userscript WikiMasters
 
-Mis à jour le 2026-10-13. Les instructions durables sont dans `CLAUDE.md` ; ce fichier ne garde que l'état et la suite.
+Mis à jour le 2026-10-13, en fin de session : **la v1.9.3 est la version stable, figée à la demande de la personne**. Les instructions durables sont dans `CLAUDE.md` ; ce fichier garde l'état, les décisions, la suite et les questions en suspens.
+
+## Reprendre une session
+
+1. Lire `CLAUDE.md`, puis ce fichier en entier (surtout « Questions en suspens »).
+2. Dépôt absent → `git clone https://github.com/matteo-lorenzi/wikimasters-rangement`, puis `npm install`. `npm test` doit donner **194 tests verts** ; `PYTHONIOENCODING=utf-8 python scripts/regressions.py` **16/16 mutations détectées**.
+3. Travailler sur une nouvelle branche partie de `main` ; `main` n'avance qu'après le oui de la personne (`CLAUDE.md`).
+4. Demander à la personne où elle en est des « Actions de la personne » ci-dessous avant de coder.
 
 ## État
 
-- **v1.9.3** (2026-10-13, à installer par la personne) : Ranger relit toutes les cartes sans étiquette quand les règles ont changé (empreinte `ranger_regles`) ; ~35 mots du 3e tour. v1.9.2 : règles enrichies d'après le 2e tour de Suggestions (voir plus bas). v1.9.1 : bouton « Suggestions » (voir Chantier plus bas).
-- Premier tour de Suggestions (v1.9.0, 2026-10-13) : 826 sans étiquette = 577 sans règle, 0 à traiter, 235 ignorées, 14 rangeables ; 50 portent `!À traiter`. Seulement 3 mots à 5 cartes ou plus (france, politique, voie) : les cartes sans règle sont presque toutes isolées. Décidé avec la personne : `voie` → Géographie et `voie verte` → Transports ; `politique` refusé (dans `PAS_SUGGERER`) ; pays jamais proposés ; seuil abaissé à 3 cartes ; bouton « Copier les cartes sans règle » (v1.9.1) pour que Claude propose des règles aux cartes isolées ; les 235 ignorées restent sans étiquette (pas de `!Homonymie`).
-- 2e tour (v1.9.1, 2026-10-13) : 826 sans étiquette = 572 sans règle, 235 ignorées, 19 rangeables ; 50 portent `!À traiter`. ~60 % des 572 n'ont **pas de description** (titre seul, souvent un nom propre) : aucune règle de mots ne les rangera. Décidé avec la personne (v1.9.2) :
-  - **titre en secours** : si la description ne donne aucun domaine (et n'est pas une page à ignorer), le moteur lit aussi le titre ;
-  - **« ignorée » passe avant « mot ambigu »** (« liste d'un projet Wikimedia » n'est plus `!À traiter`) ;
-  - ~120 mots ajoutés aux 15 domaines (marqués « Suggestions du 2026-10-13 » dans `regles.js`), un cas réel par groupe dans `test/classement.test.js` ;
-  - **mots risqués refusés** : date, conflit, industrie, commerce, justice, manifestation (cas « Friperie » et « 16 septembre » restent sans règle dans les tests).
-- **Wikipédia pour les cartes sans description** (première phrase de l'article, « est un/une … », API publique en lecture seule) : accord de principe, **à reparler en détail avec la personne pour optimiser les appels** avant d'écrire quoi que ce soit.
-- Effet de bord accepté par la personne (2026-10-13) : « Défilé de l'Écluse — défilé situé dans l'Ain, France » part en Transports (« écluse » dans le titre, lu en secours). Ne pas mettre « défilé » en Géographie (défilé de mode, défilé militaire).
-- 3e tour (v1.9.2, 2026-10-13) : 875 sans étiquette = 449 sans règle, 240 ignorées, **186 rangeables jamais relues** (Ranger ne lisait que les nouvelles cartes : corrigé en v1.9.3, bug n° 16 de `regressions.py`) ; 50 portent `!À traiter`, dont 18 que les règles rangent maintenant. Les 449 sont presque toutes des titres seuls. Décidé avec la personne (v1.9.3) : ~35 mots (« 3e tour » dans `regles.js`), sauf « affection » et « barrage » (risqués) ; groupes de musique (« groupe britannique »…) laissés pour Wikipédia.
-- **Wikipédia** : la personne veut en parler **quand il ne restera que des cartes dont le titre n'indique aucun domaine**.
-- Prochaine étape : (1) la personne installe la v1.9.3 et lance Ranger (relit tout, une fois) ; (2) **retrait de `!À traiter`** : « Retirer l'étiquette » observé le 2026-10-13 (voir `docs/wikimasters.md`) ; reste à le rejouer dans le faux site et à coder (voir Chantier).
-- Avant : **v1.8.4** (à installer par la personne ; v1.8.4 assouplit la suppression des anciennes étiquettes ; premier vrai rangement fait en v1.8.2, voir plus bas).
-- Dépôt sur GitHub (`matteo-lorenzi/wikimasters-rangement`, branche `main`), copie durable.
-- **Tests recréés** (`docs/tests.md`) : moteur sur 51 cartes réelles + pièges, faux site jsdom (rechargement de page compris), automatisation de la page, `scripts/regressions.py` (15 mutations, toutes détectées en v1.8.3 ; ~2 min 30, chaque mutation ne lance que son test).
-- v1.8.2, demandé par la personne le 2026-10-12 :
-  - **Journal des bugs** (bouton du panneau) : chaque erreur et chaque rechargement automatique y sont notés (version, message, état de la page, fin du journal) ; la personne le copie et le colle dans la conversation. Lire d'abord « Page : » et « Journal : ».
-  - **Raté du site → rechargement et reprise** : erreur API passagère réessayée (3 essais) ; serveur toujours en erreur, chargement raté, pose refusée, page bloquée → la page est rechargée et l'étape (lecture ou application) reprend seule, 3 fois au plus. Ce qui est posé est enregistré au fil de l'eau (`ranger_fait`). La lecture par l'écran ne sert plus que si l'API répond dans un format inconnu.
-- v1.8.1 :
-  - **Ranger choisit sa stratégie** : à partir de 200 cartes à ranger, recherches groupées d'abord (piste 1, `docs/piste-1.md`), puis page par page ; en dessous, comme avant. Décidé avec la personne le 2026-10-12.
-  - Pose refusée par le site (« Impossible d'appliquer l'étiquette ») : un réessai, puis arrêt avec un message clair.
-  - Chargement raté (« Le chargement de la collection a échoué ») : arrêt avec un message, au lieu de prendre la liste vide pour la fin de la vue.
-  - « Tout sélectionner (page) » quand toute la page est à poser.
-- v1.8.3, d'après le premier journal des bugs de la personne (v1.8.2, 2026-10-12 : ~330 cartes rangées par recherche, puis arrêt après 3 rechargements) :
-  - recherche ratée par le serveur → relancée sur place (`ALBUM`, puis `Album`) ; toujours ratée → mot abandonné (noté), ses cartes rangées page par page ; 3 abandons de suite → rechargement ;
-  - la limite de 3 rechargements ne compte plus que les rechargements **de suite sans aucune pose** (plafond 20 par séance) ;
-  - menu des étiquettes vide juste après un rechargement → le script attend ses options ;
-  - sélection : plus de la moitié de la page à poser → « Tout sélectionner (page) » puis décocher le reste (demande de la personne) ; vérification carte par carte avant « Étiqueter ».
-- Le 2026-10-12, 1 854 cartes sans étiquette, dont 1 112 rangeables (avant le premier vrai rangement).
+- **v1.9.3 sur `main`** (2026-10-13), CI verte, 194 tests, 16 bugs surveillés par `scripts/regressions.py`. `main` = `claude/dynamic-card-labels-08c680` (branche de cette session, rien d'autre en attente).
+- Le panneau du script a quatre boutons :
+  - **Ranger les nouvelles cartes** : lit les cartes sans étiquette (seulement les nouvelles, ou **toutes si les règles ont changé** depuis le dernier rangement, v1.9.3), montre l'aperçu, pose les domaines après « Appliquer ». Recherches groupées à partir de 200 cartes (`docs/piste-1.md`). Rechargement et reprise automatiques sur raté du site.
+  - **Suggestions** (v1.9.0–1.9.1, lecture seule) : compteur des cartes sans domaine, mots inconnus des règles (dès 3 cartes, domaine proposé d'après les cartes déjà étiquetées), « Copier pour Claude » et « Copier les cartes sans règle ». C'est l'outil du chantier en cours (voir plus bas).
+  - **Migration (une fois)** : faite par la personne (2026-10-13, v1.8.4). Sa lecture complète (`lecture2`) est partagée avec Suggestions.
+  - **Journal des bugs** : la personne le copie dans la conversation ; lire d'abord « Page : » et « Journal : ».
+- Moteur (`src/regles.js`) : la description d'abord ; **si elle ne donne aucun domaine (et n'est pas une page à ignorer), le titre en secours** (v1.9.2). Une page à ignorer l'emporte sur un mot ambigu (v1.9.2).
+- Dernier compteur (Suggestions, v1.9.2, 2026-10-13 16:49) : 875 sans étiquette = 449 sans règle, 0 à traiter, 240 ignorées, **186 rangeables** (pas encore rangées : bug corrigé en v1.9.3) ; 50 portent `!À traiter` (18 que les règles rangent maintenant). Depuis, ~35 mots ajoutés (v1.9.3) et « Cour d'appel de Besançon » a perdu son `!À traiter` (test de « Retirer l'étiquette »).
+
+### Actions de la personne (avant la prochaine session de code)
+
+1. Installer la v1.9.3 (`dist/wikimasters-rangement.user.js`).
+2. Lancer « Ranger les nouvelles cartes » : il annonce « Les règles ont changé » et relit **toutes** les cartes sans étiquette (une fois) ; « Appliquer ».
+3. Lancer « Suggestions » → « Relire », et garder les deux textes copiés (mots, cartes sans règle) pour la prochaine session.
 
 ## Système d'étiquettes (décidé avec la personne)
 
 - 17 **domaines** (clés de `DOMAINES` dans `src/regles.js`), jusqu'à 5 par carte, dans l'ordre de la description.
 - 1 collection : `★Village Polonais`. Gestion : `!Doublon`, `!À vendre`, `!À garder` (posées à la main), `!À traiter` (posée par le script quand seul un mot ambigu est trouvé).
-- Nationalités et métiers précis → la barre de recherche du site, qui se combine avec le filtre d'étiquette ; pas d'étiquette.
-- Plafond 30 étiquettes. Sans règle, la carte reste « Sans étiquette » : le script ne devine pas.
-- Suppression des anciennes étiquettes (décidé le 2026-10-13, d'après le rapport de Migration) : une étiquette de métier ou de lieu (`d` non vide dans `ANCIENNES`) est supprimable dès que ses cartes ont son domaine, le détail se perd. Une nationalité (`d` vide) ou une étiquette non prévue exige toujours son mot dans le titre ou la description ; celles qui bloquent sont **gardées pour l'instant** (ex. `#Américain` 52/116, `#Français` 40/163, `#Anglais` 26/31), décision à reprendre plus tard avec la personne.
+- Nationalités et métiers précis → la barre de recherche du site ; pas d'étiquette. Plafond 30 étiquettes (22 utilisées).
+- Sans règle, la carte reste « Sans étiquette » : le script ne devine pas. Les cartes ignorées (homonymies, listes, noms de famille, prénoms : 240) restent sans étiquette, hors objectif.
+- Anciennes étiquettes (Migration) : une étiquette de métier ou de lieu est supprimable dès que ses cartes ont son domaine ; une nationalité exige son mot sur la carte. Les nationalités qui bloquent sont **gardées pour l'instant** (question B).
 
-## Suite
+## Chantier : moins de cartes sans étiquette (décidé avec la personne le 2026-10-13)
 
-1. **Migration faite** par la personne (2026-10-13, en v1.8.4).
-2. **Chantier « moins de cartes sans étiquette »** (Suggestions livré ; tour en cours, voir État) (décidé avec la personne le 2026-10-13, détail plus bas) : Suggestions (v1.9.0-v1.9.1), puis retrait de `!À traiter`, puis « Compléter les cartes rangées ». Entre deux versions, un tour réel Suggestions → règles → Ranger pour voir l'effet sur le compteur.
-3. Les **21 cartes « pas de domaine »** du rapport de Migration (Saison 2015 des Astros de Houston, McLaren MP4-28, Hippodrome de Dieppe, Borough de Denali, Stanley Benham, David B. Samadi, John L. Lewis, Raymond Montaner, Jean de Croonders, Mary Butters, The Irish Press, TM Racing, Wilfried Huber, Radiorama, Guido Capello Vincentinus, Hanabie., Iouri Matvéïévitch Sokolov, Xenia Gueorguievna de Russie, Pierre Fehlmann, Français de Corse, Bourboulon) et les **3 cartes mal classées** ci-dessous (Qué bonito amor réglée en v1.9.2) passent par le flux Suggestions (premiers cas réels) : cas réel dans `test/classement.test.js`, puis la règle. Les 16 de `#Nom de famille` restent ignorées.
-   - « Armed Forces Bowl 2017 — match de football universitaire américain… à Fort Worth » → Sport, **Sciences** (universitaire), **Patrimoine** (Fort Worth) ;
-   - « Le Secret de la salamandre — album de bande dessinée » → **Musique** + Littérature ;
-   - « Programmation spaghetti — code source… gestion des événements » → **Histoire** (événements) ;
-4. **Finir le premier rangement** avec la personne et relire son journal des bugs.
+Méthode : **le script propose, la personne tranche, Claude écrit la règle**. Un tour = la personne lance Suggestions et colle les deux textes ; Claude propose des mots par domaine avec les cartes qu'ils rangent (vérifier d'abord qu'ils sont inconnus du moteur, et signaler les mots risqués) ; la personne accepte ou refuse ; chaque groupe accepté entre dans `test/classement.test.js` avec une carte réelle (rouge), puis dans `regles.js` (vert), marqué en commentaire par le tour ; puis version, Ranger, nouveau compteur.
 
-## Chantier : moins de cartes sans étiquette (décidé le 2026-10-13)
+Tours faits le 2026-10-13 (v1.9.0 → v1.9.3) : 577 → 449 cartes sans règle. Les ~450 restantes sont **presque toutes des titres seuls** (noms propres, espèces en latin) : les mots n'y peuvent plus grand-chose, d'où Wikipédia (question A).
 
-- **But** : faire baisser les cartes `inconnue` et `!À traiter`. Les `ignoree` (homonymie, nom de famille…) restent sans étiquette, hors objectif. Un compteur du panneau le suit.
-- **Le script propose, la personne tranche** ; le script ne devine pas et ne crée rien. Les mots acceptés entrent dans `src/regles.js` (par Claude, en session), avec 1 à 2 cas réels dans `test/classement.test.js` ; pas de règles gardées dans le navigateur.
-- **v1.9.0 — bouton « Suggestions »** (lecture seule) :
-  - réutilise la lecture complète de Migration (`lecture2`) : date affichée, relecture proposée ; un « Appliquer » de Ranger la marque périmée (« Relire (recommandé) ») ;
-  - compteur : N sans étiquette → X inconnues, Y à traiter, Z ignorées, plus les cartes portant `!À traiter` ;
-  - sur les cartes `inconnue` et `a_traiter` (sans étiquette ou `!À traiter`) : mots seuls et expressions de 2-3 mots, sans mots vides ni mots déjà connus des règles, à partir de 3 cartes (5 au départ, abaissé après le premier tour), top 50, 3 exemples chacun ;
-  - domaine proposé = celui que portent les cartes déjà étiquetées contenant ce mot, si ≥ 70 % sur au moins 5 cartes, sinon « ? » ; « nouvelle étiquette ? » à partir de 30 cartes sans domaine majoritaire ;
-  - « Copier pour Claude » : une ligne par candidat (mot, nb, domaine + %, 3 exemples `titre — description`).
-- **Version suivante** : Ranger relit aussi les cartes `!À traiter`, leur pose leur domaine et **retire `!À traiter`, et seulement elle**, avec « Retirer l'étiquette » (aperçu + « Appliquer »). Avant : observer une fois ce bouton dans le Chrome de la personne (une carte, accord à chaque clic), le noter dans `docs/wikimasters.md` et le rejouer dans le faux site ; mettre à jour `docs/piste-1.md` (qui l'interdit) et `CODING_STANDARDS.md` ; un test vérifie qu'aucune autre étiquette n'est retirée.
-- **Puis** : « Compléter les cartes rangées » dans Ranger : cartes portant au moins un domaine, ajout des domaines manquants trouvés par les règles (5 au total au plus), jamais de retrait ; aperçu groupé (« + #Sciences : 42 cartes »). Une carte rangée à la main en `#Arts` que les règles mettent en Musique finit avec les deux (accepté).
+### Suite, dans l'ordre
 
-Déjà refusé par la personne, à ne pas reproposer : écrire directement dans la base (Supabase) avec le jeton de session (règle 1 de `CODING_STANDARDS.md`). Une exploration des cookies a déjà été bloquée par le classificateur de sécurité.
+1. **Tour de Suggestions** avec les textes de la personne (après ses actions ci-dessus).
+2. **Retrait de `!À traiter`** (décidé ; prochaine version de code). Spécification :
+   - Ranger lit aussi les cartes portant `!À traiter` (API `tag_id=<id de !À traiter>`, l'id est dans `stats.tagOptions`) ; celles que les règles rangent maintenant reçoivent leur(s) domaine(s) **puis** perdent `!À traiter` (dans cet ordre : si la pose échoue, la carte garde son repère). Aperçu (« N cartes : #Domaine + retrait de !À traiter ») puis « Appliquer ».
+   - Le script retire **`!À traiter` et seulement elle** : bouton au texte exact `!À traiter` (le texte du bouton est « nom » + saut de ligne + nombre). Un test du faux site vérifie qu'aucune autre étiquette n'est retirée, et qu'une carte encore ambiguë garde `!À traiter`.
+   - Comportement du site observé le 2026-10-13 : voir `docs/wikimasters.md`, « Retirer l'étiquette » (pas de `confirm`, bilan « N carte désétiquetée. », **fenêtre qui ne se ferme pas seule → cliquer « Terminé »**, **sélection gardée après**). Le rejouer d'abord dans `test/faux-site.js` (aujourd'hui le bouton y est vide).
+   - Reprise sans perte (règle 4) : noter chaque retrait fait dans le stockage, comme `ranger_fait`.
+   - Mettre à jour `docs/piste-1.md` (« Jamais Retirer l'étiquette ») et `CODING_STANDARDS.md` (règle 2 : retirer `!À traiter`, posée par le script, est réversible ; aucune autre étiquette).
+   - Le premier usage réel se fait avec la personne présente, sur quelques cartes d'abord.
+3. **« Compléter les cartes rangées »** (décidé) : bouton dans Ranger ; cartes portant au moins un domaine ; ajout des domaines manquants trouvés par les règles (5 au total au plus), jamais de retrait ; aperçu groupé (« + #Sciences : 42 cartes »). Une carte rangée à la main en `#Arts` que les règles mettent en Musique finit avec les deux (accepté).
+4. **Wikipédia** : seulement quand la question A sera tranchée.
 
-## Points ouverts
+## Questions en suspens
 
-- Suppression des anciennes étiquettes (101 au départ) : la réponse au `confirm` natif n'a jamais été vérifiée sur le vrai site. Si la fenêtre réapparaît, demander son texte exact et le noter dans `docs/wikimasters.md`.
-- Rapport de Migration du 2026-10-13 (avant la v1.8.4) : une cinquantaine d'anciennes étiquettes bloquées (●). La v1.8.4 débloque celles de métier ou de lieu ; restent bloquées les nationalités (gardées pour l'instant, décision de la personne) et les cartes sans domaine (Suite, point 2). Toujours relire la collection avant de supprimer.
-- À revalider avec la personne : philosophes et historiens rangés en #Sciences.
-- Le bouton « Sélectionner / Quitter la sélection » a disparu une fois après une pose suivie d'un échec de `stats` (cause inconnue) : `modeSelection` lève alors une PanneSite, donc rechargement et reprise. Non rejoué dans le faux site.
-- Pagination absente quand `stats` échoue : `allerA` lève une PanneSite (rechargement et reprise). Non rejoué dans le faux site.
+Chacune avec le contexte et la recommandation à proposer. Ne pas trancher à la place de la personne.
+
+- **A. Wikipédia pour les cartes sans description** (accord de principe le 2026-10-13 ; la personne veut en parler **en détail, pour optimiser les appels, quand il ne restera que des cartes dont le titre n'indique aucun domaine**). Idée : lire la première phrase de l'article fr.wikipedia du titre de la carte (« Jimmy Choo … est un styliste … ») et classer ce qui suit « est un / est une ». Lecture seule, API publique (pas le site : règle 1 respectée) ; Tampermonkey demandera l'autorisation du domaine (`@connect`). À débattre :
+  - quelles cartes : seulement les `inconnue` sans description (~400) ? aussi les `!À traiter` comme les groupes de musique (« Bôa — groupe britannique ») ?
+  - nombre d'appels : l'API `action=query&prop=extracts&exintro&explaintext&exsentences=1` accepte plusieurs titres par requête (limite à vérifier, sans doute 20) → ~20 requêtes au lieu de 400 ; cache dans le navigateur pour ne jamais redemander un titre ;
+  - où : dans Suggestions (proposer des mots) ou dans Ranger (poser) ? Recommandation : Ranger, avec « d'après Wikipédia » dans l'aperçu et « Appliquer » obligatoire ;
+  - garde-fous : n'utiliser que la proposition après « est un/une », jamais tout l'article ; titre absent ou page d'homonymie → rien.
+- **B. Anciennes étiquettes de nationalité** (`#Américain` 52/116, `#Français` 40/163, `#Anglais` 26/31…) gardées depuis la Migration : les supprimer (la barre de recherche les remplace) ou les garder ? Pas tranché.
+- **C. Philosophes et historiens rangés en #Sciences** : à revalider avec la personne.
+- **D. Trois cartes mal classées** (repérées en recréant les tests, à trancher avant de toucher aux règles ; cas réel d'abord) :
+  - « Armed Forces Bowl 2017 — match de football universitaire américain… à Fort Worth » → Sport, **Sciences** (universitaire), **Patrimoine** (Fort Worth) ;
+  - « Le Secret de la salamandre — album de bande dessinée » → **Musique** (album) + Littérature ;
+  - « Programmation spaghetti — code source… gestion des événements » → **Histoire** (événements).
+- **E. Les 21 cartes « pas de domaine » du rapport de Migration** (Saison 2015 des Astros de Houston, McLaren MP4-28, Hippodrome de Dieppe, Borough de Denali, Stanley Benham, David B. Samadi, John L. Lewis, Raymond Montaner, Jean de Croonders, Mary Butters, The Irish Press, TM Racing, Wilfried Huber, Radiorama, Guido Capello Vincentinus, Hanabie., Iouri Matvéïévitch Sokolov, Xenia Gueorguievna de Russie, Pierre Fehlmann, Français de Corse, Bourboulon) : presque toutes à titre seul → Wikipédia (A). Les 16 de `#Nom de famille` restent ignorées.
+- **F. Derniers mots proposés par Suggestions, jamais soumis à la personne** : « formation » (4 cartes, sens différents : Formation de Kaili = géologie, Formation de classes, Centre de formation à distance) et « thomas » (prénom, 3 cartes). Recommandation : refuser les deux ; ajouter « thomas » (ou les prénoms) à `PAS_SUGGERER`.
+- **G. Groupes de musique** (« Bôa — groupe britannique », « Hanabie. — groupe japonais », « Terrorgruppe — groupe allemand », « Ravager (groupe) ») : « groupe » est ambigu à juste titre (groupe aéronaval…), le moteur ne sait pas dire « groupe + nationalité ». Décidé : laissés `!À traiter` en attendant Wikipédia (A).
+
+## Refusé par la personne — ne pas reproposer
+
+- Écrire directement dans la base (Supabase) avec le jeton de session (règle 1). Une exploration des cookies a déjà été bloquée par le classificateur de sécurité.
+- Mots refusés : `politique` (seul ; « doctrine politique » accepté) ; mots risqués **date, conflit, industrie, commerce, justice, manifestation, affection, barrage** (leurs cartes restent sans règle dans les tests).
+- Proposer des pays ou des nationalités dans Suggestions (`PAS_SUGGERER`).
+- Une étiquette `!Homonymie` pour les cartes ignorées.
+- « défilé » en Géographie : « Défilé de l'Écluse » part en Transports (titre en secours, « écluse »), erreur acceptée.
+
+## Points techniques ouverts
+
+- Suppression des anciennes étiquettes : la réponse au `confirm` natif n'a jamais été vérifiée sur le vrai site. Si la fenêtre réapparaît, relever son texte exact dans `docs/wikimasters.md`.
+- Le bouton « Sélectionner / Quitter la sélection » a disparu une fois après une pose suivie d'un échec de `stats` (cause inconnue) : `modeSelection` lève une PanneSite (rechargement et reprise). Non rejoué dans le faux site.
+- Pagination absente quand `stats` échoue : `allerA` lève une PanneSite. Non rejoué dans le faux site.
+- La requête d'écriture de « Retirer l'étiquette » n'apparaît pas dans la surveillance réseau de Claude in Chrome (sans importance : le script ne l'appelle jamais).
+- Titre en secours et accents : le moteur ignore les accents, donc un titre peut ranger par erreur (« marqué » trouve la règle « marque » ; vu dans un test). À garder en tête en lisant les cartes mal classées.
+
+## Pièges de l'environnement (Windows, rencontrés en session)
+
+- Git Bash : un script Python passé par heredoc perd des barres obliques inverses (`'\\n'` devenu un vrai saut de ligne, `\'` devenu `'` dans `regles.js`) → écrire le script dans un fichier avec l'outil d'écriture, ou modifier à la main ; toujours relancer les tests après.
+- `scripts/regressions.py` plante à l'affichage du ✓ dans la console Windows → `PYTHONIOENCODING=utf-8`.
+- Claude in Chrome : la personne a Opera GX **et** Chrome connectés ; l'extension vise Opera GX par défaut (« No group with id ») → `list_connected_browsers` puis `select_browser` sur Chrome (voir `docs/wikimasters.md`).
+- Tests en contexte `vm` : recopier les tableaux du script (`Array.from`) avant `deepEqual` (`docs/tests.md`).
+
+## Historique des versions
+
+- **v1.9.3** : Ranger relit toutes les cartes sans étiquette quand les règles ont changé (empreinte `ranger_regles` ; bug n° 16) ; ~35 mots (3e tour).
+- **v1.9.2** : titre en secours ; « ignorée » avant « ambigu » ; ~120 mots (2e tour).
+- **v1.9.1** : Suggestions dès 3 cartes, pays et mots refusés jamais proposés, « Copier les cartes sans règle » ; `voie` → Géographie, `voie verte` → Transports.
+- **v1.9.0** : bouton Suggestions.
+- **v1.8.4** : Migration, une étiquette de métier ou de lieu se supprime avec son domaine.
+- **v1.8.3** (premier journal des bugs) : recherche ratée relancée sur place ou abandonnée ; rechargements comptés seulement sans progrès ; menu des étiquettes vide attendu ; « Tout sélectionner (page) » puis décocher.
+- **v1.8.2** : journal des bugs ; rechargement et reprise automatiques.
+- **v1.8.1** : rangement groupé par recherches à partir de 200 cartes ; pose refusée et chargement raté gérés.
+- Le 2026-10-12 : 1 854 cartes sans étiquette, dont 1 112 rangeables, avant le premier vrai rangement.
