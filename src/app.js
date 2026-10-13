@@ -604,7 +604,8 @@ const motsGroupes = (cartes, plans) => {
 // Sur les cartes restées sans domaine (sans étiquette, ou « !À traiter ») que les règles ne rangent pas,
 // on compte les mots et les expressions de 2 à 3 mots. Le domaine proposé est celui que portent les cartes
 // déjà étiquetées qui les contiennent. Rien n'est posé : la personne choisit, Claude écrit la règle dans regles.js.
-const SUGG_MIN_CARTES = 5;
+const SUGG_MIN_CARTES = 3;
+const SUGG_MIN_ETIQUETEES = 5;
 const SUGG_MAX = 50;
 const SUGG_MAJORITE = 0.7;
 const SUGG_NOUVELLE = 30;
@@ -632,7 +633,7 @@ const dejaConnu = (k) => scan(k).some((h) => couvre(kwRegex(h.kw), k)) || PAS_SU
 
 const suggestions = (cartes) => {
   const compteur = { sansEtiquette: 0, rangeables: 0, inconnues: 0, aTraiter: 0, ignorees: 0, marqueesATraiter: 0 };
-  const cibles = [], etiquetees = [];
+  const sansRegle = [], ambigues = [], etiquetees = [];
   for (const c of cartes) {
     if (c.tags.some((t) => DOMAINES[t])) { etiquetees.push(c); continue; }
     const marquee = c.tags.includes(A_TRAITER);
@@ -640,8 +641,10 @@ const suggestions = (cartes) => {
     const { statut } = classer(c);
     if (marquee) compteur.marqueesATraiter++;
     else { compteur.sansEtiquette++; compteur[{ classee: 'rangeables', inconnue: 'inconnues', a_traiter: 'aTraiter', ignoree: 'ignorees' }[statut]]++; }
-    if (statut === 'inconnue' || statut === 'a_traiter') cibles.push(c);
+    if (statut === 'inconnue') sansRegle.push(c);
+    if (statut === 'a_traiter') ambigues.push(c);
   }
+  const cibles = [...sansRegle, ...ambigues];
   const parMot = new Map();
   for (const c of cibles) {
     for (const [k, mot] of ngrammes(c)) {
@@ -669,10 +672,10 @@ const suggestions = (cartes) => {
     const { n: etiq, par } = doms.get(k);
     const [tete, nb] = Object.entries(par).sort((a, b) => b[1] - a[1])[0] || [null, 0];
     const part = etiq ? nb / etiq : 0;
-    const dom = etiq >= SUGG_MIN_CARTES && part >= SUGG_MAJORITE ? tete : null;
+    const dom = etiq >= SUGG_MIN_ETIQUETEES && part >= SUGG_MAJORITE ? tete : null;
     return { mot, n: cs.length, dom, tete, part, etiquetees: etiq, nouvelle: !dom && cs.length >= SUGG_NOUVELLE, exemples: cs.slice(0, 3) };
   }).sort((a, b) => b.n - a.n || a.mot.localeCompare(b.mot)).slice(0, SUGG_MAX);
-  return { compteur, candidats };
+  return { compteur, candidats, sansRegle, ambigues };
 };
 
 const rapportSuppression = (lecture, plans) => {
@@ -884,10 +887,10 @@ const majBoutonBugs = () => {
   const n = store.get('bugs', []).length;
   if (b) b.textContent = 'Journal des bugs' + (n ? ` (${n})` : '');
 };
-// Le bouton [data-copier] du panneau copie le texte du textarea ; sinon le texte est sélectionné pour Ctrl+C.
-const brancherCopie = (t, ok) => {
-  const ta = ui.out.querySelector('textarea');
-  const copier = ui.out.querySelector('[data-copier]');
+// Le bouton du panneau ([data-copier]) copie le texte de sa zone (le premier textarea) ; sinon le texte est sélectionné pour Ctrl+C.
+const brancherCopie = (t, ok, zone = 'textarea', bouton = '[data-copier]') => {
+  const ta = ui.out.querySelector(zone);
+  const copier = ui.out.querySelector(bouton);
   if (copier) copier.onclick = () => {
     const echec = () => { ta.select(); ui.statut('Copie impossible ici : le texte est sélectionné, fais Ctrl+C.'); };
     try { navigator.clipboard.writeText(t).then(() => ui.statut(ok), echec); } catch (e) { echec(); }
@@ -1128,7 +1131,7 @@ const modeSuggestions = async () => {
   ui.out.querySelector('[data-relire]').onclick = () => lancer(async () => afficherSuggestions(await lireCollection()));
 };
 const afficherSuggestions = (lecture) => {
-  const { compteur: k, candidats } = suggestions(Object.values(lecture.cartes));
+  const { compteur: k, candidats, sansRegle, ambigues } = suggestions(Object.values(lecture.cartes));
   const pct = (x) => Math.round(x * 100) + ' %';
   const domaine = (c) => (c.dom ? `${c.dom} (${pct(c.part)})` : (c.nouvelle ? 'nouvelle étiquette ?' : '?') + (c.tete ? ` (${c.tete} ${pct(c.part)})` : ''));
   const exemple = (x) => x.t + (x.d ? ' — ' + x.d : '');
@@ -1136,6 +1139,8 @@ const afficherSuggestions = (lecture) => {
     + `Et ${k.marqueesATraiter} portent « !À traiter ».`;
   const copie = [`Suggestions WikiMasters v${VERSION}, lecture du ${new Date(lecture.at).toLocaleString()}`, resume, '',
     ...candidats.map((c) => `${c.mot} — ${c.n} cartes — ${domaine(c)} — ex. : ${c.exemples.map(exemple).join(' ; ')}`)].join('\n');
+  const cartes = [`Cartes sans règle (${sansRegle.length}) :`, ...sansRegle.map(exemple), '',
+    `Cartes avec un mot ambigu seul (${ambigues.length}) :`, ...ambigues.map(exemple)].join('\n');
   ui.statut(`${Object.keys(lecture.cartes).length} cartes lues, ${candidats.length} mot(s) à proposer.`);
   ui.out.innerHTML = `<h4>Cartes sans domaine</h4><div>${esc(resume)}</div>
     <h4>Mots que les règles ne connaissent pas</h4>
@@ -1144,8 +1149,13 @@ const afficherSuggestions = (lecture) => {
       c.exemples.map((x) => `<div class="li">${esc(exemple(x))}</div>`).join('')}</details></td><td class="n">${c.n}</td></tr>`).join('')}</table>`
     : `<p class="hint">Aucun mot inconnu ne revient sur ${SUGG_MIN_CARTES} cartes ou plus.</p>`}
     <textarea readonly rows="8">${esc(copie)}</textarea>
-    <div class="row"><button class="b p" data-copier>Copier pour Claude</button></div>`;
+    <div class="row"><button class="b p" data-copier>Copier pour Claude</button></div>
+    <h4>Toutes les cartes à revoir</h4>
+    <p class="hint">Les cartes isolées n'ont aucun mot en commun : copie-les toutes pour Claude, il proposera une règle par groupe.</p>
+    <textarea readonly rows="6" data-cartes>${esc(cartes)}</textarea>
+    <div class="row"><button class="b" data-copier-cartes>Copier les cartes sans règle (${sansRegle.length + ambigues.length})</button></div>`;
   brancherCopie(copie, 'Liste copiée : colle-la dans la conversation avec Claude.');
+  brancherCopie(cartes, 'Cartes copiées : colle-les dans la conversation avec Claude.', '[data-cartes]', '[data-copier-cartes]');
 };
 
 // ── Mode Migration ──

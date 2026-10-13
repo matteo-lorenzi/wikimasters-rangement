@@ -180,7 +180,7 @@ const DOMAINES = {
     'glacier', 'lac', 'rivière', 'fleuve', 'ruisseau', 'cours d\'eau', 'affluent', 'canal', 'mer', 'océan',
     'golfe', 'baie', 'détroit', 'cap', 'plage', 'désert', 'vallée', 'plaine', 'plateau', 'cascade',
     'chute d\'eau', 'gorge', 'grotte', 'oblast', 'voïvodie', 'gmina', 'powiat', 'raïon', 'municipio',
-    'préfecture', 'subdivision', 'drapeau', 'frontière', 'rue', 'avenue', 'boulevard', 'place publique',
+    'préfecture', 'subdivision', 'drapeau', 'frontière', 'rue', 'voie', 'avenue', 'boulevard', 'place publique',
     'ville-préfecture', 'colline', 'point culminant', 'freguesia', 'sebkha', 'géographie',
   ],
   'Patrimoine': [
@@ -193,7 +193,7 @@ const DOMAINES = {
   ],
   'Transports': [
     'gare', 'station de métro', 'station du métro', 'métro', 'ligne de métro', 'ligne ferroviaire',
-    'ligne de chemin de fer', 'chemin de fer', 'voie ferrée', 'ferroviaire', 'train', 'locomotive', 'wagon',
+    'ligne de chemin de fer', 'chemin de fer', 'voie ferrée', 'voie verte', 'ferroviaire', 'train', 'locomotive', 'wagon',
     'automotrice', 'rame', 'tramway', 'funiculaire', 'téléphérique', 'autoroute', 'route', 'route nationale',
     'route départementale', 'aéroport', 'aérodrome', 'avion', 'aéronef', 'hélicoptère', 'navire', 'bateau',
     'voilier', 'paquebot', 'sous-marin', 'porte-avions', 'cuirassé', 'frégate', 'croiseur', 'destroyer',
@@ -229,9 +229,28 @@ const IGNORER = [
   'page d\'homonymie', 'page de liste', 'projet wikimedia', 'nom de famille', 'prénom', 'patronyme', 'homonymie',
 ];
 
-// Mots que le bouton « Suggestions » ne propose jamais : les nationalités (la barre de recherche suffit).
-// Le féminin et le pluriel suivent, comme pour les domaines : coréen → coréenne.
+// Mots que le bouton « Suggestions » ne propose jamais : les nationalités et les pays (la barre de recherche
+// suffit), et les mots déjà refusés. Le féminin et le pluriel suivent, comme pour les domaines : coréen → coréenne.
 const PAS_SUGGERER = [
+  // refusés (2026-10-13)
+  'politique',
+  // pays et régions du monde
+  'afghanistan', 'afrique', 'afrique du sud', 'albanie', 'algérie', 'allemagne', 'amérique', 'andorre', 'angleterre',
+  'angola', 'arabie saoudite', 'argentine', 'arménie', 'asie', 'australie', 'autriche', 'azerbaïdjan', 'bangladesh',
+  'belgique', 'biélorussie', 'birmanie', 'bolivie', 'bosnie-herzégovine', 'brésil', 'bulgarie', 'cambodge',
+  'cameroun', 'canada', 'chili', 'chine', 'chypre', 'colombie', 'congo', 'corée', 'corée du nord', 'corée du sud',
+  'costa rica', 'côte d\'ivoire', 'croatie', 'cuba', 'danemark', 'écosse', 'égypte', 'équateur', 'espagne',
+  'estonie', 'états-unis', 'éthiopie', 'europe', 'finlande', 'france', 'géorgie', 'ghana', 'grèce', 'guatemala',
+  'guinée', 'haïti', 'honduras', 'hongrie', 'inde', 'indonésie', 'irak', 'iran', 'irlande', 'islande', 'israël',
+  'italie', 'jamaïque', 'japon', 'jordanie', 'kazakhstan', 'kenya', 'laos', 'lettonie', 'liban', 'libye',
+  'lituanie', 'luxembourg', 'macédoine', 'madagascar', 'malaisie', 'mali', 'malte', 'maroc', 'mexique', 'monaco',
+  'mongolie', 'monténégro', 'népal', 'nicaragua', 'niger', 'nigeria', 'nigéria', 'norvège', 'nouvelle-zélande',
+  'océanie', 'ouganda', 'ouzbékistan', 'pakistan', 'palestine', 'panama', 'paraguay', 'pays-bas', 'pays de galles',
+  'pérou', 'philippines', 'pologne', 'portugal', 'québec', 'roumanie', 'royaume-uni', 'russie', 'salvador',
+  'sénégal', 'serbie', 'singapour', 'slovaquie', 'slovénie', 'soudan', 'sri lanka', 'suède', 'suisse', 'syrie',
+  'taïwan', 'tanzanie', 'tchad', 'tchécoslovaquie', 'tchéquie', 'thaïlande', 'tunisie', 'turquie', 'ukraine',
+  'union soviétique', 'urss', 'uruguay', 'venezuela', 'viêt nam', 'vietnam', 'yougoslavie', 'zimbabwe',
+  // nationalités
   'africain', 'albanais', 'algérien', 'allemand', 'alsacien', 'américain', 'anglais', 'arménien', 'argentin',
   'asiatique', 'australien', 'autrichien', 'azerbaïdjanais', 'basque', 'belge', 'biélorusse', 'birman', 'bolivien',
   'bosnien', 'breton', 'brésilien', 'britannique', 'bulgare', 'cambodgien', 'camerounais', 'canadien', 'catalan',

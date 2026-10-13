@@ -34,7 +34,7 @@ Couvre : panneau ouvrir/fermer ; lecture (pagination tardive, pages fantômes, c
 
 ## `test/suggestions.test.js` — le bouton « Suggestions »
 
-Le calcul (`suggestions`) sur une petite collection inventée : compteur des cartes sans domaine (`!À traiter` à part), mots inconnus des règles à partir de 5 cartes, sans mots vides, nationalités (`PAS_SUGGERER`) ni expressions déjà couvertes par un mot ; domaine proposé à 70 % des cartes étiquetées ; « nouvelle étiquette ? » à 30 cartes. Puis le panneau : lecture par l'API seulement (aucun clic sur la page), texte à copier pour Claude, lecture gardée qui devient périmée après un Ranger (« Relire (recommandé) »).
+Le calcul (`suggestions`) sur une petite collection inventée : compteur des cartes sans domaine (`!À traiter` à part), mots inconnus des règles à partir de 3 cartes, sans mots vides, pays, nationalités ni mots refusés (`PAS_SUGGERER`) ni expressions déjà couvertes par un mot ; domaine proposé à 70 % des cartes étiquetées ; « nouvelle étiquette ? » à 30 cartes. Puis le panneau : lecture par l'API seulement (aucun clic sur la page), texte à copier pour Claude, toutes les cartes à revoir (sans règle, mot ambigu seul) à copier aussi, lecture gardée qui devient périmée après un Ranger (« Relire (recommandé) »).
 
 ## `scripts/regressions.py` — les bugs déjà livrés
 
