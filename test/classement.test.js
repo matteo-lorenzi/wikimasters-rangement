@@ -74,6 +74,73 @@ const CAS = [
   ['Élodie Fontan', 'comédienne et mannequin française', ['Cinéma & TV', 'Arts'], 'classee'],
   // une expression longue l'emporte sur le mot seul : « personnage de la mythologie » ≠ « personnage » (Fiction)
   ['Pénélope', 'personnage de la mythologie grecque', ['Religion & Mythes'], 'classee'],
+
+  // Cartes sans règle de la personne (Suggestions v1.9.1, 2026-10-13) : mots ajoutés avec son accord
+  ['974', 'année', ['Histoire'], 'classee'],
+  ['25 octobre 2014', 'samedi en octobre 2014', ['Histoire'], 'classee'],
+  ['Egnatius Proculus', 'consul suffect romain en 219', ['Histoire'], 'classee'],
+  ['Gian Bernardo Frugoni', 'doge de la république de Gênes', ['Histoire'], 'classee'],
+  ['Révolte des sabotiers', 'soulèvement de paysans solognots en 1658', ['Histoire'], 'classee'],
+  ['Siro', 'genre d’opilions', ['Nature'], 'classee'],
+  ['Kanapoi', 'site fossilifère du Kenya', ['Nature'], 'classee'],
+  ['Espace vert', "espace d'agrément végétalisé", ['Nature'], 'classee'],
+  ['Edgar Lehr', 'herpétologiste allemand', ['Sciences'], 'classee'],
+  ['Hypocorrection', 'phénomène linguistique', ['Sciences'], 'classee'],
+  ['Host Identity Protocol', 'Protocole Internet', ['Sciences'], 'classee'],
+  ['Bruit sismique', 'bruit de fond des sismogrammes', ['Sciences'], 'classee'],
+  ['Université nationale de pharmacie', 'enseignement à Kharkiv', ['Sciences'], 'classee'],
+  ['Laura Vanessa Vásquez', 'taekwondoïste salvadorienne', ['Sport'], 'classee'],
+  ['Alain Feuillette', 'céiste français', ['Sport'], 'classee'],
+  ['Torben Grael', 'skipper brésilien', ['Sport'], 'classee'],
+  ['Draft 2011 de la NFL', '', ['Sport'], 'classee'],
+  ["20e étape du Tour d'Espagne 2007", "étape du Tour d'Espagne 2007", ['Sport'], 'classee'],
+  ['Hanriot HD.17', "ancien hydravion d'entraînement français", ['Transports'], 'classee'],
+  ['Regent Sky', 'ferry inachevé', ['Transports'], 'classee'],
+  ['Doora', 'système de vélopartage en Tunisie', ['Transports'], 'classee'],
+  ['Unterseeboot UC-60', '', ['Transports'], 'classee'],
+  ['Limitations de vitesse en Lettonie', '', ['Transports'], 'classee'],
+  ['Badalgachhi', 'upazila bengladaise', ['Géographie'], 'classee'],
+  ['Tösse', 'unité urbaine suédoise', ['Géographie'], 'classee'],
+  ['Ladera (Californie)', 'census designated place américaine de Californie', ['Géographie'], 'classee'],
+  ['Strupenfossen', "chutes d'eau en Norvège", ['Géographie'], 'classee'],
+  ['Micro-région de Sárvár', '', ['Géographie'], 'classee'],
+  ['Isong Corona', 'corona sur Vénus', ['Espace'], 'classee'],
+  ['Pâte de noisettes', 'préparation culinaire originaire de Piémont, en Italie', ['Économie'], 'classee'],
+  ['Usine sidérurgique de Posan', 'complexe sidérurgique de Corée du Nord', ['Économie'], 'classee'],
+  ['Taxe au sac', 'système de taxation des sacs poubelle mettant en place un principe du pollueur-payeur', ['Économie'], 'classee'],
+  ['Canon (architecture)', '', ['Arts'], 'classee'],
+  ['Jacques Daliwe', 'enlumineur flamand', ['Arts'], 'classee'],
+  ['Clare West', 'créatrice de costumes américaine', ['Arts'], 'classee'],
+  ['Contrechamps', 'ensemble instrumental à Genève', ['Musique'], 'classee'],
+  ['Te Deum pour Notre-Dame', 'œuvre musicale de Thierry Escaich', ['Musique'], 'classee'],
+  ['Trail of Justice', 'western américain par Nick DeBoer en 2020', ['Cinéma & TV'], 'classee'],
+  ['Qué bonito amor', 'telenovela mexicaine', ['Cinéma & TV'], 'classee'],
+  ['Filmographie de Bourvil', 'filmographie', ['Cinéma & TV'], 'classee'],
+  ['Utsuro no hako to zero no Maria', 'série de light novels de sept tomes', ['Littérature'], 'classee'],
+  ['Guru Ram Das', 'gourou du sikhisme', ['Religion & Mythes'], 'classee'],
+  ['Zuhd', 'Pratique du Soufisme en Islam', ['Religion & Mythes'], 'classee'],
+  ['Kabi Leon', 'fonctionnaire, Liban', ['Politique & Droit'], 'classee'],
+  ['Ambassade du Maroc en Serbie', '', ['Politique & Droit'], 'classee'],
+  ['Consulat général de France à La Nouvelle-Orléans', 'représentation consulaire française en Louisiane (États-Unis)', ['Politique & Droit'], 'classee'],
+  ['Résolution 11 du Conseil de sécurité des Nations unies', 'résolution du Conseil de sécurité des Nations Unies', ['Politique & Droit'], 'classee'],
+  ['Grève générale de 1971-1972', 'grève générale en Namibie', ['Politique & Droit'], 'classee'],
+  ['Bourse du travail de Lille', 'lieu de réunion des syndicats de Lille', ['Politique & Droit'], 'classee'],
+  ['Citoyens du Monde (association)', "organisation d'inspiration mondialiste et pacifiste", ['Politique & Droit'], 'classee'],
+  ['André Agid', 'homme de média', ['Médias'], 'classee'],
+  ['Miss Moldavie', 'concours de beauté', ['Médias'], 'classee'],
+  // mots risqués refusés par la personne : la carte reste sans règle
+  ['Friperie', "commerce de détail des vêtements d'occasion", [], 'inconnue'],
+  ['16 septembre', 'date', [], 'inconnue'],
+  // la description ne donne aucun domaine : le titre en secours
+  ['Gérard Simon (directeur de la photographie)', 'personnalité française', ['Cinéma & TV'], 'classee'],
+  ['IXe congrès du Parti communiste (France)', 'congrès tenu à Arles du 25 au 29 décembre 1937.', ['Politique & Droit'], 'classee'],
+  ['Avocat en France', "type d'auxiliaire de justice en droit français", ['Politique & Droit'], 'classee'],
+  ['Trio à cordes de Cras', 'œuvre de Jean Cras', ['Musique'], 'classee'],
+  // … mais seulement en secours : la description garde le dernier mot
+  ['Le Footballeur', 'film de 1974', ['Cinéma & TV'], 'classee'],
+  ['Footballeur (homonymie)', "page d'homonymie de Wikimédia", [], 'ignoree'],
+  // une page de liste reste ignorée, même avec le mot ambigu « liste »
+  ['Liste de peintures de Claude Monet à Bordighera (1884)', "liste d'un projet Wikimedia", [], 'ignoree'],
 ];
 
 for (const [t, d, attendu, statut] of CAS) {
@@ -117,9 +184,15 @@ test('collection ★Village Polonais : village + Pologne (reconstitué)', () => 
 });
 
 test('mot ambigu seul → !À traiter', () => {
-  const r = classe("Cour d'appel de Besançon", "service de l'État français");
+  const r = classe('Bôa', 'groupe britannique');
   assert.deepEqual(r.etiquettes, ['!À traiter']);
   assert.equal(r.statut, 'a_traiter');
+});
+
+test('mot ambigu seul, mais un domaine dans le titre : le titre range la carte', () => {
+  const r = classe("Cour d'appel de Besançon", "service de l'État français");
+  assert.deepEqual(r.etiquettes, ['Politique & Droit']);
+  assert.equal(r.source, 'titre');
 });
 
 test('page d\'homonymie → ignorée, sans étiquette', () => {

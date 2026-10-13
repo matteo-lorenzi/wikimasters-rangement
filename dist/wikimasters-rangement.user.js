@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WikiMasters — Rangement des cartes
 // @namespace    wikimasters-rangement
-// @version      1.9.1
+// @version      1.9.2
 // @description  Étiquette tes cartes WikiMasters par domaine (aperçu avant application, jamais de défausse).
 // @match        https://www.wiki-masters.com/*
 // @match        https://wiki-masters.com/*
@@ -22,6 +22,7 @@
 //  • Termine par * pour « commence par » : "sculpt*" → sculpteur, sculptrice…
 //  • Les expressions longues passent avant les mots seuls :
 //    "auteur-compositeur" (Musique) l'emporte sur "auteur" (Littérature).
+//  • Le moteur lit la description ; si elle ne donne aucun domaine, il lit aussi le titre.
 // ═══════════════════════════════════════════════════════════════════
 
 const DOMAINES = {
@@ -33,6 +34,8 @@ const DOMAINES = {
     'studio de cinéma', 'festival de cinéma', 'cascadeur', 'cascadeuse', 'directeur de la photographie',
     'film d\'animation', 'mini-série', 'saison de la série',
     'série de télévision', 'thriller', 'télévision',
+    // Suggestions du 2026-10-13
+    'western', 'filmographie', 'telenovela',
   ],
   'Musique': [
     'chanteur', 'chanteuse', 'compositeur', 'compositrice', 'auteur-compositeur', 'autrice-compositrice',
@@ -45,6 +48,8 @@ const DOMAINES = {
     'producteur de musique', 'productrice de musique', 'producteur de disques', 'ténor', 'soprano', 'baryton',
     'jazzman', 'chorale', 'festival de musique', 'comédie musicale', 'musique', 'interprète de musique',
     'auteure-compositrice-interprète', 'autrice-compositrice-interprète', 'auteure-compositrice', 'girls band', 'boys band', 'chant', 'composition', 'piano', 'manager musical', 'discographie', 'concert', 'tournée',
+    // Suggestions du 2026-10-13
+    'musical', 'instrumental', 'jazz', 'trio à cordes',
   ],
   'Littérature': [
     'écrivain', 'écrivaine', 'romancier', 'romancière', 'poète', 'poétesse', 'auteur', 'autrice',
@@ -54,6 +59,8 @@ const DOMAINES = {
     'critique littéraire', 'prix littéraire', 'conte', 'fabuliste', 'biographe', 'mémorialiste', 'librettiste',
     'littérature', 'homme de lettres', 'femme de lettres', 'littéraire', 'nouvelle de', 'œuvre littéraire',
     'auteure', 'expression latine', 'proverbe', 'locution', 'rhétorique', 'philologue',
+    // Suggestions du 2026-10-13
+    'light novel',
   ],
   'Arts': [
     'peintre', 'sculpt*', 'artiste', 'illustrateur', 'illustratrice', 'dessinateur', 'dessinatrice',
@@ -63,6 +70,8 @@ const DOMAINES = {
     'style architectural', 'calligraphe', 'orfèvre', 'ébéniste', 'lithographie', 'gravure', 'photographie',
     'metteur en scène', 'metteuse en scène', 'théâtre', 'cirque', 'marionnettiste', 'peinture murale',
     'aquarelle', 'estampe', 'art', 'arts', 'esthétique',
+    // Suggestions du 2026-10-13
+    'architecture', 'enlumineur', 'coloriste', 'costume',
   ],
   'Sport': [
     'footballeur', 'footballeuse', 'football', 'joueur de football', 'cycliste', 'coureur cycliste',
@@ -85,6 +94,9 @@ const DOMAINES = {
     'fléchettes', 'billard', 'bowling', 'curling', 'bobsleigh', 'luge', 'haltérophil*', 'culturiste',
     'pentathl*', 'décathl*', 'heptathl*', 'saison sportive', 'équipe nationale', 'sélection nationale',
     'rallye-raid', 'omnisports', 'water polo', 'formule 1', 'coupe stanley', 'séries éliminatoires', 'derby', 'soccer', 'major league', 'nba', 'nhl', 'jo', 'épreuve sportive', 'cricket',
+    // Suggestions du 2026-10-13
+    'taekwondo*', 'canoéiste', 'céiste', 'skipper', 'orienteur', 'nfl', 'wnba', 'bowl', 'coupe davis', 'double messieurs',
+    'étape du tour',
   ],
   'Politique & Droit': [
     'homme politique', 'femme politique', 'personnalité politique', 'politicien', 'politicienne', 'ministre',
@@ -98,6 +110,9 @@ const DOMAINES = {
     'référendum', 'féministe', 'résistant', 'résistante', 'dissident', 'révolutionnaire', 'monarchiste',
     'anarchiste', 'communiste', 'socialiste', 'idéologie', 'organisation internationale', 'administration', 'front national', 'front populaire',
     'lois', 'législation', 'fonction publique', 'service public', 'diplomatique', 'organisme international', 'homme d\'état', 'femme d\'état', 'mouvement social', 'gendarmerie', 'police', 'ségrégation', 'devise nationale',
+    // Suggestions du 2026-10-13
+    'fonctionnaire', 'ambassade', 'consulaire', 'consulat', 'conseil de sécurité', 'nations unies', 'unesco',
+    'humanitaire', 'grève', 'syndicat', 'sanction', 'décret', 'lgbt', 'pacifiste', 'mondialiste',
   ],
   'Économie': [
     'homme d\'affaires', 'femme d\'affaires', 'entrepreneur', 'entrepreneuse', 'chef d\'entreprise',
@@ -109,6 +124,8 @@ const DOMAINES = {
     'mine', 'monnaie', 'bourse', 'publicitaire', 'publicité', 'restaurateur', 'chef cuisinier', 'cuisinier',
     'cuisinière', 'siège social', 'gastronomie', 'plat', 'recette', 'fromage', 'vin', 'bière', 'boisson',
     'pain', 'pâtisserie', 'gâteau', 'dessert', 'confiserie', 'cuisine', 'spécialité culinaire', 'centre commercial', 'appellation d\'origine', 'épice', 'économie', 'hôtel', 'hôtels', 'chaîne d\'hôtels',
+    // Suggestions du 2026-10-13
+    'culinaire', 'sidérurgi*', 'charbonnage', 'taxe', 'taxation',
   ],
   'Médias': [
     'journaliste', 'humoriste', 'animateur', 'animatrice', 'présentateur', 'présentatrice', 'chroniqueur',
@@ -119,6 +136,8 @@ const DOMAINES = {
     'réseau social', 'blogueur', 'blogueuse', 'personnalité de la télévision', 'télé-réalité', 'jeu télévisé',
     'humour', 'one-man-show', 'stand-up', 'imitateur', 'imitatrice',
     'miss', 'émetteur', 'audiovisuel',
+    // Suggestions du 2026-10-13
+    'média', 'concours de beauté',
   ],
   'Sciences': [
     'scientifique', 'chercheur', 'chercheuse', 'physicien', 'physicienne', 'chimiste', 'biologiste',
@@ -136,6 +155,9 @@ const DOMAINES = {
     'médecine', 'anatomie', 'scissure', 'composé chimique', 'composé organique', 'composé inorganique', 'distribution de probabilité', 'navigateur web', 'gaz noble', 'muscle', 'os', 'nerf', 'organe', 'hôpital', 'centre hospitalier',
     'minéral', 'roche', 'alliage', 'particule', 'langue', 'dialecte', 'alphabet', 'écriture', 'grammaire',
     'sismologue', 'sociolinguiste', 'romaniste', 'égyptologue', 'paléontologue', 'thérapie', 'tumeur', 'cancer', 'cortex', 'pathologique', 'fibre alimentaire', 'gélule', 'philosophique', 'conjecture', 'composés chimiques', 'météorologie', 'nuage', 'nuages', 'cœur', 'sang', 'acidité', 'outil frontend', 'programmation',
+    // Suggestions du 2026-10-13
+    'agronome', 'herpétologiste', 'politologue', 'linguistique', 'diacritique', 'ponctuation', 'unicode', 'lettre arabe',
+    'protocole', 'chiffrement', 'sismi*', 'galvanique', 'enseignement',
   ],
   'Espace': [
     'astéroïde', 'galaxie', 'constellation', 'nébuleuse', 'étoile', 'planète', 'exoplanète', 'planète mineure',
@@ -144,6 +166,8 @@ const DOMAINES = {
     'astronaute', 'cosmonaute', 'astronome', 'objet céleste', 'objet transneptunien', 'système stellaire',
     'naine blanche', 'naine brune', 'géante rouge', 'météorite', 'astronomie', 'spatial', 'spatiale',
     'lanceur', 'astronomique', 'fusée',
+    // Suggestions du 2026-10-13
+    'corona', 'satellite',
   ],
   'Nature': [
     'espèce', 'genre de plantes', 'genre d\'insectes', 'genre d\'araignées', 'genre de poissons',
@@ -158,6 +182,8 @@ const DOMAINES = {
     'fougère', 'orchidée', 'parc national', 'parc naturel', 'réserve naturelle', 'aire protégée', 'forêt',
     'écosystème', 'écosystèmes', 'biome',
     'espace naturel', 'parc zoologique', 'parcs zoologiques', 'zoo', 'aquarium', 'genre d\'animaux', 'aromatique', 'œuf',
+    // Suggestions du 2026-10-13
+    'fossil*', 'super-famille', 'nématode', 'opilion', 'psoque', 'eucaryote', 'espace vert',
   ],
   'Histoire': [
     'bataille', 'guerre', 'siège', 'sac de', 'révolution', 'dynastie', 'empire', 'royaume', 'roi', 'reine',
@@ -173,6 +199,9 @@ const DOMAINES = {
     'meurtrier', 'affaire criminelle', 'gangster', 'mafieux', 'espion', 'espionne', 'condottiere',
     'traité de paix', 'sénateur romain', 'consul romain', 'personnalité de la rome antique', 'grec ancien', 'personnage historique',
     'sultan', 'sultanat', 'khaganat', 'khanat', 'émirat', 'hiéroglyphe', 'peuple', 'peuple autochtone', 'ethnie', 'tribu', 'résistance française', 'camp de concentration', 'mercenaire', 'mercenaires', 'étude et narration du passé',
+    // Suggestions du 2026-10-13
+    'année', 'mois', 'chronologie', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche',
+    'consul', 'tribun', 'doge', 'sénéchal', 'romain', 'révolte', 'soulèvement',
   ],
   'Religion & Mythes': [
     'mythologie', 'personnage de la mythologie', 'homme d\'église', 'femme d\'église', 'dieu', 'déesse', 'divinité', 'saint', 'sainte', 'pape',
@@ -183,6 +212,8 @@ const DOMAINES = {
     'secte', 'bible', 'biblique', 'coran', 'héros grec', 'héroïne grecque', 'créature légendaire',
     'créature mythologique', 'fétiche', 'chamanisme', 'calife', 'imam', 'rabbin', 'pasteur', 'personnage biblique',
     'prélat', 'archidiocèse', 'catholique', 'protestant', 'orthodoxe', 'missionnaire', 'jésuite', 'prédicateur', 'chartreuse', 'liturgie', 'vierge marie', 'apparition mariale', 'mahomet', 'jésus', 'islamique',
+    // Suggestions du 2026-10-13
+    'gourou', 'sikhisme', 'bouddh*', 'soufisme', 'islam', 'aumônier', 'kabbale', 'concile', 'confucianisme',
   ],
   'Géographie': [
     'commune', 'village', 'ville', 'municipalité', 'localité', 'hameau', 'lieu-dit', 'département',
@@ -196,6 +227,9 @@ const DOMAINES = {
     'chute d\'eau', 'gorge', 'grotte', 'oblast', 'voïvodie', 'gmina', 'powiat', 'raïon', 'municipio',
     'préfecture', 'subdivision', 'drapeau', 'frontière', 'rue', 'voie', 'avenue', 'boulevard', 'place publique',
     'ville-préfecture', 'colline', 'point culminant', 'freguesia', 'sebkha', 'géographie',
+    // Suggestions du 2026-10-13
+    'upazila', 'unité urbaine', 'banlieue', 'bourg', 'oasis', 'îlot', 'chutes d\'eau',
+    'census designated place', 'secteur communautaire', 'découpage administratif', 'micro-région', 'microrégion', 'méridien',
   ],
   'Patrimoine': [
     'château', 'château fort', 'monument', 'monument historique', 'musée', 'cathédrale', 'chapelle', 'abbaye',
@@ -216,6 +250,9 @@ const DOMAINES = {
     'limitation de vitesse', 'signalisation', 'panneau', 'transport', 'transports en commun', 'aviation',
     'constructeur automobile', 'tunnel', 'échangeur', 'pont ferroviaire', 'viaduc', 'canal de navigation',
     'trolleybus', 'voie de communication', 'supercar', 'réseau ter', 'noctambus',
+    // Suggestions du 2026-10-13
+    'hydravion', 'ferry', 'sloop', 'torpilleur', 'écluse', 'vélopartage', 'unterseeboot', 'limitations de vitesse',
+    'chemins de fer',
   ],
   'Fiction & Jeux': [
     'personnage de fiction', 'personnage', 'de fiction', 'fictif', 'fictive', 'univers de fiction',
@@ -358,15 +395,22 @@ const scan = (text, onlyAtStart = false) => {
 // Classe une carte { t: titre, d: description }.
 // Renvoie { etiquettes: [...], statut: 'classee'|'a_traiter'|'ignoree'|'inconnue', source, mots }.
 const classer = (carte) => {
+  // le titre : la parenthèse d'abord (« Cherry (film, 2021) »)
+  const titre = () => {
+    const paren = (carte.t.match(/\(([^)]*)\)/) || [])[1] || '';
+    const reste = carte.t.replace(/\([^)]*\)/g, ' ').trim();
+    return [...scan(paren), ...scan(reste).map((h) => ({ ...h, pos: h.pos + 1000 }))];
+  };
   let hits, source;
   if (carte.d && carte.d.trim()) {
     hits = scan(carte.d); source = 'description';
+    // description sans domaine (et pas une page à ignorer) : le titre en secours (« Miss Moldavie — concours de beauté »)
+    if (!hits.some((h) => h.kind === 'sur' || h.kind === 'ignore')) {
+      const t = titre();
+      if (t.some((h) => h.kind === 'sur')) { hits = [...hits, ...t.map((h) => ({ ...h, pos: h.pos + 10000 }))]; source = 'titre'; }
+    }
   } else {
-    // sans description : le titre (la parenthèse d'abord : « Cherry (film, 2021) »)
-    const paren = (carte.t.match(/\(([^)]*)\)/) || [])[1] || '';
-    const reste = carte.t.replace(/\([^)]*\)/g, ' ').trim();
-    hits = [...scan(paren), ...scan(reste).map((h) => ({ ...h, pos: h.pos + 1000 }))];
-    source = 'titre';
+    hits = titre(); source = 'titre';
   }
   let doms = [];
   for (const h of hits) if (h.kind === 'sur') for (const d of h.doms) if (!doms.includes(d)) doms.push(d);
@@ -378,8 +422,9 @@ const classer = (carte) => {
   }
   const mots = hits.map((h) => h.kw);
   if (doms.length) return { etiquettes, statut: 'classee', source, mots };
-  if (hits.some((h) => h.kind === 'ambigu')) return { etiquettes: [...etiquettes, A_TRAITER], statut: 'a_traiter', source, mots };
+  // une page à ignorer l'emporte sur un mot ambigu : « liste d'un projet Wikimedia »
   if (hits.some((h) => h.kind === 'ignore')) return { etiquettes, statut: 'ignoree', source, mots };
+  if (hits.some((h) => h.kind === 'ambigu')) return { etiquettes: [...etiquettes, A_TRAITER], statut: 'a_traiter', source, mots };
   return { etiquettes, statut: 'inconnue', source, mots };
 };
 

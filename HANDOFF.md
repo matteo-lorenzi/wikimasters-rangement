@@ -4,9 +4,16 @@ Mis à jour le 2026-10-13. Les instructions durables sont dans `CLAUDE.md` ; ce 
 
 ## État
 
-- **v1.9.1** (2026-10-13, à installer par la personne) : bouton « Suggestions » (voir Chantier plus bas).
+- **v1.9.2** (2026-10-13, à installer par la personne) : règles enrichies d'après le 2e tour de Suggestions (voir plus bas). v1.9.1 : bouton « Suggestions » (voir Chantier plus bas).
 - Premier tour de Suggestions (v1.9.0, 2026-10-13) : 826 sans étiquette = 577 sans règle, 0 à traiter, 235 ignorées, 14 rangeables ; 50 portent `!À traiter`. Seulement 3 mots à 5 cartes ou plus (france, politique, voie) : les cartes sans règle sont presque toutes isolées. Décidé avec la personne : `voie` → Géographie et `voie verte` → Transports ; `politique` refusé (dans `PAS_SUGGERER`) ; pays jamais proposés ; seuil abaissé à 3 cartes ; bouton « Copier les cartes sans règle » (v1.9.1) pour que Claude propose des règles aux cartes isolées ; les 235 ignorées restent sans étiquette (pas de `!Homonymie`).
-- Prochaine étape : la personne installe la v1.9.1, relance Suggestions (Relire), colle les deux listes ; Claude propose des règles par groupe, la personne valide, cas réels dans `test/classement.test.js`, puis règles.
+- 2e tour (v1.9.1, 2026-10-13) : 826 sans étiquette = 572 sans règle, 235 ignorées, 19 rangeables ; 50 portent `!À traiter`. ~60 % des 572 n'ont **pas de description** (titre seul, souvent un nom propre) : aucune règle de mots ne les rangera. Décidé avec la personne (v1.9.2) :
+  - **titre en secours** : si la description ne donne aucun domaine (et n'est pas une page à ignorer), le moteur lit aussi le titre ;
+  - **« ignorée » passe avant « mot ambigu »** (« liste d'un projet Wikimedia » n'est plus `!À traiter`) ;
+  - ~120 mots ajoutés aux 15 domaines (marqués « Suggestions du 2026-10-13 » dans `regles.js`), un cas réel par groupe dans `test/classement.test.js` ;
+  - **mots risqués refusés** : date, conflit, industrie, commerce, justice, manifestation (cas « Friperie » et « 16 septembre » restent sans règle dans les tests).
+- **Wikipédia pour les cartes sans description** (première phrase de l'article, « est un/une … », API publique en lecture seule) : accord de principe, **à reparler en détail avec la personne pour optimiser les appels** avant d'écrire quoi que ce soit.
+- Effet de bord à trancher avec la personne : « Défilé de l'Écluse — défilé situé dans l'Ain, France » part en **Transports** (« écluse » dans le titre, lu en secours) ; options : `défilé` en Géographie (risque : défilé de mode, défilé militaire) ou accepter.
+- Prochaine étape : la personne installe la v1.9.2, lance Ranger (les cartes que les nouvelles règles rangent), puis Suggestions (Relire) pour voir le nouveau compteur.
 - Avant : **v1.8.4** (à installer par la personne ; v1.8.4 assouplit la suppression des anciennes étiquettes ; premier vrai rangement fait en v1.8.2, voir plus bas).
 - Dépôt sur GitHub (`matteo-lorenzi/wikimasters-rangement`, branche `main`), copie durable.
 - **Tests recréés** (`docs/tests.md`) : moteur sur 51 cartes réelles + pièges, faux site jsdom (rechargement de page compris), automatisation de la page, `scripts/regressions.py` (15 mutations, toutes détectées en v1.8.3 ; ~2 min 30, chaque mutation ne lance que son test).
@@ -37,11 +44,10 @@ Mis à jour le 2026-10-13. Les instructions durables sont dans `CLAUDE.md` ; ce 
 
 1. **Migration faite** par la personne (2026-10-13, en v1.8.4).
 2. **Chantier « moins de cartes sans étiquette »** (Suggestions livré ; tour en cours, voir État) (décidé avec la personne le 2026-10-13, détail plus bas) : Suggestions (v1.9.0-v1.9.1), puis retrait de `!À traiter`, puis « Compléter les cartes rangées ». Entre deux versions, un tour réel Suggestions → règles → Ranger pour voir l'effet sur le compteur.
-3. Les **21 cartes « pas de domaine »** du rapport de Migration (Saison 2015 des Astros de Houston, McLaren MP4-28, Hippodrome de Dieppe, Borough de Denali, Stanley Benham, David B. Samadi, John L. Lewis, Raymond Montaner, Jean de Croonders, Mary Butters, The Irish Press, TM Racing, Wilfried Huber, Radiorama, Guido Capello Vincentinus, Hanabie., Iouri Matvéïévitch Sokolov, Xenia Gueorguievna de Russie, Pierre Fehlmann, Français de Corse, Bourboulon) et les **4 cartes mal classées** ci-dessous passent par le flux Suggestions (premiers cas réels) : cas réel dans `test/classement.test.js`, puis la règle. Les 16 de `#Nom de famille` restent ignorées.
+3. Les **21 cartes « pas de domaine »** du rapport de Migration (Saison 2015 des Astros de Houston, McLaren MP4-28, Hippodrome de Dieppe, Borough de Denali, Stanley Benham, David B. Samadi, John L. Lewis, Raymond Montaner, Jean de Croonders, Mary Butters, The Irish Press, TM Racing, Wilfried Huber, Radiorama, Guido Capello Vincentinus, Hanabie., Iouri Matvéïévitch Sokolov, Xenia Gueorguievna de Russie, Pierre Fehlmann, Français de Corse, Bourboulon) et les **3 cartes mal classées** ci-dessous (Qué bonito amor réglée en v1.9.2) passent par le flux Suggestions (premiers cas réels) : cas réel dans `test/classement.test.js`, puis la règle. Les 16 de `#Nom de famille` restent ignorées.
    - « Armed Forces Bowl 2017 — match de football universitaire américain… à Fort Worth » → Sport, **Sciences** (universitaire), **Patrimoine** (Fort Worth) ;
    - « Le Secret de la salamandre — album de bande dessinée » → **Musique** + Littérature ;
    - « Programmation spaghetti — code source… gestion des événements » → **Histoire** (événements) ;
-   - « Qué bonito amor — telenovela mexicaine » → rien (telenovela absent).
 4. **Finir le premier rangement** avec la personne et relire son journal des bugs.
 
 ## Chantier : moins de cartes sans étiquette (décidé le 2026-10-13)

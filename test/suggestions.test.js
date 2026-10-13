@@ -14,14 +14,14 @@ const nationalites = ['mexicaine', 'colombienne', 'brésilienne', 'vénézuélie
 
 // Cartes inventées, mais avec des descriptions du genre de celles de la collection.
 const collection = () => [
-  // sans étiquette, sans règle : « telenovela » absent des règles (cas de « Qué bonito amor »)
-  ...serie(6, (i) => ({ t: `Novela ${i}`, d: `telenovela ${nationalites[i]}` })),
+  // sans étiquette, sans règle : « zarzuela » absent des règles
+  ...serie(6, (i) => ({ t: `Novela ${i}`, d: `zarzuela ${nationalites[i]}` })),
   // déjà étiquetées à la main : toutes en Cinéma & TV
-  ...serie(6, (i) => ({ t: `Novela rangée ${i}`, d: `telenovela ${nationalites[i]}`, tags: ['Cinéma & TV'] })),
+  ...serie(6, (i) => ({ t: `Novela rangée ${i}`, d: `zarzuela ${nationalites[i]}`, tags: ['Cinéma & TV'] })),
   // mot ambigu seul (joueur) : à traiter ; 5 sans étiquette, 2 déjà marquées « !À traiter »
   ...serie(3, (i) => ({ t: `Bouliste ${i}`, d: 'joueur de pétanque' })),
   ...serie(2, (i) => ({ t: `Bouliste femme ${i}`, d: 'joueuse de pétanque' })),
-  ...serie(2, (i) => ({ t: `Bouliste marqué ${i}`, d: 'joueur de pétanque', tags: ['!À traiter'] })),
+  ...serie(2, (i) => ({ t: `Bouliste suivi ${i}`, d: 'joueur de pétanque', tags: ['!À traiter'] })),
   // étiquetées sans majorité nette : 3 Sport, 2 Fiction & Jeux (60 %)
   ...serie(3, (i) => ({ t: `Pétanque sport ${i}`, d: 'tournoi de pétanque', tags: ['Sport'] })),
   ...serie(2, (i) => ({ t: `Pétanque jeu ${i}`, d: 'pétanque de salon', tags: ['Fiction & Jeux'] })),
@@ -31,9 +31,9 @@ const collection = () => [
   ...serie(3, (i) => ({ t: `Webtoon ${i}`, d: 'webtoon' })),
   ...serie(2, (i) => ({ t: `Fanzine ${i}`, d: 'fanzine' })),
   // jamais proposés : un pays ; « politique », refusé par la personne (2026-10-13)
-  { t: "Défilé de l'Écluse", d: "défilé situé dans l'Ain, France" },
-  { t: 'Administrateur du Sénat', d: 'fonction en France' },
-  { t: 'Chevalier', d: 'titre honorifique en France' },
+  { t: 'Endroit A', d: "défilé situé dans l'Ain, France" },
+  { t: 'Endroit B', d: 'fonction en France' },
+  { t: 'Endroit C', d: 'titre honorifique en France' },
   { t: 'Politique en Guyane' }, { t: 'Politique dans la Seine-Saint-Denis' }, { t: 'Politique au Groenland' },
   // ignorées volontairement, et rangeables par les règles actuelles
   ...serie(3, (i) => ({ t: `Dupont ${i}`, d: "page d'homonymie de Wikimédia" })),
@@ -45,18 +45,18 @@ test('suggestions : compteur des cartes sans domaine, mots inconnus des règles,
   const s = site.wmr.suggestions(collection());
   assert.deepEqual({ ...s.compteur }, { sansEtiquette: 57, rangeables: 2, inconnues: 47, aTraiter: 5, ignorees: 3, marqueesATraiter: 2 });
   const vus = Object.fromEntries(s.candidats.map((c) => [c.mot, c]));
-  assert.deepEqual(Array.from(s.candidats, (c) => c.mot), ['manhwa', 'pétanque', 'telenovela', 'webtoon'], 'triés par nombre de cartes ; ni mots vides, ni mots connus, ni pays, ni mots refusés, ni expressions déjà couvertes par un mot');
-  assert.deepEqual([vus.manhwa.n, vus['pétanque'].n, vus.telenovela.n], [30, 7, 6], '« !À traiter » compte avec les cartes sans étiquette');
-  assert.equal(vus.telenovela.dom, 'Cinéma & TV');
-  assert.equal(vus.telenovela.part, 1);
+  assert.deepEqual(Array.from(s.candidats, (c) => c.mot), ['manhwa', 'pétanque', 'zarzuela', 'webtoon'], 'triés par nombre de cartes ; ni mots vides, ni mots connus, ni pays, ni mots refusés, ni expressions déjà couvertes par un mot');
+  assert.deepEqual([vus.manhwa.n, vus['pétanque'].n, vus.zarzuela.n], [30, 7, 6], '« !À traiter » compte avec les cartes sans étiquette');
+  assert.equal(vus.zarzuela.dom, 'Cinéma & TV');
+  assert.equal(vus.zarzuela.part, 1);
   assert.equal(vus['pétanque'].dom, null, '60 % : pas de majorité nette');
   assert.equal(vus['pétanque'].tete, 'Sport');
   assert.equal(vus.manhwa.dom, null);
   assert.equal(vus.manhwa.nouvelle, true, '30 cartes sans domaine connu');
-  assert.equal(vus.telenovela.nouvelle, false);
+  assert.equal(vus.zarzuela.nouvelle, false);
   assert.equal(vus['pétanque'].nouvelle, false);
-  assert.equal(vus.telenovela.exemples.length, 3);
-  assert.ok(vus.telenovela.exemples.every((c) => !c.tags.length), 'exemples pris parmi les cartes à ranger');
+  assert.equal(vus.zarzuela.exemples.length, 3);
+  assert.ok(vus.zarzuela.exemples.every((c) => !c.tags.length), 'exemples pris parmi les cartes à ranger');
   site.fermer();
 });
 
@@ -79,7 +79,7 @@ test('Suggestions : lecture de la collection par l\'API, compteur et texte à co
   assert.match(p.texte(), /57 sans étiquette/);
   assert.match(p.texte(), /47 sans règle/);
   const copie = p.root().querySelector('.out textarea').value;
-  assert.match(copie, /^telenovela — 6 cartes — Cinéma & TV \(100 %\) — ex\. : Novela \d — telenovela \S+ ; /m);
+  assert.match(copie, /^zarzuela — 6 cartes — Cinéma & TV \(100 %\) — ex\. : Novela \d — zarzuela \S+ ; /m);
   assert.match(copie, /^manhwa — 30 cartes — nouvelle étiquette \? — ex\./m);
   assert.match(copie, /^pétanque — 7 cartes — \? \(Sport 60 %\) — ex\./m);
   // toutes les cartes à revoir, pour que Claude propose des règles aussi aux cartes isolées
@@ -88,7 +88,7 @@ test('Suggestions : lecture de la collection par l\'API, compteur et texte à co
   assert.match(cartes, /^Fanzine 0 — fanzine$/m);
   assert.match(cartes, /^Politique en Guyane$/m, 'carte sans description : le titre seul');
   assert.match(cartes, /^Cartes avec un mot ambigu seul \(7\)/m);
-  assert.match(cartes, /^Bouliste marqué 0 — joueur de pétanque$/m);
+  assert.match(cartes, /^Bouliste suivi 0 — joueur de pétanque$/m);
   assert.doesNotMatch(cartes, /Dupont|Footeux|Novela rangée/, 'ni ignorées, ni rangeables, ni déjà étiquetées');
   assert.ok(p.bouton(/Copier les cartes sans règle/));
   assert.ok(!site.actions.some((a) => ['filtre', 'page', 'recherche', 'pose', 'clic'].includes(a.type)), 'lecture seule, par l\'API');

@@ -230,7 +230,7 @@ const grosStock = () => [
   ...serie(20, (i) => ({ t: nom(300 + i), d: 'astéroïde', obtenu: date(400 + i) })),
   ...serie(30, (i) => ({ t: nom(400 + i), d: 'xyz sans règle', obtenu: date(500 + i) })),
   // intrus : la recherche « footballeur » les trouve par le titre, mais le moteur ne leur donne rien (ou autre chose)
-  { t: "Footballeur d'or", d: 'xyz sans règle', obtenu: date(600) },
+  { t: 'Footballeurland', d: 'xyz sans règle', obtenu: date(600) },
   { t: 'Footballeur (homonymie)', d: "page d'homonymie de Wikimédia", obtenu: date(601) },
   { t: 'Le Footballeur', d: 'film de 1974', obtenu: date(602) },
 ];
@@ -250,7 +250,7 @@ test('Ranger, gros stock : recherches groupées d\'abord, puis page par page ; c
   assert.deepEqual(tags(nom(200)), ['Politique & Droit']);
   assert.deepEqual(tags(nom(303)), ['Espace']);
   assert.deepEqual(tags(nom(401)), [], 'sans règle : reste sans étiquette');
-  assert.deepEqual(tags("Footballeur d'or"), [], 'intrus sans règle : jamais coché');
+  assert.deepEqual(tags('Footballeurland'), [], 'intrus sans règle : jamais coché');
   assert.deepEqual(tags('Footballeur (homonymie)'), []);
   assert.deepEqual(tags('Le Footballeur'), ['Cinéma & TV'], 'intrus d\'un autre domaine : seulement son propre domaine');
   assert.ok(site.actions.some((a) => a.type === 'recherche' && /footba/i.test(a.q)), 'recherche groupée lancée');
