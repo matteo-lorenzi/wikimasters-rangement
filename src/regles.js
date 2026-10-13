@@ -229,6 +229,25 @@ const IGNORER = [
   'page d\'homonymie', 'page de liste', 'projet wikimedia', 'nom de famille', 'prénom', 'patronyme', 'homonymie',
 ];
 
+// Mots que le bouton « Suggestions » ne propose jamais : les nationalités (la barre de recherche suffit).
+// Le féminin et le pluriel suivent, comme pour les domaines : coréen → coréenne.
+const PAS_SUGGERER = [
+  'africain', 'albanais', 'algérien', 'allemand', 'alsacien', 'américain', 'anglais', 'arménien', 'argentin',
+  'asiatique', 'australien', 'autrichien', 'azerbaïdjanais', 'basque', 'belge', 'biélorusse', 'birman', 'bolivien',
+  'bosnien', 'breton', 'brésilien', 'britannique', 'bulgare', 'cambodgien', 'camerounais', 'canadien', 'catalan',
+  'chilien', 'chinois', 'colombien', 'congolais', 'coréen', 'corse', 'croate', 'cubain', 'danois', 'dominicain',
+  'écossais', 'égyptien', 'équatorien', 'espagnol', 'estonien', 'éthiopien', 'européen', 'finlandais', 'flamand',
+  'français', 'gallois', 'géorgien', 'ghanéen', 'grec', 'grecque', 'guatémaltèque', 'haïtien', 'hondurien',
+  'hongrois', 'indien', 'indonésien', 'irakien', 'iranien', 'irlandais', 'islandais', 'israélien', 'italien',
+  'ivoirien', 'jamaïcain', 'japonais', 'kazakh', 'kényan', 'letton', 'libanais', 'lituanien', 'luxembourgeois',
+  'macédonien', 'malaisien', 'malien', 'marocain', 'mexicain', 'monégasque', 'mongol', 'néerlandais',
+  'néo-zélandais', 'népalais', 'nigérian', 'nord-coréen', 'norvégien', 'pakistanais', 'panaméen', 'paraguayen',
+  'péruvien', 'philippin', 'polonais', 'portoricain', 'portugais', 'québécois', 'roumain', 'russe', 'saoudien',
+  'sénégalais', 'serbe', 'singapourien', 'slovaque', 'slovène', 'soviétique', 'sud-africain', 'sud-coréen',
+  'suédois', 'suisse', 'syrien', 'taïwanais', 'tchèque', 'thaïlandais', 'tunisien', 'turc', 'turque', 'ukrainien',
+  'uruguayen', 'vénézuélien', 'vietnamien', 'wallon',
+];
+
 // Collections personnelles : la carte reçoit l'étiquette si TOUS les groupes
 // ont au moins un mot présent.
 const COLLECTIONS = [

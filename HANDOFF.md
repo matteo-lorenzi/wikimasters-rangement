@@ -4,7 +4,8 @@ Mis à jour le 2026-10-13. Les instructions durables sont dans `CLAUDE.md` ; ce 
 
 ## État
 
-- Version livrée : **v1.8.4** (à installer par la personne ; v1.8.4 assouplit la suppression des anciennes étiquettes ; premier vrai rangement fait en v1.8.2, voir plus bas).
+- **v1.9.0** (2026-10-13, à installer par la personne) : bouton « Suggestions » (voir Chantier plus bas). Prochaine étape : la personne le lance sur sa collection et colle la liste « Copier pour Claude » ; on choisit les mots ensemble, cas réels dans `test/classement.test.js`, puis règles.
+- Avant : **v1.8.4** (à installer par la personne ; v1.8.4 assouplit la suppression des anciennes étiquettes ; premier vrai rangement fait en v1.8.2, voir plus bas).
 - Dépôt sur GitHub (`matteo-lorenzi/wikimasters-rangement`, branche `main`), copie durable.
 - **Tests recréés** (`docs/tests.md`) : moteur sur 51 cartes réelles + pièges, faux site jsdom (rechargement de page compris), automatisation de la page, `scripts/regressions.py` (15 mutations, toutes détectées en v1.8.3 ; ~2 min 30, chaque mutation ne lance que son test).
 - v1.8.2, demandé par la personne le 2026-10-12 :
@@ -33,7 +34,7 @@ Mis à jour le 2026-10-13. Les instructions durables sont dans `CLAUDE.md` ; ce 
 ## Suite
 
 1. **Migration faite** par la personne (2026-10-13, en v1.8.4).
-2. **Chantier « moins de cartes sans étiquette »** (décidé avec la personne le 2026-10-13, détail plus bas) : v1.9.0 Suggestions, puis v1.9.1, puis v1.9.2. Entre deux versions, un tour réel Suggestions → règles → Ranger pour voir l'effet sur le compteur.
+2. **Chantier « moins de cartes sans étiquette »** (v1.9.0 livrée : premier tour Suggestions → règles → Ranger à faire avec la personne) (décidé avec la personne le 2026-10-13, détail plus bas) : v1.9.0 Suggestions, puis v1.9.1, puis v1.9.2. Entre deux versions, un tour réel Suggestions → règles → Ranger pour voir l'effet sur le compteur.
 3. Les **21 cartes « pas de domaine »** du rapport de Migration (Saison 2015 des Astros de Houston, McLaren MP4-28, Hippodrome de Dieppe, Borough de Denali, Stanley Benham, David B. Samadi, John L. Lewis, Raymond Montaner, Jean de Croonders, Mary Butters, The Irish Press, TM Racing, Wilfried Huber, Radiorama, Guido Capello Vincentinus, Hanabie., Iouri Matvéïévitch Sokolov, Xenia Gueorguievna de Russie, Pierre Fehlmann, Français de Corse, Bourboulon) et les **4 cartes mal classées** ci-dessous passent par le flux Suggestions (premiers cas réels) : cas réel dans `test/classement.test.js`, puis la règle. Les 16 de `#Nom de famille` restent ignorées.
    - « Armed Forces Bowl 2017 — match de football universitaire américain… à Fort Worth » → Sport, **Sciences** (universitaire), **Patrimoine** (Fort Worth) ;
    - « Le Secret de la salamandre — album de bande dessinée » → **Musique** + Littérature ;

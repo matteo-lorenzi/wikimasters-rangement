@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WikiMasters — Rangement des cartes
 // @namespace    wikimasters-rangement
-// @version      1.8.4
+// @version      1.9.0
 // @description  Étiquette tes cartes WikiMasters par domaine (aperçu avant application, jamais de défausse).
 // @match        https://www.wiki-masters.com/*
 // @match        https://wiki-masters.com/*
@@ -241,6 +241,25 @@ const AMBIGUS = [
 // Reconnues mais volontairement sans étiquette (la recherche suffit).
 const IGNORER = [
   'page d\'homonymie', 'page de liste', 'projet wikimedia', 'nom de famille', 'prénom', 'patronyme', 'homonymie',
+];
+
+// Mots que le bouton « Suggestions » ne propose jamais : les nationalités (la barre de recherche suffit).
+// Le féminin et le pluriel suivent, comme pour les domaines : coréen → coréenne.
+const PAS_SUGGERER = [
+  'africain', 'albanais', 'algérien', 'allemand', 'alsacien', 'américain', 'anglais', 'arménien', 'argentin',
+  'asiatique', 'australien', 'autrichien', 'azerbaïdjanais', 'basque', 'belge', 'biélorusse', 'birman', 'bolivien',
+  'bosnien', 'breton', 'brésilien', 'britannique', 'bulgare', 'cambodgien', 'camerounais', 'canadien', 'catalan',
+  'chilien', 'chinois', 'colombien', 'congolais', 'coréen', 'corse', 'croate', 'cubain', 'danois', 'dominicain',
+  'écossais', 'égyptien', 'équatorien', 'espagnol', 'estonien', 'éthiopien', 'européen', 'finlandais', 'flamand',
+  'français', 'gallois', 'géorgien', 'ghanéen', 'grec', 'grecque', 'guatémaltèque', 'haïtien', 'hondurien',
+  'hongrois', 'indien', 'indonésien', 'irakien', 'iranien', 'irlandais', 'islandais', 'israélien', 'italien',
+  'ivoirien', 'jamaïcain', 'japonais', 'kazakh', 'kényan', 'letton', 'libanais', 'lituanien', 'luxembourgeois',
+  'macédonien', 'malaisien', 'malien', 'marocain', 'mexicain', 'monégasque', 'mongol', 'néerlandais',
+  'néo-zélandais', 'népalais', 'nigérian', 'nord-coréen', 'norvégien', 'pakistanais', 'panaméen', 'paraguayen',
+  'péruvien', 'philippin', 'polonais', 'portoricain', 'portugais', 'québécois', 'roumain', 'russe', 'saoudien',
+  'sénégalais', 'serbe', 'singapourien', 'slovaque', 'slovène', 'soviétique', 'sud-africain', 'sud-coréen',
+  'suédois', 'suisse', 'syrien', 'taïwanais', 'tchèque', 'thaïlandais', 'tunisien', 'turc', 'turque', 'ukrainien',
+  'uruguayen', 'vénézuélien', 'vietnamien', 'wallon',
 ];
 
 // Collections personnelles : la carte reçoit l'étiquette si TOUS les groupes
@@ -947,6 +966,81 @@ const motsGroupes = (cartes, plans) => {
   return choix;
 };
 
+// ── Suggestions : les mots que les règles ne connaissent pas encore ──
+// Sur les cartes restées sans domaine (sans étiquette, ou « !À traiter ») que les règles ne rangent pas,
+// on compte les mots et les expressions de 2 à 3 mots. Le domaine proposé est celui que portent les cartes
+// déjà étiquetées qui les contiennent. Rien n'est posé : la personne choisit, Claude écrit la règle dans regles.js.
+const SUGG_MIN_CARTES = 5;
+const SUGG_MAX = 50;
+const SUGG_MAJORITE = 0.7;
+const SUGG_NOUVELLE = 30;
+const MOTS_VIDES = new Set(('a au aux avec ce ces cet cette dans de des du elle elles en entre est et il ils la le les leur leurs '
+  + 'ou par pas pour qu que qui sa sans se ses son sur un une ancien ancienne anciens anciennes ne nee mort morte situe situee dont lors').split(' '));
+const PAS_SUGGERER_RE = PAS_SUGGERER.map(kwRegex);
+// Les mots d'une carte (sa description, sinon son titre) : clé sans accents → forme affichée.
+const ngrammes = (c) => {
+  const mots = ((c.d && c.d.trim()) || c.t).toLowerCase().replace(/[’`]/g, "'")
+    .split(/[^\p{L}\p{N}-]+/u).map((m) => m.replace(/^-+|-+$/g, '')).filter(Boolean);
+  const vide = (m) => m.length < 3 || MOTS_VIDES.has(norm(m));
+  const out = new Map();
+  for (let i = 0; i < mots.length; i++) {
+    for (let n = 1; n <= 3 && i + n <= mots.length; n++) {
+      const g = mots.slice(i, i + n);
+      if (/^\d+$/.test(g[n - 1])) break;
+      if (vide(g[0]) || vide(g[n - 1])) continue;
+      out.set(norm(g.join(' ')), g.join(' '));
+    }
+  }
+  return out;
+};
+const couvre = (re, k) => { re.lastIndex = 0; const m = re.exec(k); return !!m && m.index === 0 && m[0].length === k.length; };
+const dejaConnu = (k) => scan(k).some((h) => couvre(kwRegex(h.kw), k)) || PAS_SUGGERER_RE.some((re) => couvre(re, k));
+
+const suggestions = (cartes) => {
+  const compteur = { sansEtiquette: 0, rangeables: 0, inconnues: 0, aTraiter: 0, ignorees: 0, marqueesATraiter: 0 };
+  const cibles = [], etiquetees = [];
+  for (const c of cartes) {
+    if (c.tags.some((t) => DOMAINES[t])) { etiquetees.push(c); continue; }
+    const marquee = c.tags.includes(A_TRAITER);
+    if (c.tags.length && !marquee) continue; // seulement une étiquette de gestion ou de nationalité : hors objectif
+    const { statut } = classer(c);
+    if (marquee) compteur.marqueesATraiter++;
+    else { compteur.sansEtiquette++; compteur[{ classee: 'rangeables', inconnue: 'inconnues', a_traiter: 'aTraiter', ignoree: 'ignorees' }[statut]]++; }
+    if (statut === 'inconnue' || statut === 'a_traiter') cibles.push(c);
+  }
+  const parMot = new Map();
+  for (const c of cibles) {
+    for (const [k, mot] of ngrammes(c)) {
+      if (!parMot.has(k)) parMot.set(k, { mot, cartes: [] });
+      parMot.get(k).cartes.push(c);
+    }
+  }
+  const retenus = new Map([...parMot].filter(([k, x]) => x.cartes.length >= SUGG_MIN_CARTES && !dejaConnu(k)));
+  // une expression n'apporte rien quand un de ses mots (ou une expression plus courte) est déjà proposé
+  const tous = new Set(retenus.keys());
+  for (const k of tous) {
+    const m = k.split(' ');
+    for (let n = 1; n < m.length; n++) for (let i = 0; i + n <= m.length; i++) if (tous.has(m.slice(i, i + n).join(' '))) retenus.delete(k);
+  }
+  const doms = new Map([...retenus.keys()].map((k) => [k, { n: 0, par: {} }]));
+  for (const c of etiquetees) {
+    for (const k of ngrammes(c).keys()) {
+      const x = doms.get(k);
+      if (!x) continue;
+      x.n++;
+      for (const t of c.tags) if (DOMAINES[t]) x.par[t] = (x.par[t] || 0) + 1;
+    }
+  }
+  const candidats = [...retenus].map(([k, { mot, cartes: cs }]) => {
+    const { n: etiq, par } = doms.get(k);
+    const [tete, nb] = Object.entries(par).sort((a, b) => b[1] - a[1])[0] || [null, 0];
+    const part = etiq ? nb / etiq : 0;
+    const dom = etiq >= SUGG_MIN_CARTES && part >= SUGG_MAJORITE ? tete : null;
+    return { mot, n: cs.length, dom, tete, part, etiquetees: etiq, nouvelle: !dom && cs.length >= SUGG_NOUVELLE, exemples: cs.slice(0, 3) };
+  }).sort((a, b) => b.n - a.n || a.mot.localeCompare(b.mot)).slice(0, SUGG_MAX);
+  return { compteur, candidats };
+};
+
 const rapportSuppression = (lecture, plans) => {
   const lignes = [];
   for (const [nom, cles] of Object.entries(lecture.membres)) {
@@ -1066,6 +1160,7 @@ const monterUI = () => {
       <p class="hint">Rien n'est modifié sans que tu cliques sur « Appliquer ». Le script ne touche jamais à Défausser ni aux enchères.</p>
       <div class="row">
         <button class="b p" data-a="ranger">Ranger les nouvelles cartes</button>
+        <button class="b" data-a="suggestions">Suggestions</button>
         <button class="b" data-a="migration">Migration (une fois)</button>
         <button class="b d" data-a="stop" disabled>Arrêter</button>
         <button class="b" data-a="bugs">Journal des bugs</button>
@@ -1086,6 +1181,7 @@ const monterUI = () => {
   $('.x').onclick = () => montrer($('.pan'), false);
   root.querySelector('[data-a=stop]').onclick = () => { STOP = true; ui.statut('Arrêt demandé…'); };
   root.querySelector('[data-a=ranger]').onclick = () => lancer(() => modeRanger(false), { etape: 'lecture', tout: false });
+  root.querySelector('[data-a=suggestions]').onclick = () => lancer(modeSuggestions);
   root.querySelector('[data-a=migration]').onclick = () => lancer(modeMigration);
   root.querySelector('[data-a=bugs]').onclick = afficherBugs;
   majBoutonBugs();
@@ -1154,18 +1250,22 @@ const majBoutonBugs = () => {
   const n = store.get('bugs', []).length;
   if (b) b.textContent = 'Journal des bugs' + (n ? ` (${n})` : '');
 };
+// Le bouton [data-copier] du panneau copie le texte du textarea ; sinon le texte est sélectionné pour Ctrl+C.
+const brancherCopie = (t, ok) => {
+  const ta = ui.out.querySelector('textarea');
+  const copier = ui.out.querySelector('[data-copier]');
+  if (copier) copier.onclick = () => {
+    const echec = () => { ta.select(); ui.statut('Copie impossible ici : le texte est sélectionné, fais Ctrl+C.'); };
+    try { navigator.clipboard.writeText(t).then(() => ui.statut(ok), echec); } catch (e) { echec(); }
+  };
+};
 const afficherBugs = () => {
   const t = texteBugs();
   ui.out.innerHTML = '<h4>Journal des bugs</h4>' + (t ? `<p class="hint">Copie ce texte et colle-le dans la conversation avec Claude.</p>
     <textarea readonly rows="12">${esc(t)}</textarea>
     <div class="row"><button class="b p" data-copier>Copier</button><button class="b d" data-vider>Vider le journal</button></div>`
     : '<p class="hint">Aucun bug noté.</p>');
-  const ta = ui.out.querySelector('textarea');
-  const copier = ui.out.querySelector('[data-copier]');
-  if (copier) copier.onclick = () => {
-    const echec = () => { ta.select(); ui.statut('Copie impossible ici : le texte est sélectionné, fais Ctrl+C.'); };
-    try { navigator.clipboard.writeText(t).then(() => ui.statut('Journal copié : colle-le dans la conversation avec Claude.'), echec); } catch (e) { echec(); }
-  };
+  brancherCopie(t, 'Journal copié : colle-le dans la conversation avec Claude.');
   const vider = ui.out.querySelector('[data-vider]');
   if (vider) vider.onclick = () => { store.set('bugs', []); majBoutonBugs(); afficherBugs(); };
 };
@@ -1228,6 +1328,7 @@ const preparerRanger = (cartes, depuis) => {
 const appliquerLecture = async (l) => {
   const { plans, cibles, plusRecente, groupes } = preparerRanger(l.cartes, l.depuis);
   await appliquerRanger(cibles, plans, groupes);
+  store.set('lecture2_perimee', true);
   if (l.viaApi && plusRecente) store.set('ranger_depuis', plusRecente);
   store.set('ranger_lecture', null);
   store.set('ranger_fait', null);
@@ -1358,6 +1459,61 @@ const appliquerRanger = async (cibles, plans, groupes = []) => {
   ui.statut(manquent.length ? `Terminé, mais ${manquent.length} carte(s) non traitée(s) entièrement : relance « Ranger les nouvelles cartes ».` : `✅ ${cibles.length} carte(s) rangée(s).`);
 };
 
+// ── Mode Suggestions ──
+// Même lecture de la collection que Migration (« lecture2 ») ; un « Appliquer » de Ranger ou de Migration la rend périmée.
+const lireCollection = async () => {
+  let toutes;
+  try {
+    toutes = await lireApi({ sort: 'rarity' }, { progression: (n, tot) => ui.statut(`Lecture de la collection : ${n}${tot ? ' / ' + tot : ''} cartes…`) });
+  } catch (e) {
+    if (STOP || e instanceof PanneSite) throw e;
+    throw new Error(`Lecture de la collection impossible (${e.message}). Les suggestions ont besoin de la lecture rapide : réessaie dans quelques minutes.`);
+  }
+  const cartes = {}, membres = {};
+  for (const c of toutes) {
+    cartes[cle(c)] = c;
+    for (const t of c.tags) if (!NOUVELLES.has(t) && !(membres[t] = membres[t] || []).includes(cle(c))) membres[t].push(cle(c));
+  }
+  const lecture = { at: Date.now(), cartes, membres };
+  store.set('lecture2', lecture);
+  store.set('lecture2_perimee', false);
+  return lecture;
+};
+// Une lecture par l'écran (repli de Migration) ne voit que 2 étiquettes par carte : inutilisable ici.
+const lectureComplete = (l) => Object.values(l.cartes).every((c) => Array.isArray(c.tags) && !('plus' in c));
+const modeSuggestions = async () => {
+  const lecture = store.get('lecture2', null);
+  if (!lecture || !lectureComplete(lecture)) return afficherSuggestions(await lireCollection());
+  const perimee = store.get('lecture2_perimee', false);
+  ui.statut('');
+  ui.out.innerHTML = `<h4>Suggestions</h4>
+    <p class="hint">Lecture de la collection du ${new Date(lecture.at).toLocaleString()}${perimee ? ' : des étiquettes ont été posées depuis, mieux vaut la relire' : ''}.</p>
+    <div class="row"><button class="b${perimee ? '' : ' p'}" data-reutiliser>Réutiliser cette lecture</button>
+      <button class="b${perimee ? ' p' : ''}" data-relire>Relire${perimee ? ' (recommandé)' : ''} (≈ 2 min)</button></div>`;
+  ui.out.querySelector('[data-reutiliser]').onclick = () => afficherSuggestions(lecture);
+  ui.out.querySelector('[data-relire]').onclick = () => lancer(async () => afficherSuggestions(await lireCollection()));
+};
+const afficherSuggestions = (lecture) => {
+  const { compteur: k, candidats } = suggestions(Object.values(lecture.cartes));
+  const pct = (x) => Math.round(x * 100) + ' %';
+  const domaine = (c) => (c.dom ? `${c.dom} (${pct(c.part)})` : (c.nouvelle ? 'nouvelle étiquette ?' : '?') + (c.tete ? ` (${c.tete} ${pct(c.part)})` : ''));
+  const exemple = (x) => x.t + (x.d ? ' — ' + x.d : '');
+  const resume = `${k.sansEtiquette} sans étiquette : ${k.inconnues} sans règle · ${k.aTraiter} à traiter · ${k.ignorees} ignorée(s) · ${k.rangeables} que Ranger peut déjà ranger. `
+    + `Et ${k.marqueesATraiter} portent « !À traiter ».`;
+  const copie = [`Suggestions WikiMasters v${VERSION}, lecture du ${new Date(lecture.at).toLocaleString()}`, resume, '',
+    ...candidats.map((c) => `${c.mot} — ${c.n} cartes — ${domaine(c)} — ex. : ${c.exemples.map(exemple).join(' ; ')}`)].join('\n');
+  ui.statut(`${Object.keys(lecture.cartes).length} cartes lues, ${candidats.length} mot(s) à proposer.`);
+  ui.out.innerHTML = `<h4>Cartes sans domaine</h4><div>${esc(resume)}</div>
+    <h4>Mots que les règles ne connaissent pas</h4>
+    <p class="hint">Domaine proposé : celui de tes cartes déjà étiquetées qui contiennent ce mot (70 % au moins). Copie la liste pour Claude : il ajoutera aux règles les mots que tu choisis.</p>
+    ${candidats.length ? `<table>${candidats.map((c) => `<tr><td><details><summary>${esc(c.mot)} → ${esc(domaine(c))}</summary>${
+      c.exemples.map((x) => `<div class="li">${esc(exemple(x))}</div>`).join('')}</details></td><td class="n">${c.n}</td></tr>`).join('')}</table>`
+    : `<p class="hint">Aucun mot inconnu ne revient sur ${SUGG_MIN_CARTES} cartes ou plus.</p>`}
+    <textarea readonly rows="8">${esc(copie)}</textarea>
+    <div class="row"><button class="b p" data-copier>Copier pour Claude</button></div>`;
+  brancherCopie(copie, 'Liste copiée : colle-la dans la conversation avec Claude.');
+};
+
 // ── Mode Migration ──
 const modeMigration = async () => {
   let lecture = store.get('lecture2', null);
@@ -1395,6 +1551,7 @@ const modeMigration = async () => {
     for (const e of anciennes) if (e.n && membres[e.nom].length < e.n) ui.journal(`⚠️ #${e.nom} : ${membres[e.nom].length} carte(s) trouvée(s) sur ${e.n}`);
     lecture = { at: Date.now(), cartes, membres };
     store.set('lecture2', lecture);
+    store.set('lecture2_perimee', false);
   }
   // une étiquette supprimée entre-temps (à la main ou par un essai précédent) disparaît du rapport
   const existantes = new Set((await listerEtiquettes()).map((e) => e.nom));
@@ -1428,6 +1585,7 @@ const modeMigration = async () => {
         store.set('fait2', [...fait]);
       });
       store.set('migration_ok2', true);
+      store.set('lecture2_perimee', true);
       const reel = Object.fromEntries((await listerEtiquettes()).map((e) => [e.nom, e.n]));
       const prevu = {}; for (const p of plan.values()) for (const t of p) prevu[t] = (prevu[t] || 0) + 1;
       const ecarts = Object.entries(prevu).filter(([t, n]) => (reel[t] || 0) < n);
@@ -1473,7 +1631,7 @@ if (window.__WMR_TEST__ || store.get('debug', false)) {
     classer, planCarte, norm, cle, store, cartesDom, lireCarte, pageInfo,
     lireVue, lireApi, parcourirVue, changerPage, choisirFiltre, choisirTri, listerEtiquettes,
     modeSelection, poserEtiquette, appliquerSurPage, appliquerRanger, modeRanger, modeMigration, motsGroupes, rechercher,
-    supprimerEtiquette, rapportSuppression, monterUI, ui: () => ui, stop: () => { STOP = true; },
+    supprimerEtiquette, rapportSuppression, suggestions, monterUI, ui: () => ui, stop: () => { STOP = true; },
   };
 }
 
