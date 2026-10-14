@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WikiMasters — Rangement des cartes
 // @namespace    wikimasters-rangement
-// @version      1.9.4
+// @version      1.9.5
 // @description  Étiquette tes cartes WikiMasters par domaine (aperçu avant application, jamais de défausse).
 // @match        https://www.wiki-masters.com/*
 // @match        https://wiki-masters.com/*
@@ -237,8 +237,8 @@ const DOMAINES = {
     'traité de paix', 'sénateur romain', 'consul romain', 'personnalité de la rome antique', 'grec ancien', 'personnage historique',
     'sultan', 'sultanat', 'khaganat', 'khanat', 'émirat', 'hiéroglyphe', 'peuple', 'peuple autochtone', 'ethnie', 'tribu', 'résistance française', 'camp de concentration', 'mercenaire', 'mercenaires', 'étude et narration du passé',
     // Suggestions du 2026-10-13
-    'année', 'mois', 'chronologie', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche',
-    'consul', 'tribun', 'doge', 'sénéchal', 'romain', 'révolte', 'soulèvement',
+    // pas de date seule (jour, mois, année) : il faut l'événement, le personnage, le bâtiment… (2026-10-14)
+    'chronologie', 'consul', 'tribun', 'doge', 'sénéchal', 'romain', 'révolte', 'soulèvement',
     // Suggestions du 2026-10-13 (3e tour)
     'armoiries', 'obusier', 'famille patricienne', 'fusilier',
     // Suggestions du 2026-10-14 (4e tour) ; pas les mois : seuls, ils ne disent rien,
@@ -337,6 +337,12 @@ const IGNORER = [
 const PAS_SUGGERER = [
   // refusés (2026-10-13)
   'politique',
+  // refusés (2026-10-14) : plusieurs sens (classe de navires / de trains / sociale ; formation géologique /
+  // d'élèves ; distribution Linux / de probabilité / entreprise), « thomas » est un prénom
+  'classe', 'distribution', 'formation', 'thomas',
+  // une date seule ne range pas en Histoire (2026-10-14)
+  'année', 'mois', 'janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre',
+  'novembre', 'décembre', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche',
   // pays et régions du monde
   'afghanistan', 'afrique', 'afrique du sud', 'albanie', 'algérie', 'allemagne', 'amérique', 'andorre', 'angleterre',
   'angola', 'arabie saoudite', 'argentine', 'arménie', 'asie', 'australie', 'autriche', 'azerbaïdjan', 'bangladesh',

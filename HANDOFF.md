@@ -1,12 +1,12 @@
 # Passation — userscript WikiMasters
 
-Mis à jour le 2026-10-14 : **v1.9.4 (4e tour de Suggestions) sur la branche `claude/handoff-reprise-travail-dd9b3d`, en attente du oui de la personne pour `main`** ; v1.9.3 reste la version stable sur `main` jusque-là. Les instructions durables sont dans `CLAUDE.md` ; ce fichier garde l'état, les décisions, la suite et les questions en suspens.
+Mis à jour le 2026-10-14 : **v1.9.5 sur `main`** (4e tour de Suggestions, dates seules sorties d'Histoire), poussée avec l'accord de la personne. Les instructions durables sont dans `CLAUDE.md` ; ce fichier garde l'état, les décisions, la suite et les questions en suspens.
 
 ## Avant tout, en début de session : ce que la personne fait
 
 À donner tel quel quand la personne demande par où commencer (« Nouvelle session pour wikimasters rangement, que dois-je faire avant de commencer à travailler les questions en suspens ? »). Ces étapes donnent à Claude l'état réel de la collection : sans elles, un tour de Suggestions ou une décision sur les questions en suspens se ferait sur des chiffres périmés.
 
-1. **Installer la dernière version** : le fichier `dist/wikimasters-rangement.user.js` de `main` sur GitHub (`matteo-lorenzi/wikimasters-rangement`), dans Tampermonkey. Vérifier que le numéro de version affiché par Tampermonkey est celui de « État » ci-dessous (aujourd'hui **1.9.3** ; **1.9.4** dès qu'elle est sur `main`).
+1. **Installer la dernière version** : le fichier `dist/wikimasters-rangement.user.js` de `main` sur GitHub (`matteo-lorenzi/wikimasters-rangement`), dans Tampermonkey. Vérifier que le numéro de version affiché par Tampermonkey est celui de « État » ci-dessous (aujourd'hui **1.9.5**).
 2. **Ouvrir la page Collection** de wiki-masters.com dans **Chrome** (pas Opera GX), onglet au premier plan, et ouvrir le panneau « 🏷 Rangement ».
 3. **Ranger** : « Ranger les nouvelles cartes ». Si les règles ont changé depuis le dernier rangement, il l'annonce et relit toutes les cartes sans étiquette (≈ 1 min 30). Relire l'aperçu, puis « Appliquer » et laisser aller au bout.
 4. **Journal des bugs** : si le bouton affiche un nombre (« Journal des bugs (2) »), le copier pour Claude.
@@ -19,13 +19,13 @@ Si Claude doit regarder le vrai site (observer un bouton, lire une carte) : Chro
 ## Reprendre une session (côté Claude)
 
 1. Lire `CLAUDE.md`, puis ce fichier en entier (surtout « Questions en suspens »).
-2. Dépôt absent → `git clone https://github.com/matteo-lorenzi/wikimasters-rangement`, puis `npm install`. `npm test` doit donner **212 tests verts** ; `PYTHONIOENCODING=utf-8 python scripts/regressions.py` **16/16 mutations détectées**.
+2. Dépôt absent → `git clone https://github.com/matteo-lorenzi/wikimasters-rangement`, puis `npm install`. `npm test` doit donner **214 tests verts** ; `PYTHONIOENCODING=utf-8 python scripts/regressions.py` **16/16 mutations détectées**.
 3. Travailler sur une nouvelle branche partie de `main` ; `main` n'avance qu'après le oui de la personne (`CLAUDE.md`).
 4. Si la personne n'a pas encore fait « Avant tout » (ci-dessus), le lui donner avant de coder ou de trancher quoi que ce soit.
 
 ## État
 
-- **v1.9.3 sur `main`** (2026-10-13). **v1.9.4** (2026-10-14, 4e tour : ~75 mots) sur `claude/handoff-reprise-travail-dd9b3d`, 212 tests, 16 bugs surveillés par `scripts/regressions.py` ; à pousser sur `main` après le oui de la personne.
+- **v1.9.5 sur `main`** (2026-10-14), 214 tests, 16 bugs surveillés par `scripts/regressions.py`. `main` = `claude/handoff-reprise-travail-dd9b3d` (rien d'autre en attente). La personne ne l'a pas encore installée ni rangée avec.
 - Le panneau du script a quatre boutons :
   - **Ranger les nouvelles cartes** : lit les cartes sans étiquette (seulement les nouvelles, ou **toutes si les règles ont changé** depuis le dernier rangement, v1.9.3), montre l'aperçu, pose les domaines après « Appliquer ». Recherches groupées à partir de 200 cartes (`docs/piste-1.md`). Rechargement et reprise automatiques sur raté du site.
   - **Suggestions** (v1.9.0–1.9.1, lecture seule) : compteur des cartes sans domaine, mots inconnus des règles (dès 3 cartes, domaine proposé d'après les cartes déjà étiquetées), « Copier pour Claude » et « Copier les cartes sans règle ». C'est l'outil du chantier en cours (voir plus bas).
@@ -49,13 +49,13 @@ Méthode : **le script propose, la personne tranche, Claude écrit la règle**. 
 
 Tours faits le 2026-10-13 (v1.9.0 → v1.9.3) : 577 → 449 cartes sans règle. Les ~450 restantes sont **presque toutes des titres seuls** (noms propres, espèces en latin) : les mots n'y peuvent plus grand-chose, d'où Wikipédia (question A).
 
-### Tour 4 (2026-10-14) : fait, v1.9.4
+### Tour 4 (2026-10-14) : fait, v1.9.4 puis v1.9.5
 
 Compteur de la personne (Suggestions v1.9.3, 14/10 16:08) : 770 sans étiquette = **490 sans règle**, 1 à traiter, 259 ignorées, 20 rangeables ; 57 portent `!À traiter`. Le Ranger v1.9.3 est allé au bout, sans bug (réponse de la personne).
 
 Réponse de la personne : groupes 1, 3 à 10 et 12 acceptés **tels quels, ⚠ compris** (médical, commission, accord de, section de, coupe) ; 11 refusé (essai, bibliothèque) ; 2 accepté **sans les mois** : « un mois seul ne vaut pas Histoire, il faut un événement avec » (« guerre en septembre » oui, « mois de septembre » non). L'événement range déjà la carte, donc aucun mois n'est ajouté. Effet mesuré sur 724 cartes sans étiquette lues par l'API le 14/10 (pages 1 à 15 ; la page 0 a été oubliée) : **63 cartes rangées en plus**, une seule fausse (« LVL Medical », une entreprise, en Sciences : ⚠ accepté). « Commission scolaire de Charlevoix » gagne Politique & Droit (⚠ commission).
 
-Pas encore répondu par la personne : refuser `classe`, `distribution`, `formation`, `thomas` et les mettre dans `PAS_SUGGERER` (question F) ; incohérence avec sa règle sur les mois (question H).
+Puis (v1.9.5), réponses de la personne : **une date seule ne range pas en Histoire**, il faut un événement, un personnage, un bâtiment historique… → `année`, `mois`, `lundi`…`dimanche` (1er tour) retirés d'Histoire, et les dates (mois, jours, `année`, `mois`) mises dans `PAS_SUGGERER` pour que Suggestions ne les repropose pas ; `chronologie` gardé. `classe`, `distribution`, `formation`, `thomas` refusés (« si on est sûr qu'ils posent problème » : plusieurs sens sur ses cartes, ou prénom) → `PAS_SUGGERER`. Aucune des 724 cartes sans étiquette ne change ; les cartes de dates déjà étiquetées `#Histoire` le restent (le script ne retire jamais un domaine).
 
 Mots proposés (numéros tels que donnés à la personne ; ⚠ = risqué) :
 
@@ -76,7 +76,7 @@ Fait : une carte réelle par groupe dans `test/classement.test.js` (rouge sans l
 
 ### Suite, dans l'ordre
 
-1. **Après le oui pour `main`** : la personne installe la v1.9.4 et lance Ranger (il annoncera « Les règles ont changé »), puis Suggestions pour le nouveau compteur.
+1. **La personne installe la v1.9.5** et lance Ranger (il annoncera « Les règles ont changé »), puis Suggestions pour le nouveau compteur.
 2. **Retrait de `!À traiter`** (décidé ; prochaine version de code). Spécification :
    - Ranger lit aussi les cartes portant `!À traiter` (API `tag_id=<id de !À traiter>`, l'id est dans `stats.tagOptions`) ; celles que les règles rangent maintenant reçoivent leur(s) domaine(s) **puis** perdent `!À traiter` (dans cet ordre : si la pose échoue, la carte garde son repère). Aperçu (« N cartes : #Domaine + retrait de !À traiter ») puis « Appliquer ».
    - Le script retire **`!À traiter` et seulement elle** : bouton au texte exact `!À traiter` (le texte du bouton est « nom » + saut de ligne + nombre). Un test du faux site vérifie qu'aucune autre étiquette n'est retirée, et qu'une carte encore ambiguë garde `!À traiter`.
@@ -103,14 +103,13 @@ Chacune avec le contexte et la recommandation à proposer. Ne pas trancher à la
   - « Le Secret de la salamandre — album de bande dessinée » → **Musique** (album) + Littérature ;
   - « Programmation spaghetti — code source… gestion des événements » → **Histoire** (événements).
 - **E. Les 21 cartes « pas de domaine » du rapport de Migration** (Saison 2015 des Astros de Houston, McLaren MP4-28, Hippodrome de Dieppe, Borough de Denali, Stanley Benham, David B. Samadi, John L. Lewis, Raymond Montaner, Jean de Croonders, Mary Butters, The Irish Press, TM Racing, Wilfried Huber, Radiorama, Guido Capello Vincentinus, Hanabie., Iouri Matvéïévitch Sokolov, Xenia Gueorguievna de Russie, Pierre Fehlmann, Français de Corse, Bourboulon) : presque toutes à titre seul → Wikipédia (A). Les 16 de `#Nom de famille` restent ignorées.
-- **F. Derniers mots proposés par Suggestions, jamais soumis à la personne** : « formation » (4 cartes, sens différents : Formation de Kaili = géologie, Formation de classes, Centre de formation à distance) et « thomas » (prénom, 3 cartes). Recommandation : refuser les deux ; ajouter « thomas » (ou les prénoms) à `PAS_SUGGERER`.
-- **H. Jours et « mois » déjà en Histoire** (1er tour, 2026-10-13 : `année`, `mois`, `lundi`…`dimanche`) : ils contredisent la règle donnée par la personne le 2026-10-14 (« mois de septembre » ne doit pas valoir Histoire, or « mois » le range). Les retirer ? Pas tranché ; ne pas y toucher sans son accord.
+- **H. Cartes de dates déjà étiquetées `#Histoire`** (rangées avant la v1.9.5, par `année`, `mois` ou un jour) : elles gardent `#Histoire`, le script ne retire pas de domaine. Les retirer à la main, ou plus tard avec un outil ? Pas demandé par la personne ; à signaler si la personne en voit.
 - **G. Groupes de musique** (« Bôa — groupe britannique », « Hanabie. — groupe japonais », « Terrorgruppe — groupe allemand », « Ravager (groupe) ») : « groupe » est ambigu à juste titre (groupe aéronaval…), le moteur ne sait pas dire « groupe + nationalité ». Décidé : laissés `!À traiter` en attendant Wikipédia (A).
 
 ## Refusé par la personne — ne pas reproposer
 
 - Écrire directement dans la base (Supabase) avec le jeton de session (règle 1). Une exploration des cookies a déjà été bloquée par le classificateur de sécurité.
-- Mots refusés : `politique` (seul ; « doctrine politique » accepté) ; mots risqués **date, conflit, industrie, commerce, justice, manifestation, affection, barrage** (leurs cartes restent sans règle dans les tests) ; 4e tour : **essai, bibliothèque**, et **les mois seuls** (janvier…décembre : il faut un événement).
+- Mots refusés : `politique` (seul ; « doctrine politique » accepté) ; mots risqués **date, conflit, industrie, commerce, justice, manifestation, affection, barrage** (leurs cartes restent sans règle dans les tests) ; 4e tour : **essai, bibliothèque**, **les dates seules** (jours, mois, `année` : il faut un événement, un personnage, un bâtiment historique…), **classe, distribution, formation, thomas**.
 - Proposer des pays ou des nationalités dans Suggestions (`PAS_SUGGERER`).
 - Une étiquette `!Homonymie` pour les cartes ignorées.
 - « défilé » en Géographie : « Défilé de l'Écluse » part en Transports (titre en secours, « écluse »), erreur acceptée.
@@ -132,6 +131,7 @@ Chacune avec le contexte et la recommandation à proposer. Ne pas trancher à la
 
 ## Historique des versions
 
+- **v1.9.5** : une date seule ne range plus en Histoire (`année`, `mois`, jours retirés) ; dates et `classe`, `distribution`, `formation`, `thomas` jamais proposés par Suggestions.
 - **v1.9.4** : ~75 mots (4e tour), dont `films` et `artiste-peintre` (trous du moteur) ; pas de mois.
 - **v1.9.3** : Ranger relit toutes les cartes sans étiquette quand les règles ont changé (empreinte `ranger_regles` ; bug n° 16) ; ~35 mots (3e tour).
 - **v1.9.2** : titre en secours ; « ignorée » avant « ambigu » ; ~120 mots (2e tour).

@@ -123,3 +123,23 @@ test('Suggestions : après un Ranger, la lecture gardée est périmée et la rel
   assert.ok(!p.bouton(/recommandé/), 'lecture à jour : rien de recommandé');
   site.fermer();
 });
+
+test('suggestions : jamais les mots refusés le 2026-10-14 (plusieurs sens, prénom, dates)', async () => {
+  const site = await creerSite({ cartes: [] });
+  // descriptions et titres de cartes réelles de la personne (lecture API du 2026-10-14)
+  const cartes = [
+    { t: 'Classe Turbine' }, { t: 'Classe Tromp' }, { t: 'CIE classe 501' },
+    { t: 'Formation de Kaili' }, { t: 'Formation de classes' }, { t: 'Centre international de formation à distance' },
+    { t: 'Plastic Head Distribution' }, { t: 'Distribution q-exponentielle' }, { t: 'Distribution de Bose' },
+    { t: 'Thomas de La Marche' }, { t: 'Thomas McFarland' }, { t: 'Thomas Hale' },
+    { t: '974', d: 'année' }, { t: '975', d: 'année' }, { t: '976', d: 'année' },
+    { t: 'Septembre 2008 en France' }, { t: 'Septembre 2009 en France' }, { t: 'Septembre 2010 en France' },
+    { t: '25 octobre 2014', d: 'samedi en octobre 2014' }, { t: '1er novembre 2014', d: 'samedi en novembre 2014' },
+    { t: '8 novembre 2014', d: 'samedi en novembre 2014' },
+  ].map((c, i) => ({ r: 'Commune', tags: [], d: '', obtenu: new Date(Date.UTC(2026, 0, 1) + i * 60000).toISOString(), ...c }));
+  const mots = Array.from(site.wmr.suggestions(cartes).candidats, (c) => c.mot);
+  for (const m of ['classe', 'formation', 'distribution', 'thomas', 'année', 'septembre', 'octobre', 'novembre', 'samedi']) {
+    assert.ok(!mots.includes(m), `« ${m} » proposé : ${mots.join(', ')}`);
+  }
+  site.fermer();
+});

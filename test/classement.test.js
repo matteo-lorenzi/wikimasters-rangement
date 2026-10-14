@@ -76,8 +76,6 @@ const CAS = [
   ['Pénélope', 'personnage de la mythologie grecque', ['Religion & Mythes'], 'classee'],
 
   // Cartes sans règle de la personne (Suggestions v1.9.1, 2026-10-13) : mots ajoutés avec son accord
-  ['974', 'année', ['Histoire'], 'classee'],
-  ['25 octobre 2014', 'samedi en octobre 2014', ['Histoire'], 'classee'],
   ['Egnatius Proculus', 'consul suffect romain en 219', ['Histoire'], 'classee'],
   ['Gian Bernardo Frugoni', 'doge de la république de Gênes', ['Histoire'], 'classee'],
   ['Révolte des sabotiers', 'soulèvement de paysans solognots en 1658', ['Histoire'], 'classee'],
@@ -184,9 +182,13 @@ const CAS = [
   ['Urticaire', 'affection de la peau', [], 'inconnue'],
   ['Barrage de Bayano', 'barrage en Panama', [], 'inconnue'],
   ['16 septembre', 'date', [], 'inconnue'],
-  // un mois seul ne range pas en Histoire : il faut un événement (décidé le 2026-10-14)
+  // une date seule (jour, mois, année) ne range pas en Histoire : il faut un événement, un personnage,
+  // un bâtiment historique… (décidé le 2026-10-14 ; « année », « mois » et les jours retirés)
   ['Septembre 2008 en France', '', [], 'inconnue'],
   ['18 octobre 1965', '', [], 'inconnue'],
+  ['974', 'année', [], 'inconnue'],
+  ['25 octobre 2014', 'samedi en octobre 2014', [], 'inconnue'],
+  ['Offensive de Villareal', '', ['Histoire'], 'classee'],
   // la description ne donne aucun domaine : le titre en secours
   ['Gérard Simon (directeur de la photographie)', 'personnalité française', ['Cinéma & TV'], 'classee'],
   ['IXe congrès du Parti communiste (France)', 'congrès tenu à Arles du 25 au 29 décembre 1937.', ['Politique & Droit'], 'classee'],
