@@ -49,9 +49,32 @@ Méthode : **le script propose, la personne tranche, Claude écrit la règle**. 
 
 Tours faits le 2026-10-13 (v1.9.0 → v1.9.3) : 577 → 449 cartes sans règle. Les ~450 restantes sont **presque toutes des titres seuls** (noms propres, espèces en latin) : les mots n'y peuvent plus grand-chose, d'où Wikipédia (question A).
 
+### Tour 4 (2026-10-14) : proposé, en attente de la réponse de la personne
+
+Compteur de la personne (Suggestions v1.9.3, 14/10 16:08) : 770 sans étiquette = **490 sans règle**, 1 à traiter, 259 ignorées, 20 rangeables ; 57 portent `!À traiter`. Le Ranger v1.9.3 a bien rangé (186 → 20 rangeables) ; les sans-règle montent avec les nouvelles cartes reçues. Demandé à la personne, sans réponse encore : Ranger allé au bout ? journal des bugs vide ?
+
+Suggestions ne propose que `classe`, `distribution`, `formation`, `thomas` : recommandé de refuser les quatre (plusieurs sens) et de les ajouter à `PAS_SUGGERER`.
+
+Mots de Claude, essayés avec le vrai moteur sur les 516 cartes collées (82 rangées : 76 sans règle, 6 `!À traiter`). Numéros tels que donnés à la personne ; ⚠ = risqué, à trancher par elle :
+
+1. Sciences : allergie, épidémiologie, autisme, urine, oculaire, médical (⚠ range « LVL Medical », une entreprise), classe de complexité, linux, software, protocol, compression de données, polym*, laser, semi-conducteur, électron, diffraction, fermentation, diviseur (19 cartes).
+2. Histoire : janvier, février, septembre, octobre, novembre, décembre (pas mars/avril/mai/août : planète, prénoms), char de combat, luftwaffe, conflit armé, clan, duché, seigneurie, offensive, chef amérindien (14).
+3. Politique & Droit : agence fédérale, candidat politique, juridiction, système politique, relations entre, droits de l'homme, identité de genre, garde républicaine (8) ; ⚠ commission, ⚠ accord de (+2).
+4. Économie : commerce de détail, charbon, centrale solaire, secteur de l'énergie, bank, agroalimentaire, agriculture, tourisme (8). `management` écarté (« Network Data Management Protocol » partait en Économie).
+5. Géographie : río, étang, récif, caverne, township, socken, amt, porte de paris (9) ; ⚠ section de (Lombeek-Notre-Dame, +1 ; « section d'Oreye » n'est pas trouvé).
+6. Nature : quercus, dypsis, réserve nationale, faune, sous-classe (7).
+7. Espace : ngc, télescope (3).
+8. Sport : cup, racing, running, fútbol, eurobowl (5, dont Alianza Fútbol Club sorti de `!À traiter`) ; ⚠ coupe (+1).
+9. Patrimoine : caserne, arène, maison-atelier (3).
+10. Médias : télé, tv (2).
+11. Littérature : ⚠ essai (essai nucléaire, rugby) ; ⚠ bibliothèque : Littérature ou Patrimoine ?
+12. Trous du moteur : « artiste-peintre » (le trait d'union bloque « artiste » et « peintre ») → `artiste-peintre` en Arts ; `film` (4 lettres, pris tel quel) ne trouve pas « Eagle-Lion Films » → `films` en Cinéma & TV. Pluriel général des mots courts essayé puis écarté (un test casse ; « Cent francs belges type 4 rois » partait en Histoire).
+
+Après la réponse : une carte réelle par groupe accepté dans `test/classement.test.js` (rouge), la règle (vert), commentaire « Suggestions du 2026-10-14 (4e tour) », puis v1.9.4. Les ~400 cartes restantes : noms propres et espèces latines → Wikipédia (question A).
+
 ### Suite, dans l'ordre
 
-1. **Tour de Suggestions** avec les textes de la personne (après ses actions ci-dessus).
+1. **Tour de Suggestions** : le 4e attend la réponse de la personne (ci-dessus).
 2. **Retrait de `!À traiter`** (décidé ; prochaine version de code). Spécification :
    - Ranger lit aussi les cartes portant `!À traiter` (API `tag_id=<id de !À traiter>`, l'id est dans `stats.tagOptions`) ; celles que les règles rangent maintenant reçoivent leur(s) domaine(s) **puis** perdent `!À traiter` (dans cet ordre : si la pose échoue, la carte garde son repère). Aperçu (« N cartes : #Domaine + retrait de !À traiter ») puis « Appliquer ».
    - Le script retire **`!À traiter` et seulement elle** : bouton au texte exact `!À traiter` (le texte du bouton est « nom » + saut de ligne + nombre). Un test du faux site vérifie qu'aucune autre étiquette n'est retirée, et qu'une carte encore ambiguë garde `!À traiter`.
