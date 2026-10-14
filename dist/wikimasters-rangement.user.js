@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WikiMasters — Rangement des cartes
 // @namespace    wikimasters-rangement
-// @version      1.9.3
+// @version      1.9.4
 // @description  Étiquette tes cartes WikiMasters par domaine (aperçu avant application, jamais de défausse).
 // @match        https://www.wiki-masters.com/*
 // @match        https://wiki-masters.com/*
@@ -38,6 +38,8 @@ const DOMAINES = {
     'western', 'filmographie', 'telenovela',
     // Suggestions du 2026-10-13 (3e tour)
     'golden globe', 'prix génie',
+    // Suggestions du 2026-10-14 (4e tour) : « film » a 4 lettres, il ne trouve pas son pluriel
+    'films',
   ],
   'Musique': [
     'chanteur', 'chanteuse', 'compositeur', 'compositrice', 'auteur-compositeur', 'autrice-compositrice',
@@ -78,6 +80,8 @@ const DOMAINES = {
     'architecture', 'enlumineur', 'coloriste', 'costume',
     // Suggestions du 2026-10-13 (3e tour)
     'designeuse',
+    // Suggestions du 2026-10-14 (4e tour) : le trait d'union cache « artiste » et « peintre »
+    'artiste-peintre',
   ],
   'Sport': [
     'footballeur', 'footballeuse', 'football', 'joueur de football', 'cycliste', 'coureur cycliste',
@@ -105,6 +109,8 @@ const DOMAINES = {
     'étape du tour',
     // Suggestions du 2026-10-13 (3e tour)
     'randonnée', 'lhjmq', 'piha',
+    // Suggestions du 2026-10-14 (4e tour)
+    'cup', 'racing', 'running', 'fútbol', 'eurobowl', 'coupe',
   ],
   'Politique & Droit': [
     'homme politique', 'femme politique', 'personnalité politique', 'politicien', 'politicienne', 'ministre',
@@ -124,6 +130,9 @@ const DOMAINES = {
     // Suggestions du 2026-10-13 (3e tour)
     'doctrine politique', 'cdu', 'condition des femmes', 'état d\'urgence', 'châtiment', 'professeur de droit',
     'cia', 'haut-commissariat',
+    // Suggestions du 2026-10-14 (4e tour)
+    'agence fédérale', 'candidat politique', 'juridiction', 'système politique', 'relations entre',
+    'droits de l\'homme', 'identité de genre', 'garde républicaine', 'commission', 'accord de',
   ],
   'Économie': [
     'homme d\'affaires', 'femme d\'affaires', 'entrepreneur', 'entrepreneuse', 'chef d\'entreprise',
@@ -139,6 +148,9 @@ const DOMAINES = {
     'culinaire', 'sidérurgi*', 'charbonnage', 'taxe', 'taxation',
     // Suggestions du 2026-10-13 (3e tour)
     'capitalisme', 'amande', 'pâtes alimentaires',
+    // Suggestions du 2026-10-14 (4e tour)
+    'commerce de détail', 'charbon', 'centrale solaire', 'secteur de l\'énergie', 'bank', 'agroalimentaire',
+    'agriculture', 'tourisme',
   ],
   'Médias': [
     'journaliste', 'humoriste', 'animateur', 'animatrice', 'présentateur', 'présentatrice', 'chroniqueur',
@@ -151,6 +163,8 @@ const DOMAINES = {
     'miss', 'émetteur', 'audiovisuel',
     // Suggestions du 2026-10-13
     'média', 'concours de beauté',
+    // Suggestions du 2026-10-14 (4e tour)
+    'télé', 'tv',
   ],
   'Sciences': [
     'scientifique', 'chercheur', 'chercheuse', 'physicien', 'physicienne', 'chimiste', 'biologiste',
@@ -173,6 +187,10 @@ const DOMAINES = {
     'protocole', 'chiffrement', 'sismi*', 'galvanique', 'enseignement',
     // Suggestions du 2026-10-13 (3e tour)
     'mots de passe', 'scolaire',
+    // Suggestions du 2026-10-14 (4e tour)
+    'allergie', 'épidémiologie', 'autisme', 'urine', 'oculaire', 'médical', 'classe de complexité', 'linux',
+    'software', 'protocol', 'compression de données', 'polym*', 'laser', 'semi-conducteur', 'électron',
+    'diffraction', 'fermentation', 'diviseur',
   ],
   'Espace': [
     'astéroïde', 'galaxie', 'constellation', 'nébuleuse', 'étoile', 'planète', 'exoplanète', 'planète mineure',
@@ -183,6 +201,8 @@ const DOMAINES = {
     'lanceur', 'astronomique', 'fusée',
     // Suggestions du 2026-10-13
     'corona', 'satellite',
+    // Suggestions du 2026-10-14 (4e tour)
+    'ngc', 'télescope',
   ],
   'Nature': [
     'espèce', 'genre de plantes', 'genre d\'insectes', 'genre d\'araignées', 'genre de poissons',
@@ -199,6 +219,8 @@ const DOMAINES = {
     'espace naturel', 'parc zoologique', 'parcs zoologiques', 'zoo', 'aquarium', 'genre d\'animaux', 'aromatique', 'œuf',
     // Suggestions du 2026-10-13
     'fossil*', 'super-famille', 'nématode', 'opilion', 'psoque', 'eucaryote', 'espace vert',
+    // Suggestions du 2026-10-14 (4e tour)
+    'quercus', 'dypsis', 'réserve nationale', 'faune', 'sous-classe',
   ],
   'Histoire': [
     'bataille', 'guerre', 'siège', 'sac de', 'révolution', 'dynastie', 'empire', 'royaume', 'roi', 'reine',
@@ -219,6 +241,9 @@ const DOMAINES = {
     'consul', 'tribun', 'doge', 'sénéchal', 'romain', 'révolte', 'soulèvement',
     // Suggestions du 2026-10-13 (3e tour)
     'armoiries', 'obusier', 'famille patricienne', 'fusilier',
+    // Suggestions du 2026-10-14 (4e tour) ; pas les mois : seuls, ils ne disent rien,
+    // et avec un événement (« guerre », « bataille »…) la carte est déjà rangée
+    'char de combat', 'luftwaffe', 'conflit armé', 'clan', 'duché', 'seigneurie', 'offensive', 'chef amérindien',
   ],
   'Religion & Mythes': [
     'mythologie', 'personnage de la mythologie', 'homme d\'église', 'femme d\'église', 'dieu', 'déesse', 'divinité', 'saint', 'sainte', 'pape',
@@ -251,6 +276,8 @@ const DOMAINES = {
     'census designated place', 'secteur communautaire', 'découpage administratif', 'micro-région', 'microrégion', 'méridien',
     // Suggestions du 2026-10-13 (3e tour)
     'sous-préfecture',
+    // Suggestions du 2026-10-14 (4e tour)
+    'río', 'étang', 'récif', 'caverne', 'township', 'socken', 'amt', 'porte de paris', 'section de',
   ],
   'Patrimoine': [
     'château', 'château fort', 'monument', 'monument historique', 'musée', 'cathédrale', 'chapelle', 'abbaye',
@@ -259,6 +286,8 @@ const DOMAINES = {
     'statue', 'fontaine', 'jardin', 'parc', 'cimetière', 'mausolée', 'tombe', 'nécropole', 'aqueduc',
     'patrimoine mondial', 'villa', 'domaine', 'théâtre de', 'opéra de', 'salle de spectacle', 'arc de triomphe',
     'lieu de culte', 'demeure', 'maison', 'ferme', 'bastide', 'dolmen', 'menhir', 'pyramide',
+    // Suggestions du 2026-10-14 (4e tour)
+    'caserne', 'arène', 'maison-atelier',
   ],
   'Transports': [
     'gare', 'station de métro', 'station du métro', 'métro', 'ligne de métro', 'ligne ferroviaire',

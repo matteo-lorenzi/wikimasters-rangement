@@ -130,7 +130,8 @@ const CAS = [
   ['Miss Moldavie', 'concours de beauté', ['Médias'], 'classee'],
   // 3e tour de Suggestions (v1.9.2, 2026-10-13)
   ['Bitwarden', 'gestionnaire de mots de passe', ['Sciences'], 'classee'],
-  ['Commission scolaire de Charlevoix', 'ancienne commission scolaire au Québec (Canada)', ['Sciences'], 'classee'],
+  // « commission » (4e tour, accepté malgré le risque) lui ajoute Politique & Droit
+  ['Commission scolaire de Charlevoix', 'ancienne commission scolaire au Québec (Canada)', ['Politique & Droit', 'Sciences'], 'classee'],
   ['Capitalisme racial', 'fondement racial du capitalisme', ['Économie'], 'classee'],
   ['Pralin', "Préparation à base d'amandes et/ou de noisettes caramélisées et concassées", ['Économie'], 'classee'],
   ['Crouis (pâtes alimentaires)', '', ['Économie'], 'classee'],
@@ -160,11 +161,32 @@ const CAS = [
   ['Haut-commissariat du Canada en Nouvelle-Zélande', '', ['Politique & Droit'], 'classee'],
   ['Tartane (chariot)', 'petit chariot couvert à deux roues', ['Transports'], 'classee'],
   ['UK Carrier Strike Group', 'groupe aéronaval britannique', ['Transports'], 'classee'],
+  // 4e tour de Suggestions (v1.9.3, 2026-10-14) : cartes sans étiquette lues par l'API le 2026-10-14
+  ['Clear Linux', 'distribution Linux', ['Sciences'], 'classee'],
+  ["Diffraction d'électrons rétrodiffusés", '', ['Sciences'], 'classee'],
+  ['Seigneurie de Bercher', '', ['Histoire'], 'classee'],
+  ['Défense passive', 'Ensemble des moyens mis en oeuvre pour la protection des populations en cas de conflit armé', ['Histoire'], 'classee'],
+  ['Relations entre la Chine et le Maroc', 'la coopération économique, politique et culturelle, et elle continue de se renforcer.', ['Politique & Droit'], 'classee'],
+  ['Énergie au Tchad', "caractéristiques du secteur de l'énergie au Tchad", ['Économie'], 'classee'],
+  ['Friperie', "commerce de détail des vêtements d'occasion", ['Économie'], 'classee'],
+  ['Lombeek-Notre-Dame', 'section de Roosdaal, Belgique', ['Géographie'], 'classee'],
+  ['Amt Achterwehr', '', ['Géographie'], 'classee'],
+  ['Aspidogastrea', 'sous-classe de vers trématodes', ['Nature'], 'classee'],
+  ['NGC 2134', '', ['Espace'], 'classee'],
+  ['Dynasty Cup 1990', '', ['Sport'], 'classee'],
+  ['Arènes du Cailar', 'arène au Cailar (Gard)', ['Patrimoine'], 'classee'],
+  ['Duck TV', '', ['Médias'], 'classee'],
+  ['Eugeniusz Geno Malkowski', 'artiste-peintre polonais', ['Arts'], 'classee'],
+  ['Eagle-Lion Films', '', ['Cinéma & TV'], 'classee'],
+  // « télé » a 4 lettres : pris tel quel, il ne trouve pas « télégraphe »
+  ["Ligne du télégraphe Chappe d'Avranches à Cherbourg", '', [], 'inconnue'],
   // mots risqués refusés par la personne : la carte reste sans règle
   ['Urticaire', 'affection de la peau', [], 'inconnue'],
   ['Barrage de Bayano', 'barrage en Panama', [], 'inconnue'],
-  ['Friperie', "commerce de détail des vêtements d'occasion", [], 'inconnue'],
   ['16 septembre', 'date', [], 'inconnue'],
+  // un mois seul ne range pas en Histoire : il faut un événement (décidé le 2026-10-14)
+  ['Septembre 2008 en France', '', [], 'inconnue'],
+  ['18 octobre 1965', '', [], 'inconnue'],
   // la description ne donne aucun domaine : le titre en secours
   ['Gérard Simon (directeur de la photographie)', 'personnalité française', ['Cinéma & TV'], 'classee'],
   ['IXe congrès du Parti communiste (France)', 'congrès tenu à Arles du 25 au 29 décembre 1937.', ['Politique & Droit'], 'classee'],
