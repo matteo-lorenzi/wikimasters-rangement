@@ -365,7 +365,7 @@ const PAS_SUGGERER = [
 // Collections personnelles : la carte reçoit l'étiquette si TOUS les groupes
 // ont au moins un mot présent.
 const COLLECTIONS = [
-  { etiquette: '★Village Polonais', groupes: [['village'], ['pologne', 'polonais', 'voïvodie', 'gmina', 'powiat']] },
+  { etiquette: '★Village Polonais', groupes: [['village', 'commune polonaise', 'gmina rurale'], ['pologne', 'polonais', 'voïvodie', 'gmina', 'powiat']] },
 ];
 
 // Domaines qui ne comptent que s'ils sont le sujet principal (premier domaine trouvé).

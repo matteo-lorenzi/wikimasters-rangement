@@ -1,12 +1,12 @@
 # Passation — userscript WikiMasters
 
-Mis à jour le 2026-10-14 : **v1.9.5 sur `main`** (4e tour de Suggestions, dates seules sorties d'Histoire), poussée avec l'accord de la personne. Les instructions durables sont dans `CLAUDE.md` ; ce fichier garde l'état, les décisions, la suite et les questions en suspens.
+Mis à jour le 2026-10-15 : **v1.9.6** sur la branche `claude/polish-village-labels-duplicates-d2858c` (Village Polonais élargi, bouton Doublons), en attente du oui de la personne pour `main`. Avant : v1.9.5 sur `main`. Les instructions durables sont dans `CLAUDE.md` ; ce fichier garde l'état, les décisions, la suite et les questions en suspens.
 
 ## Avant tout, en début de session : ce que la personne fait
 
 À donner tel quel quand la personne demande par où commencer (« Nouvelle session pour wikimasters rangement, que dois-je faire avant de commencer à travailler les questions en suspens ? »). Ces étapes donnent à Claude l'état réel de la collection : sans elles, un tour de Suggestions ou une décision sur les questions en suspens se ferait sur des chiffres périmés.
 
-1. **Installer la dernière version** : le fichier `dist/wikimasters-rangement.user.js` de `main` sur GitHub (`matteo-lorenzi/wikimasters-rangement`), dans Tampermonkey. Vérifier que le numéro de version affiché par Tampermonkey est celui de « État » ci-dessous (aujourd'hui **1.9.5**).
+1. **Installer la dernière version** : le fichier `dist/wikimasters-rangement.user.js` de `main` sur GitHub (`matteo-lorenzi/wikimasters-rangement`), dans Tampermonkey. Vérifier que le numéro de version affiché par Tampermonkey est celui de « État » ci-dessous (aujourd'hui **1.9.6**).
 2. **Ouvrir la page Collection** de wiki-masters.com dans **Chrome** (pas Opera GX), onglet au premier plan, et ouvrir le panneau « 🏷 Rangement ».
 3. **Ranger** : « Ranger les nouvelles cartes ». Si les règles ont changé depuis le dernier rangement, il l'annonce et relit toutes les cartes sans étiquette (≈ 1 min 30). Relire l'aperçu, puis « Appliquer » et laisser aller au bout.
 4. **Journal des bugs** : si le bouton affiche un nombre (« Journal des bugs (2) »), le copier pour Claude.
@@ -19,17 +19,18 @@ Si Claude doit regarder le vrai site (observer un bouton, lire une carte) : Chro
 ## Reprendre une session (côté Claude)
 
 1. Lire `CLAUDE.md`, puis ce fichier en entier (surtout « Questions en suspens »).
-2. Dépôt absent → `git clone https://github.com/matteo-lorenzi/wikimasters-rangement`, puis `npm install`. `npm test` doit donner **214 tests verts** ; `PYTHONIOENCODING=utf-8 python scripts/regressions.py` **16/16 mutations détectées**.
+2. Dépôt absent → `git clone https://github.com/matteo-lorenzi/wikimasters-rangement`, puis `npm install`. `npm test` doit donner **216 tests verts** ; `PYTHONIOENCODING=utf-8 python scripts/regressions.py` **16/16 mutations détectées**.
 3. Travailler sur une nouvelle branche partie de `main` ; `main` n'avance qu'après le oui de la personne (`CLAUDE.md`).
 4. Si la personne n'a pas encore fait « Avant tout » (ci-dessus), le lui donner avant de coder ou de trancher quoi que ce soit.
 
 ## État
 
-- **v1.9.5 sur `main`** (2026-10-14), 214 tests, 16 bugs surveillés par `scripts/regressions.py`. `main` = `claude/handoff-reprise-travail-dd9b3d` (rien d'autre en attente). La personne ne l'a pas encore installée ni rangée avec.
-- Le panneau du script a quatre boutons :
+- **v1.9.6** (2026-10-15, branche ci-dessus), 216 tests ; v1.9.5 sur `main` (2026-10-14), 16 bugs surveillés par `scripts/regressions.py`. `main` = `claude/handoff-reprise-travail-dd9b3d` (rien d'autre en attente). La personne ne l'a pas encore installée ni rangée avec.
+- Le panneau du script a cinq boutons :
   - **Ranger les nouvelles cartes** : lit les cartes sans étiquette (seulement les nouvelles, ou **toutes si les règles ont changé** depuis le dernier rangement, v1.9.3), montre l'aperçu, pose les domaines après « Appliquer ». Recherches groupées à partir de 200 cartes (`docs/piste-1.md`). Rechargement et reprise automatiques sur raté du site.
   - **Suggestions** (v1.9.0–1.9.1, lecture seule) : compteur des cartes sans domaine, mots inconnus des règles (dès 3 cartes, domaine proposé d'après les cartes déjà étiquetées), « Copier pour Claude » et « Copier les cartes sans règle ». C'est l'outil du chantier en cours (voir plus bas).
   - **Migration (une fois)** : faite par la personne (2026-10-13, v1.8.4). Sa lecture complète (`lecture2`) est partagée avec Suggestions.
+  - **Doublons** (v1.9.6, demandé par la personne) : lit toute la collection par l'API, liste les cartes possédées en plusieurs exemplaires (même titre, description et rareté) qui n'ont pas encore `!Doublon`, puis après « Appliquer » cherche chaque titre et pose `!Doublon` sur tous ses exemplaires (le site ne les distingue pas). Pas encore lancé sur le vrai site.
   - **Journal des bugs** : la personne le copie dans la conversation ; lire d'abord « Page : » et « Journal : ».
 - Moteur (`src/regles.js`) : la description d'abord ; **si elle ne donne aucun domaine (et n'est pas une page à ignorer), le titre en secours** (v1.9.2). Une page à ignorer l'emporte sur un mot ambigu (v1.9.2).
 - Dernier compteur (Suggestions, v1.9.2, 2026-10-13 16:49) : 875 sans étiquette = 449 sans règle, 0 à traiter, 240 ignorées, **186 rangeables** (pas encore rangées : bug corrigé en v1.9.3) ; 50 portent `!À traiter` (18 que les règles rangent maintenant). Depuis, ~35 mots ajoutés (v1.9.3) et « Cour d'appel de Besançon » a perdu son `!À traiter` (test de « Retirer l'étiquette »).
@@ -38,7 +39,8 @@ Si Claude doit regarder le vrai site (observer un bouton, lire une carte) : Chro
 ## Système d'étiquettes (décidé avec la personne)
 
 - 17 **domaines** (clés de `DOMAINES` dans `src/regles.js`), jusqu'à 5 par carte, dans l'ordre de la description.
-- 1 collection : `★Village Polonais`. Gestion : `!Doublon`, `!À vendre`, `!À garder` (posées à la main), `!À traiter` (posée par le script quand seul un mot ambigu est trouvé).
+- 1 collection : `★Village Polonais`. Gestion : `!À vendre`, `!À garder` (posées à la main), `!Doublon` (à la main ou par le bouton Doublons), `!À traiter` (posée par le script quand seul un mot ambigu est trouvé).
+- `★Village Polonais` : « village », « commune polonaise » ou « gmina rurale », avec un mot de la Pologne (v1.9.6, demandé par la personne).
 - Nationalités et métiers précis → la barre de recherche du site ; pas d'étiquette. Plafond 30 étiquettes (22 utilisées).
 - Sans règle, la carte reste « Sans étiquette » : le script ne devine pas. Les cartes ignorées (homonymies, listes, noms de famille, prénoms : 240) restent sans étiquette, hors objectif.
 - Anciennes étiquettes (Migration) : une étiquette de métier ou de lieu est supprimable dès que ses cartes ont son domaine ; une nationalité exige son mot sur la carte. Les nationalités qui bloquent sont **gardées pour l'instant** (question B).
@@ -87,6 +89,10 @@ Fait : une carte réelle par groupe dans `test/classement.test.js` (rouge sans l
 3. **« Compléter les cartes rangées »** (décidé) : bouton dans Ranger ; cartes portant au moins un domaine ; ajout des domaines manquants trouvés par les règles (5 au total au plus), jamais de retrait ; aperçu groupé (« + #Sciences : 42 cartes »). Une carte rangée à la main en `#Arts` que les règles mettent en Musique finit avec les deux (accepté).
 4. **Wikipédia** : seulement quand la question A sera tranchée.
 
+### Idées futures (de la personne, pas encore décidées)
+
+- **Mettre aux enchères, au prix moyen, les cartes en `!Doublon`** (2026-10-15). Avant d'y toucher : `CODING_STANDARDS.md` dit aujourd'hui « le script ne touche jamais […] aux enchères » (règle 2), à rediscuter avec la personne ; observer d'abord sur le vrai site la mise aux enchères et où lire le prix moyen, et le noter dans `docs/wikimasters.md`. Garder un exemplaire de chaque carte.
+
 ## Questions en suspens
 
 Chacune avec le contexte et la recommandation à proposer. Ne pas trancher à la place de la personne.
@@ -131,6 +137,7 @@ Chacune avec le contexte et la recommandation à proposer. Ne pas trancher à la
 
 ## Historique des versions
 
+- **v1.9.6** : `★Village Polonais` aussi pour « commune polonaise » et « gmina rurale polonaise » ; bouton Doublons (pose `!Doublon`).
 - **v1.9.5** : une date seule ne range plus en Histoire (`année`, `mois`, jours retirés) ; dates et `classe`, `distribution`, `formation`, `thomas` jamais proposés par Suggestions.
 - **v1.9.4** : ~75 mots (4e tour), dont `films` et `artiste-peintre` (trous du moteur) ; pas de mois.
 - **v1.9.3** : Ranger relit toutes les cartes sans étiquette quand les règles ont changé (empreinte `ranger_regles` ; bug n° 16) ; ~35 mots (3e tour).

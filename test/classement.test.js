@@ -241,6 +241,13 @@ test('collection ★Village Polonais : village + Pologne (reconstitué)', () => 
   assert.deepEqual(classe('Wola Zarczycka', 'village de Pologne, dans la voïvodie des Basses-Carpates').etiquettes, ['Géographie', '★Village Polonais']);
 });
 
+test('collection ★Village Polonais : aussi « commune polonaise » et « gmina rurale polonaise » (demandé)', () => {
+  assert.ok(classe('Gmina Kowala', 'gmina rurale polonaise').etiquettes.includes('★Village Polonais'));
+  assert.ok(classe('Kowala', 'commune polonaise').etiquettes.includes('★Village Polonais'));
+  // une ville de Pologne n'est pas un village
+  assert.ok(!classe('Radom', 'ville de Pologne, siège de la commune de Radom').etiquettes.includes('★Village Polonais'));
+});
+
 test('mot ambigu seul → !À traiter', () => {
   const r = classe('Bôa', 'groupe britannique');
   assert.deepEqual(r.etiquettes, ['!À traiter']);

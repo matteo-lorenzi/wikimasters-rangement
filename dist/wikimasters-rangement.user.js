@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WikiMasters — Rangement des cartes
 // @namespace    wikimasters-rangement
-// @version      1.9.5
+// @version      1.9.6
 // @description  Étiquette tes cartes WikiMasters par domaine (aperçu avant application, jamais de défausse).
 // @match        https://www.wiki-masters.com/*
 // @match        https://wiki-masters.com/*
@@ -379,7 +379,7 @@ const PAS_SUGGERER = [
 // Collections personnelles : la carte reçoit l'étiquette si TOUS les groupes
 // ont au moins un mot présent.
 const COLLECTIONS = [
-  { etiquette: '★Village Polonais', groupes: [['village'], ['pologne', 'polonais', 'voïvodie', 'gmina', 'powiat']] },
+  { etiquette: '★Village Polonais', groupes: [['village', 'commune polonaise', 'gmina rurale'], ['pologne', 'polonais', 'voïvodie', 'gmina', 'powiat']] },
 ];
 
 // Domaines qui ne comptent que s'ils sont le sujet principal (premier domaine trouvé).
@@ -598,7 +598,7 @@ const ANCIENNES = {
   'Wagon': { d: ['Transports'], r: ['wagon'] },
 };
 
-// Étiquettes de gestion que le script ne pose ni ne retire jamais (à part !À traiter).
+// Étiquettes de gestion que le script ne retire jamais ; il ne pose que !À traiter (Ranger) et !Doublon (Doublons).
 const GESTION = ['!Doublon', '!À vendre', '!À garder', '!À traiter'];
 
 // ═══════════════════════════════════════════════════════════════════
@@ -1286,6 +1286,7 @@ const monterUI = () => {
       <div class="row">
         <button class="b p" data-a="ranger">Ranger les nouvelles cartes</button>
         <button class="b" data-a="suggestions">Suggestions</button>
+        <button class="b" data-a="doublons">Doublons</button>
         <button class="b" data-a="migration">Migration (une fois)</button>
         <button class="b d" data-a="stop" disabled>Arrêter</button>
         <button class="b" data-a="bugs">Journal des bugs</button>
@@ -1307,6 +1308,7 @@ const monterUI = () => {
   root.querySelector('[data-a=stop]').onclick = () => { STOP = true; ui.statut('Arrêt demandé…'); };
   root.querySelector('[data-a=ranger]').onclick = () => lancer(() => modeRanger(false), { etape: 'lecture', tout: false });
   root.querySelector('[data-a=suggestions]').onclick = () => lancer(modeSuggestions);
+  root.querySelector('[data-a=doublons]').onclick = () => lancer(modeDoublons);
   root.querySelector('[data-a=migration]').onclick = () => lancer(modeMigration);
   root.querySelector('[data-a=bugs]').onclick = afficherBugs;
   majBoutonBugs();
@@ -1655,6 +1657,52 @@ const afficherSuggestions = (lecture) => {
     <div class="row"><button class="b" data-copier-cartes>Copier les cartes sans règle (${sansRegle.length + ambigues.length})</button></div>`;
   brancherCopie(copie, 'Liste copiée : colle-la dans la conversation avec Claude.');
   brancherCopie(cartes, 'Cartes copiées : colle-les dans la conversation avec Claude.', '[data-cartes]', '[data-copier-cartes]');
+};
+
+// ── Mode Doublons : chaque exemplaire d'une carte possédée plusieurs fois reçoit !Doublon ──
+// Toute la collection est lue (le premier exemplaire est souvent déjà rangé) ; les exemplaires ont la même clé,
+// le site les coche donc tous ensemble. Puis une recherche du titre par carte.
+const DOUBLON = '!Doublon';
+const doublons = (toutes) => {
+  const parCle = new Map();
+  for (const c of toutes) parCle.set(cle(c), [...(parCle.get(cle(c)) || []), c]);
+  return [...parCle.values()].filter((l) => l.length > 1 && l.some((c) => !c.tags.includes(DOUBLON))).map((l) => ({ ...l[0], n: l.length }));
+};
+const modeDoublons = async () => {
+  let toutes;
+  try {
+    toutes = await lireApi({ sort: 'rarity' }, { progression: (n, tot) => ui.statut(`Lecture de la collection : ${n}${tot ? ' / ' + tot : ''} cartes…`) });
+  } catch (e) {
+    if (STOP || e instanceof PanneSite) throw e;
+    throw new Error(`Lecture de la collection impossible (${e.message}). Réessaie dans quelques minutes.`);
+  }
+  const liste = doublons(toutes);
+  ui.statut(`${toutes.length} cartes lues, ${liste.length} carte(s) en double sans « ${DOUBLON} ».`);
+  ui.out.innerHTML = listeCartes('Cartes en double', liste.map((c) => ({ t: `${c.t} (×${c.n})`, d: c.d })))
+    + (liste.length ? '<div class="row" style="margin-top:12px"><button class="b p" data-go>Appliquer</button></div>' : '');
+  const go = ui.out.querySelector('[data-go]');
+  if (go) go.onclick = () => { go.remove(); lancer(() => appliquerDoublons(liste)); };
+};
+const appliquerDoublons = async (liste) => {
+  const plan = new Map(liste.map((c) => [cle(c), [DOUBLON]]));
+  const fait = new Set();
+  const reste = (c) => !fait.has(cle(c) + '§' + DOUBLON);
+  await choisirFiltre(null);
+  for (const [i, c] of liste.entries()) {
+    arret();
+    if (!reste(c)) continue; // déjà posée en passant, avec la recherche d'une autre carte
+    ui.statut(`Doublons : « ${c.t} » (${i + 1}/${liste.length})`);
+    await rechercher(c.t);
+    await parcourirVue(async (num) => {
+      await appliquerSurPage(plan, fait, (t) => ui.journal(`« ${c.t} » ${t}`), num);
+      return reste(c);
+    });
+  }
+  await rechercher('');
+  store.set('lecture2_perimee', true);
+  const manquent = liste.filter(reste);
+  ui.statut(manquent.length ? `⚠️ ${manquent.length} carte(s) introuvable(s) par la recherche, dont « ${manquent[0].t} » : relance « Doublons ».`
+    : `✅ ${liste.length} carte(s) marquée(s) « ${DOUBLON} » (tous leurs exemplaires).`);
 };
 
 // ── Mode Migration ──

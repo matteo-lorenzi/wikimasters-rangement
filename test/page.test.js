@@ -260,6 +260,30 @@ test('Ranger, gros stock : recherches groupées d\'abord, puis page par page ; c
   site.fermer();
 });
 
+test('Doublons : chaque exemplaire d\'une carte possédée en double reçoit !Doublon, rien d\'autre ne bouge', async () => {
+  const site = await creerSite({
+    cartes: [
+      { t: 'Olanchito', d: 'municipalité du Honduras', tags: ['Géographie'] }, { t: 'Olanchito', d: 'municipalité du Honduras' },
+      { t: 'Rome', d: 'capitale de l\'Italie', r: 'C' }, { t: 'Rome', d: 'capitale de l\'Italie', r: 'R' }, // rareté différente : pas un doublon
+      { t: 'Olanchito (homonymie)', d: '' },
+      { t: 'Déjà', d: 'x', tags: ['!Doublon'] }, { t: 'Déjà', d: 'x', tags: ['!Doublon'] },
+    ],
+  });
+  const p = panneau(site);
+  p.cliquer('[data-a=doublons]');
+  assert.ok(await attendreQue(() => p.root.querySelector('[data-go]')), p.statut());
+  assert.match(p.statut(), /1 carte\(s\) en double/);
+  p.appliquer();
+  assert.ok(await attendreQue(() => BILAN.test(p.statut()), 60000), p.statut());
+  assert.match(p.statut(), /✅ 1 carte\(s\)/);
+  const tags = (t, r = 'C') => site.cartes.filter((c) => c.t === t && c.r === r).map((c) => c.tags);
+  assert.deepEqual(tags('Olanchito'), [['Géographie', '!Doublon'], ['!Doublon']]);
+  assert.deepEqual([...tags('Rome'), ...tags('Rome', 'R'), ...tags('Olanchito (homonymie)')], [[], [], []]);
+  assert.equal(site.etat.q, '', 'la recherche est vidée à la fin');
+  sansIncident(site);
+  site.fermer();
+});
+
 test('Ranger : lecture API complète, puis seulement les cartes obtenues depuis', async () => {
   const site = await creerSite({ cartes: collection(), etiquettes: ['Sport'] });
   await rangerTout(site);

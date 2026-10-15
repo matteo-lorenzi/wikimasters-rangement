@@ -3,7 +3,7 @@
 Userscript Tampermonkey (Chrome) qui étiquette par domaine les cartes de la page Collection de wiki-masters.com. La personne y joue (~3 200 cartes) et installe elle-même `dist/wikimasters-rangement.user.js`. Avec elle : français, tutoiement, ton direct.
 
 - `src/regles.js` : listes de mots par domaine et moteur `classer`. La personne édite ce fichier elle-même (mode d'emploi en tête) : garde les listes lisibles par elle.
-- `src/app.js` : automatisation de la page Collection, modes Ranger, Suggestions et Migration, panneau.
+- `src/app.js` : automatisation de la page Collection, modes Ranger, Suggestions, Doublons et Migration, panneau.
 - Le build enveloppe les deux dans une seule IIFE, `regles.js` d'abord : `app.js` utilise `DOMAINES`, `classer`… sans import.
 
 ## Lire avant d'agir
