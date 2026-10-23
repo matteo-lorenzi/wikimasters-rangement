@@ -104,11 +104,37 @@ Moteur : nouvelle constante `MOTIFS_DE_TITRE` dans `regles.js` (une ligne par mo
 
 - **Mettre aux enchères, au prix moyen, les cartes en `!Doublon`** (2026-10-15). Avant d'y toucher : `CODING_STANDARDS.md` dit aujourd'hui « le script ne touche jamais […] aux enchères » (règle 2), à rediscuter avec la personne ; observer d'abord sur le vrai site la mise aux enchères et où lire le prix moyen, et le noter dans `docs/wikimasters.md`. Garder un exemplaire de chaque carte.
 
+## Wikipédia dans Ranger (question A, décidée avec la personne) — branche `claude/wikipedia-ranger`
+
+**État** : écrit et testé sur le faux site, **pas encore livré** (version non changée, `dist` non reconstruit : 291 tests, 25 mutations sur cette branche), **jamais essayé sur le vrai site**. Doc : `docs/wikimasters.md` (« API de Wikipédia »), `docs/tests.md`, `GLOSSARY.md`.
+
+**Ce que fait Ranger en plus** : pour les cartes lues qui n'ont pas de description utile (statut `inconnue` sans description, ou `a_traiter` / marquées `!À traiter` ; jamais les `ignoree`), il lit la première phrase de leur article fr.wikipedia.org (lecture seule, `fetch` simple avec `origin=*`, lots de 20 titres en série, ~1 requête par seconde), garde ce qui suit le premier « est un / une / le / la » et le donne au moteur comme description (`planAvecPhrase`). La carte garde sa vraie description (vide) à l'écran et sous sa clé `titre|description|rareté`. Aperçu : groupe « Classées d'après Wikipédia » (titre — phrase → domaine), bloc « Mots manquants » (calcul de Suggestions sur le lot, domaine proposé d'après la lecture complète si elle est à jour, sinon les cartes classées du lot ; « Copier pour Claude »). « Appliquer » reste obligatoire. Le script ne crée jamais de domaine : la personne décide, Claude écrit la règle.
+
+**Décisions de conception prises en plus de la liste de la personne** :
+- Le cache est une clé `wmr_wp:<titre NFC>` par titre (pas un seul gros objet réécrit à chaque lot). Une homonymie est gardée indéfiniment (seuls absent et sans résumé exploitable sont retentés à 30 jours).
+- Les phrases lues sont copiées dans `ranger_lecture` (`phrases`) : une reprise de l'application après rechargement ne dépend pas du cache.
+- Les cartes classées d'après Wikipédia n'entrent pas dans le rangement groupé par recherches (leur titre ne dit rien de leur domaine) : elles sont rangées page par page.
+- La phrase ne remplace le plan d'origine que si elle range la carte, ou la rend `!À traiter` alors qu'elle n'avait rien. Sinon la carte reste comme avant.
+- **Cartes laissées de côté** : Ranger ne relit d'ordinaire que les cartes obtenues depuis le dernier rangement. Sans garde-fou, les cartes non lues à cause de l'essai (ou d'un appel Wikipédia en échec) seraient oubliées pour toujours. `wiki_reste` (`{raison: 'essai'}` ou `{raison: 'erreur', version}`) fait relire toutes les cartes sans étiquette au Ranger suivant, dès que la case « Essai » est décochée, ou dès que la version du script change après un échec.
+- Appel en erreur HTTP 429/5xx : 3 essais à 3 s d'écart, puis même traitement que le blocage (message, journal des bugs, Ranger continue sans Wikipédia). Un appel bloqué n'est essayé qu'une fois par Ranger.
+- `navigateur` est devenu ambigu dans `regles.js` (Pierre Fehlmann, un marin, part en `!À traiter`). `navigatrice` reste en Histoire (non demandé).
+- Une carte `inconnue` à titre trompeur peut être rangée par son titre avant tout (« Marquée » → « marque ») : ce n'est pas Wikipédia, c'est le titre en secours existant.
+
+**Écarts / limites assumés** : la reprise automatique de `lancer` (PanneSite) n'a pas de cause réelle pendant la lecture Wikipédia (ses échecs ne sont pas des PanneSite) ; le test « rechargement en plein milieu » simule l'état que `lancer` écrit (`ranger_reprise`) puis recharge la page comme un F5, et vérifie que le cache évite toute relecture.
+
+**PAS vérifié sur le vrai site** :
+- que l'appel `fetch` vers `fr.wikipedia.org` passe depuis wiki-masters.com (CSP `connect-src` du site) : s'il est refusé, Ranger continue sans Wikipédia et le journal des bugs le dit ; il faudrait alors `GM_xmlhttpRequest` + `@connect fr.wikipedia.org` (écarté pour l'instant) ;
+- le rythme réel (~1 requête par seconde : 3 000 titres = ~2,5 minutes de lecture, sans compter les réponses) et le comportement d'un onglet en arrière-plan pendant cette durée ;
+- l'aspect du panneau (case « Essai », blocs d'aperçu) dans le vrai CSS ;
+- la qualité du classement sur de vraies cartes : à regarder avec la personne sur l'essai de 40 cartes, avant de décocher la case. La forme de l'API a été vérifiée avec `curl` le 2026-10-23 (20 extraits par requête, `normalized`, `redirects`, `missing`, `pageprops.disambiguation`).
+
+**Premier usage, avec la personne présente** : installer, ouvrir le panneau, laisser « Essai Wikipédia : 40 cartes » coché, « Ranger », lire le groupe « Classées d'après Wikipédia » carte par carte avant « Appliquer » ; si c'est bon, décocher la case (Ranger relira alors toutes les cartes sans étiquette).
+
 ## Questions en suspens
 
 Chacune avec le contexte et la recommandation à proposer. Ne pas trancher à la place de la personne.
 
-- **A. Wikipédia pour les cartes sans description** (accord de principe le 2026-10-13 ; la personne veut en parler **en détail, pour optimiser les appels, quand il ne restera que des cartes dont le titre n'indique aucun domaine**). Idée : lire la première phrase de l'article fr.wikipedia du titre de la carte (« Jimmy Choo … est un styliste … ») et classer ce qui suit « est un / est une ». Lecture seule, API publique (pas le site : règle 1 respectée) ; Tampermonkey demandera l'autorisation du domaine (`@connect`). À débattre :
+- **A. Wikipédia pour les cartes sans description** (**tranchée et écrite : voir la section « Wikipédia dans Ranger » plus haut**, branche `claude/wikipedia-ranger` ; ce qui suit est l'historique du débat ; accord de principe le 2026-10-13 ; la personne veut en parler **en détail, pour optimiser les appels, quand il ne restera que des cartes dont le titre n'indique aucun domaine**). Idée : lire la première phrase de l'article fr.wikipedia du titre de la carte (« Jimmy Choo … est un styliste … ») et classer ce qui suit « est un / est une ». Lecture seule, API publique (pas le site : règle 1 respectée) ; Tampermonkey demandera l'autorisation du domaine (`@connect`). À débattre :
   - quelles cartes : seulement les `inconnue` sans description (~400) ? aussi les `!À traiter` comme les groupes de musique (« Bôa — groupe britannique ») ?
   - nombre d'appels : l'API `action=query&prop=extracts&exintro&explaintext&exsentences=1` accepte plusieurs titres par requête (limite à vérifier, sans doute 20) → ~20 requêtes au lieu de 400 ; cache dans le navigateur pour ne jamais redemander un titre ;
   - où : dans Suggestions (proposer des mots) ou dans Ranger (poser) ? Recommandation : Ranger, avec « d'après Wikipédia » dans l'aperçu et « Appliquer » obligatoire ;

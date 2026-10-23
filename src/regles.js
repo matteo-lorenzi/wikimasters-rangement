@@ -220,7 +220,7 @@ const DOMAINES = {
     'empereur', 'impératrice', 'pharaon', 'nomarque', 'prince', 'princesse', 'duc', 'duchesse', 'marquis',
     'marquise', 'baron', 'baronne', 'noble', 'aristocrate', 'noblesse', 'famille noble', 'militaire', 'général!',
     'maréchal', 'amiral', 'officier', 'soldat', 'colonel', 'capitaine', 'chevalier', 'explorateur',
-    'exploratrice', 'navigateur', 'navigatrice', 'aviateur', 'aviatrice', 'pirate', 'corsaire', 'conquistador',
+    'exploratrice', 'navigatrice', 'aviateur', 'aviatrice', 'pirate', 'corsaire', 'conquistador',
     'catastrophe', 'attentat', 'massacre', 'génocide', 'épidémie', 'pandémie', 'accident', 'naufrage',
     'terrorisme', 'front', 'campagne militaire', 'opération militaire', 'unité militaire', 'régiment',
     'division militaire', 'escadrille', 'armée', 'civilisation', 'période', 'époque', 'âge du bronze',
@@ -318,6 +318,8 @@ const AMBIGUS = [
   'organisation', 'association', 'institution', 'prix', 'récompense', 'trophée', 'conseiller',
   'administrateur', 'manager', 'agent', 'consultant', 'collectionneur', 'mécène', 'philanthrope',
   'aventurier', 'aventurière', 'secrétaire général', 'directeur général', 'modèle', 'type', 'série', 'liste', 'résultats',
+  // Wikipédia, 2026-10-23 : un navigateur est un marin, un explorateur ou un navigateur web (« navigateur suisse » = Pierre Fehlmann, marin)
+  'navigateur',
 ];
 
 // Reconnues mais volontairement sans étiquette (la recherche suffit).

@@ -27,6 +27,27 @@ La même que la page Collection, avec les cookies de session de la page. Lecture
 
 `GET /api/my-collection/stats?<mêmes filtres>` → `{ total, rarityCounts, tagOptions }`.
 
+## API de Wikipédia
+
+Ranger lit la première phrase de l'article fr.wikipedia.org des cartes sans description utile (v1.10). Lecture seule, sur Wikipédia et non sur le site WikiMasters : la règle 1 de `CODING_STANDARDS.md` n'est pas en cause. Rejoué par le faux Wikipédia de `test/faux-site.js` (voir `docs/tests.md`).
+
+**L'appel** : un `fetch` simple de la page (le script est en `@grant none`), avec `origin=*` pour le CORS de Wikipédia. Pas de `GM_xmlhttpRequest`, pas de `@connect`. Aucun cookie, aucune clé. Si le navigateur refuse l'appel (réseau, CSP du site, CORS), `fetch` lève une `TypeError` : le script le note dans le journal des bugs et Ranger continue sans Wikipédia (règle 5, message en français dans l'aperçu). Un refus par la CSP de wiki-masters.com n'a **jamais été observé** sur le vrai site : à vérifier au premier essai.
+
+`GET https://fr.wikipedia.org/w/api.php?action=query&format=json&redirects=1&prop=extracts|pageprops&ppprop=disambiguation&exintro=1&explaintext=1&exchars=500&origin=*&titles=A|B|…` (titres URL-encodés, normalisés en NFC, 20 au plus par requête, en série, ~1 requête par seconde).
+
+Observé le 2026-10-23 (curl avec un User-Agent identifié) :
+- **20 extraits par requête au plus**, même si l'API accepte 50 titres. Avec 25 titres : 20 pages avec `extract`, 5 pages **sans `extract` et sans `missing`** (Strasbourg, Toulon, Toulouse, Tours…) et `continue: {excontinue: 20}`. La personne a aussi constaté un titre qui **disparaît** de la réponse sans erreur. Dans les deux cas : un titre sans `extract` ni `missing` est **remis dans la file** (3 essais au plus, puis noté absent).
+- `normalized` et `redirects` : listes `{from, to}`, **présentes seulement si elles ne sont pas vides**. Wikipédia met la première lettre en majuscule (`pierre fehlmann` → `Pierre fehlmann`, qui n'existe pas : `missing`), remplace `_` par une espace, suit les redirections. On retrouve la page d'un titre demandé en suivant `normalized` puis `redirects`, et en cherchant le `title` obtenu dans `pages`. Les clés de `pages` sont des numéros de page, ou -1, -2… pour les pages absentes.
+- Titre absent : `{title, missing: ""}`. Page d'homonymie : `pageprops: {disambiguation: ""}` (l'extrait peut très bien contenir « est un »).
+- `exsentences` est évité : il coupe après « c. » (« Mary Butters ( c. »). `exchars=500` coupe l'extrait à ~500 caractères et ajoute « ... ».
+- Un extrait peut se réduire au titre (« Hanabie. » vu par la personne ; le 2026-10-23, l'article avait un vrai résumé). Un extrait sans « est un/une/le/la » (« Le nom propre Mercure prend différentes significations ») n'est pas exploitable.
+
+**Ce que le script en lit** : seulement ce qui suit le **premier** « est un / est une / est le / est la » dans les ~300 premiers caractères, l'adjectif d'ouverture sauté (premier, ancien, dernière, seul, unique…), ~250 caractères au plus, coupés à la fin de la phrase (« c. 1850 » et « av. J.-C. » ne la coupent pas). « Mary Butters ( c. 1770 - c. 1850) est une sorcière irlandaise… » → « sorcière irlandaise… ». Pas de « est un… », homonymie ou titre absent : rien, la carte reste telle quelle. Ce morceau est donné au moteur (`classer`) comme description ; la carte garde sa vraie description (vide) à l'écran et sous sa clé `titre|description|rareté`.
+
+**Cache** (`localStorage`, une clé `wmr_wp:<titre NFC>`) : `{extrait, homonymie, absent, date}`, enregistré après chaque lot. Gardé indéfiniment ; un titre absent ou sans résumé exploitable est retenté après 30 jours. Un rechargement de la page repart du cache.
+
+**Essai** : la case « Essai Wikipédia : 40 cartes » (cochée par défaut, choix mémorisé) limite la lecture aux 40 premières cartes concernées. Les cartes laissées de côté (essai, ou appel en échec) font relire toutes les cartes sans étiquette au Ranger suivant (case décochée, ou nouvelle version du script), sinon Ranger les oublierait : il ne relit d'ordinaire que les cartes obtenues depuis le dernier rangement.
+
 ## Pièges de l'interface
 
 **Pagination**

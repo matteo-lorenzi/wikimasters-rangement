@@ -49,6 +49,14 @@ const installerInnerText = (window) => {
  *   apiEnPanne (false)          : toute requête /api/ répond 500
  *   apiIllisible (false)        : l'API répond, mais dans un format inconnu
  *   messageConfirm              : texte du `confirm` natif de suppression (sinon il nomme l'étiquette)
+ *   wikipedia                   : le faux fr.wikipedia.org (fetch vers wikipedia.org/w/api.php), voir plus bas
+ *     articles    { titre: texte }  : les articles qui existent (le texte est l'introduction complète)
+ *     homonymies  [titres]          : pages d'homonymie (pageprops.disambiguation)
+ *     redirections { titre: cible } : « Pierre F. » → « Pierre Fehlmann »
+ *     disparus    [titres]          : le titre disparaît de la réponse (ni extract ni missing) à sa 1re demande
+ *     bloque      (false)           : l'appel est refusé par le navigateur (réseau, CSP, CORS : fetch lève TypeError)
+ *     statutHttp  (0)               : réponse HTTP en erreur (429, 503…)
+ *     rechargerApres (0)            : la page est rechargée (comme un F5) après cette requête Wikipédia
  */
 const creerSite = async (config = {}) => {
   const o = {
@@ -61,6 +69,7 @@ const creerSite = async (config = {}) => {
   const actions = [];
   const compteurs = { chargements: 0, echecsPose: o.echecsPose, echecsRecherche: o.echecsRecherche, apiEchecs: o.apiEchecs, rechargements: 0 };
   let ouverte = null; // la page ouverte : { window, document, etat }
+  const wikiRequetes = []; // les requêtes faites au faux Wikipédia, d'une page à l'autre
 
   // Ouvre la page Collection ; « stockage » = le localStorage gardé d'un rechargement à l'autre.
   const ouvrirPage = async (stockage = {}) => {
@@ -360,8 +369,52 @@ const creerSite = async (config = {}) => {
       }
     };
 
+    // ── faux fr.wikipedia.org (docs/wikimasters.md, « API de Wikipédia ») ──
+    // Pièges rejoués : 20 extraits au plus par requête (au-delà, la page est renvoyée sans `extract` et sans erreur : ni extract ni missing ;
+    // l'option `disparus` fait disparaître le titre de la réponse tout à fait),
+    // première lettre mise en majuscule (« normalized »), redirections, pages d'homonymie (pageprops), titres absents
+    // (`missing`), extrait coupé à 500 caractères (exchars), « Hanabie. » réduit au titre.
+    const wp = { articles: {}, homonymies: [], redirections: {}, disparus: [], bloque: false, statutHttp: 0, rechargerApres: 0, ...(o.wikipedia || {}) };
+    const disparus = new Set(wp.disparus);
+    let wikiEnCours = 0;
+    const reponseWikipedia = async (url, init) => {
+      const u = new URL(url);
+      const titres = (u.searchParams.get('titles') || '').split('|').filter(Boolean);
+      const demande = { type: 'wikipedia', titres, url: String(url), methode: (init && init.method) || 'GET', options: init || null, simultanees: ++wikiEnCours };
+      wikiRequetes.push(demande);
+      actions.push(demande);
+      try {
+        if (wp.bloque) throw new TypeError('Failed to fetch');
+        await attente(3);
+        if (wp.statutHttp) return { ok: false, status: wp.statutHttp, json: async () => ({}) };
+        const p = u.searchParams;
+        const normalized = [], redirects = [], pages = {};
+        let manquant = -1;
+        titres.forEach((t, i) => {
+          const norm = t.replace(/_/g, ' ').replace(/^./u, (c) => c.toUpperCase());
+          if (norm !== t) normalized.push({ from: t, to: norm });
+          const cible = wp.redirections[norm] || norm;
+          if (cible !== norm) redirects.push({ from: norm, to: cible });
+          if (disparus.delete(cible)) return; // le titre disparaît de la réponse
+          let texte = wp.articles[cible];
+          if (texte === undefined) { pages[manquant--] = { ns: 0, title: cible, missing: '' }; return; }
+          if (i >= 20) { pages[1000 + i] = { pageid: 1000 + i, ns: 0, title: cible }; return; } // au-delà de 20 : la page est là, sans extract
+          const exchars = +p.get('exchars') || 500;
+          if (texte.length > exchars) texte = texte.slice(0, texte.lastIndexOf(' ', exchars)) + '...';
+          pages[1000 + i] = { pageid: 1000 + i, ns: 0, title: cible, extract: texte, ...(wp.homonymies.includes(cible) ? { pageprops: { disambiguation: '' } } : {}) };
+        });
+        // dans la vraie réponse, `normalized` et `redirects` n'apparaissent que s'ils ne sont pas vides
+        const query = { ...(normalized.length ? { normalized } : {}), ...(redirects.length ? { redirects } : {}), pages };
+        return { ok: true, status: 200, json: async () => ({ batchcomplete: '', query }) };
+      } finally {
+        wikiEnCours--;
+        if (wp.rechargerApres && wikiRequetes.length === wp.rechargerApres) setTimeout(rechargerPage, 0);
+      }
+    };
+
     // ── API de lecture ──
-    window.fetch = async (url) => {
+    window.fetch = async (url, init) => {
+      if (/wikipedia\.org\/w\/api\.php/.test(String(url))) return reponseWikipedia(url, init);
       await attente(2);
       const u = new URL(url, 'https://www.wiki-masters.com');
       actions.push({ type: 'api', url: u.pathname + u.search });
@@ -416,6 +469,9 @@ const creerSite = async (config = {}) => {
     chargements: () => compteurs.chargements,
     pagesVisitees: () => actions.filter((a) => a.type === 'page').length,
     poses: () => actions.filter((a) => a.type === 'pose'),
+    // requêtes faites au faux Wikipédia : [{ titres, simultanees, methode, options }]
+    wikipedia: () => wikiRequetes,
+    titresWikipedia: () => wikiRequetes.flatMap((r) => r.titres),
     fermer: () => ouverte.window.close(),
   };
 };

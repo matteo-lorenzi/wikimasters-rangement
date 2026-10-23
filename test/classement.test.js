@@ -224,6 +224,11 @@ const CAS = [
   ['Cuivre (groupe 11)', '', ['!À traiter'], 'a_traiter'],
   ['Groupe symétrique (groupe)', 'groupe en mathématiques', ['Sciences'], 'classee'],
   ['Groupe (homonymie)', '', [], 'ignoree'],
+  // « navigateur » est ambigu (marin, explorateur ou navigateur web), Wikipédia, 2026-10-23 : Pierre Fehlmann est un marin
+  ['Pierre Fehlmann', 'navigateur suisse', ['!À traiter'], 'a_traiter'],
+  ['Mozilla Firefox', 'navigateur web libre', ['Sciences'], 'classee'],
+  ['Vendée Globe', 'navigateur sportif, course autour du monde', ['Sport'], 'classee'],
+  ['Magellan', 'navigateur et explorateur portugais', ['Histoire'], 'classee'],
   // « télé » a 4 lettres : pris tel quel, il ne trouve pas « télégraphe »
   ["Ligne du télégraphe Chappe d'Avranches à Cherbourg", '', [], 'inconnue'],
   // mots risqués refusés par la personne : la carte reste sans règle
