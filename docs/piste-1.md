@@ -152,7 +152,7 @@ Conditions :
   4. `poserEtiquette` doit aussi accepter que la fenêtre se ferme seule, et reconnaître « Impossible d'appliquer l'étiquette » pour s'arrêter tout de suite avec un message clair.
 - **Reprise** (règle 4) : `fait` est enregistré au fil de l'eau (`clé§étiquette`). Une relance saute les mots déjà traités, puis les cartes déjà posées.
 - **Pagination** (règle 6) : avec une recherche, une vue de moins de 50 cartes n'a pas de pagination, et `num = null` évite d'en dépendre. Au-delà de 50 résultats, on ne passe en page 2 que si la page 1 ne contient plus que des intrus.
-- **Rien d'irréversible** (règle 2) : seulement « Étiqueter ». Jamais « Retirer l'étiquette », « Défausser » ni « Mettre en favori », qui sont dans la même barre.
+- **Rien d'irréversible** (règle 2) : « Étiqueter », et depuis la v1.9.7 « Retirer l'étiquette » pour une seule étiquette, `!À traiter` (posée par le script, donc réversible, et seulement sur des cartes que les règles viennent de ranger). Jamais « Défausser » ni « Mettre en favori », qui sont dans la même barre.
 - **Messages** (règle 7) : « Rangement groupé : recherche « football » (12/47) — 57 cartes à ranger en #Sport… », puis « Le site n'a pas pu afficher la recherche « canton ». Recharge la page puis relance : ce qui est fait reste fait. »
 - **Test d'abord** (`test/page.test.js`) : sur le faux site, avec une barre de recherche filtrant par sous-chaîne sans accents, vérifier que des intrus ne sont jamais cochés, qu'un échec de recherche arrête le script, et qu'une recherche au résultat vide passe au mot suivant.
 

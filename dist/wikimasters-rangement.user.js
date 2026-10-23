@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WikiMasters — Rangement des cartes
 // @namespace    wikimasters-rangement
-// @version      1.9.6
+// @version      1.9.7
 // @description  Étiquette tes cartes WikiMasters par domaine (aperçu avant application, jamais de défausse).
 // @match        https://www.wiki-masters.com/*
 // @match        https://wiki-masters.com/*
@@ -598,7 +598,8 @@ const ANCIENNES = {
   'Wagon': { d: ['Transports'], r: ['wagon'] },
 };
 
-// Étiquettes de gestion que le script ne retire jamais ; il ne pose que !À traiter (Ranger) et !Doublon (Doublons).
+// Étiquettes de gestion. Le script ne pose que !À traiter (Ranger) et !Doublon (Doublons), et ne retire que !À traiter
+// (Ranger, quand les règles rangent enfin la carte) : jamais les autres.
 const GESTION = ['!Doublon', '!À vendre', '!À garder', '!À traiter'];
 
 // ═══════════════════════════════════════════════════════════════════
@@ -954,6 +955,64 @@ const poserEtiquette = async (nom) => {
   return m ? { poses: +m[1], deja: +(m[2] || 0) } : null;
 };
 
+// Retire une étiquette des cartes cochées (docs/wikimasters.md, « Retirer l'étiquette »). Seule !À traiter est retirée par le script.
+// La fenêtre liste une étiquette par bouton, « nom » puis le nombre de cartes ; un clic retire tout de suite,
+// puis « Terminé » (la fenêtre ne se ferme pas seule). Le site garde la sélection : l'appelant quitte le mode sélection.
+const fenetreRetrait = () => /Retirer une étiquette/.test(texte());
+const retirerEtiquette = async (nom) => {
+  if (nom !== A_TRAITER) throw new Error('Le script ne retire que « ' + A_TRAITER + ' » (demandé : « ' + nom + ' »).');
+  const b = bouton(/^Retirer l'étiquette$/);
+  if (!b || b.disabled) throw new PanneSite('Bouton « Retirer l\'étiquette » indisponible.');
+  b.click();
+  if (!(await attendre(fenetreRetrait, 10000))) throw new PanneSite('Fenêtre « Retirer une étiquette » introuvable.');
+  const choix = () => [...document.querySelectorAll('button')].find((x) => {
+    if (x.closest('#wmr-host')) return false;
+    const t = x.innerText.trim();
+    return t === nom || (t.startsWith(nom) && /^\s+\d+$/.test(t.slice(nom.length)));
+  });
+  if (!(await attendre(choix, 10000))) { await fermerFenetre(); throw new Error('Étiquette « ' + nom + ' » absente de la fenêtre « Retirer une étiquette » : rien n\'a été retiré.'); }
+  choix().click();
+  if (!(await attendre(() => bouton(/^Terminé$/), 90000))) {
+    await fermerFenetre();
+    throw new PanneSite('Le site n\'a pas confirmé le retrait de « ' + nom + ' » après 90 s. Vérifie quelques cartes puis relance : ce qui est fait reste fait.');
+  }
+  const m = texte().match(/(\d+)\s*cartes?\s*désétiquetées?/);
+  bouton(/^Terminé$/).click();
+  await attendre(() => !fenetreRetrait(), 10000);
+  await attendre(() => !/Actualisation/.test(texte()), 30000);
+  return m ? +m[1] : null;
+};
+
+// Retire !À traiter des cartes visibles dont tous les domaines sont posés (prets : Set de clés), jusqu'à ce qu'il n'y en ait plus
+// sur la page : les cartes retirées quittent la vue « #!À traiter » et les suivantes remontent.
+const retirerSurPage = async (prets, fait, journal) => {
+  let retirees = 0;
+  for (;;) {
+    arret();
+    const cles = new Set(cartesDom().map((el) => cle(lireCarte(el))).filter((k) => prets.has(k) && !fait.has(k + '§-' + A_TRAITER)));
+    // la même clé peut être affichée deux fois (doublons) : le site coche alors tous les exemplaires ensemble
+    if (!cles.size) return retirees;
+    await modeSelection(true);
+    await viderSelection();
+    for (const el of cartesDom()) if (estSelectionnee(el) !== cles.has(cle(lireCarte(el)))) await basculer(el);
+    const ecarts = cartesDom().filter((el) => estSelectionnee(el) !== cles.has(cle(lireCarte(el))));
+    if (ecarts.length) throw new Error(`Sélection incohérente pour le retrait de « ${A_TRAITER} » (${ecarts.length} carte(s) cochée(s) à tort ou oubliée(s), dont « ${ecarts[0].h.textContent.trim()} ») : rien n'a été retiré.`);
+    const nb = cartesDom().filter(estSelectionnee).length;
+    if (!nb) throw new Error('Impossible de sélectionner les cartes pour le retrait de « ' + A_TRAITER + ' ».');
+    const avant = empreinte();
+    const bilan = await retirerEtiquette(A_TRAITER);
+    // le site garde la sélection (parfois des cartes qui ont quitté la vue) : on quitte le mode pour la vider
+    await modeSelection(false);
+    await attendre(() => empreinte() !== avant && !enChargement(), 30000);
+    await attendrePageStable();
+    // les cartes retirées ont quitté la vue ; sinon le retrait n'a pas pris, et rien n'est noté comme fait
+    if (cartesDom().some((el) => cles.has(cle(lireCarte(el))))) throw new PanneSite('Le site affiche encore des cartes dont « ' + A_TRAITER + ' » devait être retirée.');
+    for (const k of cles) fait.add(k + '§-' + A_TRAITER);
+    retirees += nb;
+    journal(`  retrait de ${A_TRAITER} → ${bilan != null ? bilan + ' retirée(s)' : nb + ' carte(s)'}`);
+  }
+};
+
 // Applique, sur la page affichée, les étiquettes prévues pour les cartes visibles.
 // plan : Map(clé → [étiquettes]) ; fait : Set('clé§étiquette')
 // Revient à la page « num » (le site peut revenir à la page 1 après un étiquetage).
@@ -1019,6 +1078,8 @@ const appliquerSurPage = async (plan, fait, journal, num = null) => {
 
 const contientMot = (c, mots) => { const t = norm(c.d + ' ' + c.t); return mots.some((m) => t.includes(norm(m))); };
 
+const estMarquee = (c) => (c.tags || []).includes(A_TRAITER);
+
 // Étiquettes finales d'une carte, avec ses anciennes étiquettes éventuelles.
 const planCarte = (c, anciennes = []) => {
   const r = classer(c);
@@ -1032,10 +1093,12 @@ const planCarte = (c, anciennes = []) => {
     else domAnc.push(...def.d);
   }
   const doms = [...new Set([...domDesc, ...domAnc])].slice(0, MAX_DOMAINES);
-  const tags = [...new Set([...doms, ...coll, ...gestion])];
-  if (!doms.length && r.statut === 'a_traiter') tags.push(A_TRAITER);
+  const marquee = estMarquee(c);
+  // une carte déjà marquée « !À traiter » ne reçoit rien tant que les règles ne lui trouvent pas de domaine
+  const tags = marquee && !doms.length ? [] : [...new Set([...doms, ...coll, ...gestion])];
+  if (!marquee && !doms.length && r.statut === 'a_traiter') tags.push(A_TRAITER);
   const statut = doms.length ? 'classee' : r.statut === 'a_traiter' ? 'a_traiter' : r.statut;
-  return { tags, statut, source: r.source };
+  return { tags, statut, source: r.source, retirer: marquee && !!doms.length };
 };
 
 // ── Rangement groupé, pour un gros stock de cartes à ranger ──
@@ -1328,7 +1391,7 @@ const lancer = async (fn, reprise = null) => {
     // Un plafond par séance évite de boucler sur un site qui ne tient jamais longtemps.
     const r = reprise && store.get('ranger_reprise', null);
     const meme = r && r.etape === reprise.etape;
-    const poses = store.get('ranger_fait', []).length;
+    const poses = (store.get('ranger_fait', []) || []).length + (store.get('ranger_fait_m', []) || []).length;
     const essais = meme && poses <= (r.poses || 0) ? r.essais : 0;
     const total = meme ? r.total || r.essais : 0;
     if (reprise && e instanceof PanneSite && essais < MAX_RECHARGEMENTS && total < MAX_RECHARGEMENTS_SEANCE) {
@@ -1447,21 +1510,50 @@ const modeRanger = async (tout = false) => {
     cartes = await lireVue((p) => ui.statut(`Lecture des cartes sans étiquette : page ${p}…`));
     await choisirFiltre(null);
   }
-  ui.statut(`Classement de ${cartes.length} carte(s)…`);
+  // Les cartes marquées « !À traiter » sont relues à chaque fois : les règles ont pu les rattraper depuis.
+  let marquees = [];
+  if (viaApi) marquees = await lireMarquees();
+  ui.statut(`Classement de ${cartes.length + marquees.length} carte(s)…`);
   await sleep(50);
-  store.set('ranger_lecture', { at: Date.now(), depuis, viaApi, cartes });
-  afficherRanger(cartes, depuis, viaApi);
+  const toutes = [...cartes, ...marquees];
+  store.set('ranger_lecture', { at: Date.now(), depuis, viaApi, cartes: toutes });
+  afficherRanger(toutes, depuis, viaApi);
+};
+
+// Les cartes qui portent !À traiter (API, filtrée par l'id de l'étiquette, lu dans les options de `stats`).
+// Un id introuvable ou une lecture ratée ne bloque pas le rangement ordinaire : on le note et on continue sans elles.
+const idEtiquette = async (nom) => {
+  const j = await lireUrl('/api/my-collection/stats');
+  const o = (Array.isArray(j.tagOptions) ? j.tagOptions : []).find((x) => (x.name ?? x.tag?.name) === nom);
+  return o ? (o.id ?? o.tag_id ?? o.tag?.id ?? null) : null;
+};
+const lireMarquees = async () => {
+  try {
+    ui.statut(`Lecture des cartes marquées « ${A_TRAITER} »…`);
+    const id = await idEtiquette(A_TRAITER);
+    if (id == null) return [];
+    return (await lireApi({ sort: 'added', tag_id: String(id) })).filter(estMarquee);
+  } catch (e) {
+    if (STOP || e instanceof PanneSite) throw e;
+    noterBug(e, `lecture des cartes « ${A_TRAITER} » impossible`);
+    ui.journal(`Cartes « ${A_TRAITER} » non lues (${e.message}) : rangement ordinaire seulement.`);
+    return [];
+  }
 };
 
 // Ce que le mode Ranger fera d'une lecture : le même calcul pour l'aperçu et pour une reprise après rechargement.
+// neuves : cartes sans étiquette ; marquees : cartes !À traiter que les règles rangent maintenant (domaine puis retrait).
 const preparerRanger = (cartes, depuis) => {
   const plans = new Map(cartes.map((c) => [cle(c), planCarte(c)]));
   const cibles = cartes.filter((c) => plans.get(cle(c)).tags.length);
-  const plusRecente = cartes.reduce((m, c) => (c.obtenu && c.obtenu > m ? c.obtenu : m), depuis || '');
+  const neuves = cibles.filter((c) => !estMarquee(c));
+  const marquees = cibles.filter(estMarquee);
+  const plusRecente = cartes.filter((c) => !estMarquee(c)).reduce((m, c) => (c.obtenu && c.obtenu > m ? c.obtenu : m), depuis || '');
   // gros stock : d'abord des recherches qui rangent les cartes par groupes, puis page par page
-  const groupes = cibles.length >= SEUIL_RANGEMENT_GROUPE ? motsGroupes(cartes, plans) : [];
-  return { plans, cibles, plusRecente, groupes };
+  const groupes = neuves.length >= SEUIL_RANGEMENT_GROUPE ? motsGroupes(cartes.filter((c) => !estMarquee(c)), plans) : [];
+  return { plans, cibles, neuves, marquees, plusRecente, groupes };
 };
+const oublierFait = () => { store.set('ranger_fait', null); store.set('ranger_fait_m', null); };
 // Applique une lecture enregistrée (store « ranger_lecture »), au clic sur « Appliquer » ou en reprise automatique.
 const appliquerLecture = async (l) => {
   const { plans, cibles, plusRecente, groupes } = preparerRanger(l.cartes, l.depuis);
@@ -1469,16 +1561,21 @@ const appliquerLecture = async (l) => {
   store.set('lecture2_perimee', true);
   if (l.viaApi && plusRecente) retenirDepuis(plusRecente);
   store.set('ranger_lecture', null);
-  store.set('ranger_fait', null);
+  oublierFait();
 };
 
 const afficherRanger = (cartes, depuis, viaApi) => {
-  const { plans, cibles, plusRecente, groupes } = preparerRanger(cartes, depuis);
+  const { plans, cibles, neuves, marquees, plusRecente, groupes } = preparerRanger(cartes, depuis);
   const groupees = groupes.reduce((s, g) => s + g.n, 0);
-  ui.statut(`${cartes.length} carte(s) ${depuis ? 'nouvelle(s)' : 'sans étiquette'}, dont ${cibles.length} à ranger.`);
+  const nbMarquees = cartes.filter(estMarquee).length;
+  ui.statut(`${cartes.length - nbMarquees} carte(s) ${depuis ? 'nouvelle(s)' : 'sans étiquette'}, dont ${neuves.length} à ranger.`
+    + (nbMarquees ? ` Et ${nbMarquees} marquée(s) « ${A_TRAITER} », dont ${marquees.length} que les règles rangent maintenant.` : ''));
   ui.out.innerHTML = (groupes.length ? `<h4>Rangement groupé</h4>
       <p class="hint">Beaucoup de cartes à ranger : ${groupes.length} recherche(s) en rangent d'abord ${groupees} par groupes, puis le reste page par page.</p>
       ${listeCartes('Recherches prévues', groupes.map((g) => ({ t: `« ${g.mot} » → #${g.dom}`, d: `${g.n} carte(s)` })))}` : '')
+    + (marquees.length ? `<h4>Cartes « ${A_TRAITER} » rangées</h4>
+      <div>${marquees.length} carte(s) : leur domaine, puis retrait de ${A_TRAITER} (et seulement elle)</div>
+      ${listeCartes('Cartes concernées', marquees)}` : '')
     + resumePlan(cartes, plans) + `<div class="row" style="margin-top:12px">
       ${cibles.length ? '<button class="b p" data-go>Appliquer</button>' : ''}
       ${depuis ? '<button class="b" data-tout>Revoir toutes les cartes sans étiquette</button>' : ''}</div>`;
@@ -1489,7 +1586,7 @@ const afficherRanger = (cartes, depuis, viaApi) => {
   const go = ui.out.querySelector('[data-go]');
   if (go) go.onclick = () => {
     go.remove();
-    store.set('ranger_fait', null);
+    oublierFait();
     lancer(() => appliquerLecture({ cartes, depuis, viaApi }), { etape: 'application' });
   };
   const tt = ui.out.querySelector('[data-tout]');
@@ -1528,7 +1625,8 @@ const appliquerRanger = async (cibles, plans, groupes = []) => {
   // Les cartes rangées disparaissent de la vue et les suivantes remontent : on reste sur la page
   // tant qu'elle contient des cartes à ranger, puis on avance.
   const premier = new Map(), suite = new Map();
-  for (const c of cibles) {
+  const marquees = cibles.filter(estMarquee); // traitées à part, dans la vue « #!À traiter » (passe 3)
+  for (const c of cibles.filter((x) => !estMarquee(x))) {
     const tags = plans.get(cle(c)).tags;
     premier.set(cle(c), [tags[0]]);
     if (tags.length > 1) suite.set(cle(c), { tete: tags[0], reste: tags.slice(1) });
@@ -1592,8 +1690,34 @@ const appliquerRanger = async (cibles, plans, groupes = []) => {
       return enAttente();
     });
   }
+  // Passe 3 : les cartes « !À traiter » que les règles rangent maintenant. Dans leur vue, d'abord leurs domaines,
+  // puis (dans cet ordre : si la pose échoue, la carte garde son repère) le retrait de !À traiter, et de lui seul.
+  // Compte à part (« ranger_fait_m ») : une carte sans étiquette qui a la même clé ne doit pas la faire croire rangée.
+  const faitM = new Set(store.get('ranger_fait_m', []) || []);
+  const noterM = (prefixe) => (t) => { ui.journal(prefixe + t); store.set('ranger_fait_m', [...faitM]); };
+  const planM = new Map(marquees.map((c) => [cle(c), plans.get(cle(c)).tags]));
+  const aFaireM = () => marquees.filter((c) => !faitM.has(cle(c) + '§-' + A_TRAITER)).length;
+  if (marquees.length && aFaireM()) {
+    arret();
+    ui.statut(`Passe 3 : ${A_TRAITER} — ${aFaireM()} carte(s) à ranger puis à débarrasser de son repère`);
+    await choisirFiltre(A_TRAITER);
+    await parcourirVue(async (num) => { await appliquerSurPage(planM, faitM, noterM(`${A_TRAITER} p${num} `), num); });
+    const prets = new Set(marquees.filter((c) => planM.get(cle(c)).every((t) => faitM.has(cle(c) + '§' + t))).map(cle));
+    // les cartes retirées quittent la vue et les suivantes remontent : on reste sur la page tant qu'elle en contient
+    await retourDebut();
+    for (let num = 1; ; num++) {
+      arret();
+      await attendre(() => cartesDom().length > 0 && !enChargement(), 30000);
+      await attendrePageStable();
+      await retirerSurPage(prets, faitM, noterM(`${A_TRAITER} p${num} `));
+      if (!aFaireM() || cartesDom().length < PAR_PAGE) break;
+      if (!(await changerPage(1))) break;
+    }
+  }
   await choisirFiltre(null);
-  const manquent = cibles.filter((c) => plans.get(cle(c)).tags.some((t) => !fait.has(cle(c) + '§' + t)));
+  const manquent = cibles.filter((c) => estMarquee(c)
+    ? planM.get(cle(c)).some((t) => !faitM.has(cle(c) + '§' + t)) || !faitM.has(cle(c) + '§-' + A_TRAITER)
+    : plans.get(cle(c)).tags.some((t) => !fait.has(cle(c) + '§' + t)));
   ui.statut(manquent.length ? `Terminé, mais ${manquent.length} carte(s) non traitée(s) entièrement : relance « Ranger les nouvelles cartes ».` : `✅ ${cibles.length} carte(s) rangée(s).`);
 };
 

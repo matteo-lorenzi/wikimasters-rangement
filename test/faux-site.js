@@ -9,7 +9,7 @@
 //
 // Pièges rejoués : « Page X / Y » en retard et au total faux, « Chargement… », cartes sans <p>,
 // libellé du filtre avec « (n) », fenêtre d'étiquetage avec bilan et « Terminé » (qui se ferme seule ou non),
-// retour en page 1 après un étiquetage, sélection perdue au changement de page, `confirm` natif,
+// retour en page 1 après un étiquetage, fenêtre « Retirer une étiquette » (qui garde la sélection), sélection perdue au changement de page, `confirm` natif,
 // recherche sans casse ni accents, échecs de chargement et de pose.
 'use strict';
 const { JSDOM } = require('jsdom');
@@ -275,7 +275,7 @@ const creerSite = async (config = {}) => {
       const tout = bouton(toutes ? 'Désélectionner la page' : 'Tout sélectionner (page)');
       tout.addEventListener('click', () => { actions.push({ type: 'clic', t: '(page)' }); for (const c of etat.affichees) toutes ? etat.choisies.delete(c.id) : etat.choisies.add(c.id); majGrilleSelection(); majBarre(); });
       const etq = bouton('Étiqueter'); etq.disabled = !n; etq.addEventListener('click', ouvrirEtiqueter);
-      const retirer = bouton('Retirer l\'étiquette'); retirer.disabled = !n;
+      const retirer = bouton('Retirer l\'étiquette'); retirer.disabled = !n; retirer.addEventListener('click', ouvrirRetirer);
       const defausser = bouton(`Défausser (+${n})`); defausser.addEventListener('click', () => actions.push({ type: 'DÉFAUSSER' }));
       barre.append(tout, etq, retirer, defausser);
     };
@@ -328,6 +328,38 @@ const creerSite = async (config = {}) => {
       lister();
     };
 
+    // ── fenêtre « Retirer une étiquette » (observée le 2026-10-13) ──
+    // Un bouton par étiquette portée par la sélection (« nom » puis le nombre de cartes), pas de confirm : le clic retire
+    // tout de suite, bilan « N carte désétiquetée. » et « Terminé ». La fenêtre ne se ferme pas seule ; la sélection est gardée.
+    const ouvrirRetirer = () => {
+      const f = $('#fenetre');
+      const choisies = cartes.filter((c) => etat.choisies.has(c.id));
+      f.innerHTML = `<div role="dialog"><h2>Retirer une étiquette</h2><p>Sur ${choisies.length} carte(s) sélectionnée(s).</p>
+        <input placeholder="Chercher une étiquette..."><div class="liste"></div><div class="message"></div></div>`;
+      const boite = f.firstChild;
+      const fermer = bouton('×', { 'aria-label': 'Fermer' }); fermer.addEventListener('click', () => { f.innerHTML = ''; }); boite.appendChild(fermer);
+      const liste = boite.querySelector('.liste');
+      const message = boite.querySelector('.message');
+      for (const nom of [...new Set(choisies.flatMap((c) => c.tags))].sort()) {
+        const b = document.createElement('button');
+        b.innerHTML = `<div>${nom}</div><div>${choisies.filter((c) => c.tags.includes(nom)).length}</div>`;
+        b.addEventListener('click', async () => {
+          liste.querySelectorAll('button').forEach((x) => { x.disabled = true; });
+          await attente(o.pose);
+          let n = 0;
+          for (const c of choisies) if (c.tags.includes(nom)) { c.tags = c.tags.filter((t) => t !== nom); n++; }
+          actions.push({ type: 'retrait', etiquette: nom, n, titres: choisies.map((c) => c.t) });
+          message.textContent = `${n} carte désétiquetée.`;
+          const fin = bouton('Terminé'); fin.addEventListener('click', () => { f.innerHTML = ''; }); boite.appendChild(fin);
+          const choix = new Set(etat.choisies);
+          await recharger(o.retourPage1 ? 0 : etat.page);
+          for (const id of choix) etat.choisies.add(id); // la sélection est gardée, même pour les cartes sorties de la vue
+          majGrilleSelection(); majBarre();
+        });
+        liste.appendChild(b);
+      }
+    };
+
     // ── API de lecture ──
     window.fetch = async (url) => {
       await attente(2);
@@ -338,7 +370,7 @@ const creerSite = async (config = {}) => {
       const p = u.searchParams;
       const filtre = p.get('untagged') === '1' ? '' : p.get('tag_id') ? p.get('tag_id') : null;
       const l = vue({ filtre, q: p.get('q') || '', tri: p.get('sort') === 'added' ? 'Date d\'ajout' : 'Rareté' });
-      if (u.pathname === '/api/my-collection/stats') return { ok: true, status: 200, json: async () => ({ total: l.length, rarityCounts: {}, tagOptions: [] }) };
+      if (u.pathname === '/api/my-collection/stats') return { ok: true, status: 200, json: async () => ({ total: l.length, rarityCounts: {}, tagOptions: etiquettes.map((t) => ({ id: t, name: t })) }) };
       if (u.pathname === '/api/my-collection') {
         const page = +p.get('page') || 0;
         const collection = l.slice(page * 50, page * 50 + 50).map((c) => ({

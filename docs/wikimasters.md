@@ -70,6 +70,8 @@ La même que la page Collection, avec les cookies de session de la page. Lecture
 - Un clic sur l'étiquette la retire **tout de suite**, sans `confirm` natif : bilan « N carte désétiquetée. » et bouton « Terminé » ; bandeau « Étiquette retirée des cartes sélectionnées. » en haut ; « Actualisation… » dans la barre du bas.
 - Contrairement à « Étiqueter », la fenêtre **ne se ferme pas seule** (encore ouverte après 7 s) : cliquer « Terminé ». Après « Terminé », la **sélection est gardée** (« 1 carte sélectionnée »).
 - La requête d'écriture n'est pas apparue dans la surveillance réseau (seulement la relecture des étiquettes, `GET …/rest/v1/tags`). Le script ne l'appelle jamais (règle 1).
+- Utilisé par Ranger depuis la v1.9.7 pour retirer `!À traiter` (et elle seule) : le bouton de la fenêtre est cherché au texte exact `!À traiter`, éventuellement suivi d'un saut de ligne et du nombre. Le script quitte le mode sélection juste après « Terminé » pour vider la sélection gardée par le site (cartes sorties de la vue comprises). Le faux site rejoue tout cela (`ouvrirRetirer`).
+- **À vérifier au premier usage réel** : la forme des `tagOptions` de `/api/my-collection/stats` (le script cherche `name` ou `tag.name`, et `id`, `tag_id` ou `tag.id`). Si l'id est introuvable, Ranger saute les cartes `!À traiter` et le dit dans son journal.
 
 **Filtres et étiquettes**
 - Le bouton du filtre actif affiche « #Nom (n) » : comparer les libellés sans le « (n) ».

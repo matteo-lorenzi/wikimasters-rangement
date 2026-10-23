@@ -321,6 +321,75 @@ test('Ranger : API illisible, lecture par l\'écran', async () => {
   site.fermer();
 });
 
+// ── Ranger : retrait de !À traiter (v1.9.7) ──
+// 60 cartes que les règles rangent maintenant (2 pages dans la vue « #!À traiter »), une qui porte aussi !À garder,
+// une encore ambiguë (« groupe » seul), et une carte sans étiquette ordinaire.
+const marquees = () => [
+  ...serie(60, (i) => ({ t: nom(i), d: 'footballeur français', tags: ['!À traiter'], obtenu: date(i) })),
+  { t: 'Marquée et gardée', d: 'footballeur français', tags: ['!À traiter', '!À garder'], obtenu: date(70) },
+  { t: 'Bôa', d: 'groupe britannique', tags: ['!À traiter'], obtenu: date(71) },
+  { t: 'Ordinaire', d: "espèce d'insectes", obtenu: date(72) },
+];
+const retraits = (site) => site.actions.filter((a) => a.type === 'retrait');
+
+test('Ranger : une carte !À traiter que les règles rangent reçoit son domaine PUIS perd !À traiter ; une carte encore ambiguë la garde', async () => {
+  const site = await creerSite({ cartes: marquees() });
+  const p = await rangerTout(site);
+  assert.match(p.statut(), /✅/);
+  const sort = site.cartes.filter((c) => c.t !== 'Bôa' && c.t !== 'Ordinaire' && c.t !== 'Marquée et gardée');
+  for (const c of sort) assert.deepEqual(c.tags, ['Sport'], c.t);
+  assert.deepEqual(site.cartes.find((c) => c.t === 'Marquée et gardée').tags, ['!À garder', 'Sport'], 'une autre étiquette de gestion n\'est jamais retirée');
+  assert.deepEqual(site.cartes.find((c) => c.t === 'Bôa').tags, ['!À traiter'], 'encore ambiguë : elle garde son repère');
+  assert.deepEqual(site.cartes.find((c) => c.t === 'Ordinaire').tags, ['Nature'], 'le rangement ordinaire continue');
+  // dans cet ordre : si la pose échoue, la carte garde son repère
+  for (const c of sort) {
+    const pose = site.actions.findIndex((a) => a.type === 'pose' && a.etiquette === 'Sport' && a.titres.includes(c.t));
+    const retrait = site.actions.findIndex((a) => a.type === 'retrait' && a.titres.includes(c.t));
+    assert.ok(pose >= 0 && retrait > pose, `${c.t} : pose ${pose}, retrait ${retrait}`);
+  }
+  sansIncident(site);
+  site.fermer();
+});
+
+test('Ranger : le script ne retire jamais que !À traiter', async () => {
+  const site = await creerSite({ cartes: marquees() });
+  await rangerTout(site);
+  assert.ok(retraits(site).length > 0, 'au moins un retrait');
+  assert.deepEqual([...new Set(retraits(site).map((a) => a.etiquette))], ['!À traiter']);
+  assert.ok(!retraits(site).some((a) => a.titres.includes('Bôa')), 'la carte encore ambiguë n\'est jamais cochée pour un retrait');
+  sansIncident(site);
+  site.fermer();
+});
+
+test('Ranger : raté du site pendant le retrait de !À traiter, rechargement, reprise, rien de perdu ni de retiré deux fois', async () => {
+  // le chargement n° 8 tombe en plein travail dans la vue « #!À traiter »
+  const site = await creerSite({ cartes: marquees(), chargementsEnEchec: [8] });
+  const p = await rangerTout(site);
+  assert.equal(site.rechargements(), 1);
+  const iFiltre = site.actions.findIndex((a) => a.type === 'filtre' && a.filtre === '!À traiter');
+  assert.ok(iFiltre >= 0 && site.actions.findIndex((a) => a.type === 'rechargement') > iFiltre, 'le raté tombe dans la vue « #!À traiter »');
+  assert.match(p.statut(), /✅/);
+  for (const c of site.cartes.filter((x) => x.t !== 'Bôa' && x.t !== 'Ordinaire' && x.t !== 'Marquée et gardée')) assert.deepEqual(c.tags, ['Sport'], c.t);
+  assert.deepEqual([...new Set(retraits(site).map((a) => a.etiquette))], ['!À traiter']);
+  sansIncident(site);
+  site.fermer();
+});
+
+test('Ranger : aperçu des cartes qui perdent !À traiter, et rien à faire quand elles sont toutes encore ambiguës', async () => {
+  const site = await creerSite({ cartes: [{ t: 'Bôa', d: 'groupe britannique', tags: ['!À traiter'] }] });
+  const p = panneau(site);
+  p.ranger();
+  assert.ok(await attendreQue(() => /^\d+ carte/.test(p.statut())), p.statut());
+  assert.ok(!p.root.querySelector('[data-go]'), 'rien à poser ni à retirer : pas de bouton Appliquer');
+  site.fermer();
+  const site2 = await creerSite({ cartes: marquees() });
+  const p2 = panneau(site2);
+  p2.ranger();
+  assert.ok(await attendreQue(() => p2.root.querySelector('[data-go]')), p2.statut());
+  assert.match(p2.root.querySelector('.out').textContent, /61 carte\(s\) : .*retrait de !À traiter/);
+  site2.fermer();
+});
+
 // ── ratés du site : réessai, rechargement et reprise, journal des bugs ──
 
 const toutRange = (site) => {

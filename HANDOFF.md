@@ -1,6 +1,6 @@
 # Passation — userscript WikiMasters
 
-Mis à jour le 2026-10-23 : **v1.9.6 sur `main`**, validée par la personne (Village Polonais élargi, bouton Doublons) : installée, cartes triées avec, **aucun bug dans le journal**. Les instructions durables sont dans `CLAUDE.md` ; ce fichier garde l'état, les décisions, la suite et les questions en suspens.
+Mis à jour le 2026-10-23 : **v1.9.7** sur la branche `claude/retrait-a-traiter` (Ranger retire `!À traiter` des cartes que les règles rangent), en attente du oui de la personne pour `main`. **v1.9.6 sur `main`**, validée par la personne : installée, cartes triées avec, aucun bug dans le journal. Les instructions durables sont dans `CLAUDE.md` ; ce fichier garde l'état, les décisions, la suite et les questions en suspens.
 
 ## Avant tout, en début de session : ce que la personne fait
 
@@ -19,13 +19,13 @@ Si Claude doit regarder le vrai site (observer un bouton, lire une carte) : Chro
 ## Reprendre une session (côté Claude)
 
 1. Lire `CLAUDE.md`, puis ce fichier en entier (surtout « Questions en suspens »).
-2. Dépôt absent → `git clone https://github.com/matteo-lorenzi/wikimasters-rangement`, puis `npm install`. `npm test` doit donner **216 tests verts** ; `PYTHONIOENCODING=utf-8 python scripts/regressions.py` **16/16 mutations détectées**.
+2. Dépôt absent → `git clone https://github.com/matteo-lorenzi/wikimasters-rangement`, puis `npm install`. `npm test` doit donner **220 tests verts** ; `PYTHONIOENCODING=utf-8 python scripts/regressions.py` **16/16 mutations détectées**.
 3. Travailler sur une nouvelle branche partie de `main` ; `main` n'avance qu'après le oui de la personne (`CLAUDE.md`).
 4. Si la personne n'a pas encore fait « Avant tout » (ci-dessus), le lui donner avant de coder ou de trancher quoi que ce soit.
 
 ## État
 
-- **v1.9.6 sur `main`** (2026-10-15), 216 tests, 16 bugs surveillés par `scripts/regressions.py`. Rien d'autre en attente. La personne l'a installée et a rangé ses cartes avec (2026-10-23), sans bug au journal. Tests non relancés le 2026-10-23 : Node.js et Python absents de la machine de travail, à installer avant de coder.
+- **v1.9.7** (2026-10-23, branche ci-dessus), 220 tests, 16 bugs surveillés par `scripts/regressions.py`. **v1.9.6 sur `main`** (2026-10-15) : la personne l'a installée et a rangé ses cartes avec (2026-10-23), sans bug au journal. Node.js 26 et Python 3.13 installés sur la machine de travail le 2026-10-23.
 - Le panneau du script a cinq boutons :
   - **Ranger les nouvelles cartes** : lit les cartes sans étiquette (seulement les nouvelles, ou **toutes si les règles ont changé** depuis le dernier rangement, v1.9.3), montre l'aperçu, pose les domaines après « Appliquer ». Recherches groupées à partir de 200 cartes (`docs/piste-1.md`). Rechargement et reprise automatiques sur raté du site.
   - **Suggestions** (v1.9.0–1.9.1, lecture seule) : compteur des cartes sans domaine, mots inconnus des règles (dès 3 cartes, domaine proposé d'après les cartes déjà étiquetées), « Copier pour Claude » et « Copier les cartes sans règle ». C'est l'outil du chantier en cours (voir plus bas).
@@ -79,7 +79,7 @@ Fait : une carte réelle par groupe dans `test/classement.test.js` (rouge sans l
 ### Suite, dans l'ordre
 
 1. **La personne installe la v1.9.5** et lance Ranger (il annoncera « Les règles ont changé »), puis Suggestions pour le nouveau compteur.
-2. **Retrait de `!À traiter`** (décidé ; prochaine version de code). Spécification :
+2. **Retrait de `!À traiter`** : **fait en v1.9.7, pas encore essayé sur le vrai site** (premier usage avec la personne présente, quelques cartes d'abord). Ranger lit aussi les cartes `!À traiter` (id lu dans les `tagOptions` de `stats` : forme **à vérifier**, voir `docs/wikimasters.md`), puis une passe 3 dans la vue `#!À traiter` pose les domaines et ensuite retire `!À traiter`. Spécification d'origine :
    - Ranger lit aussi les cartes portant `!À traiter` (API `tag_id=<id de !À traiter>`, l'id est dans `stats.tagOptions`) ; celles que les règles rangent maintenant reçoivent leur(s) domaine(s) **puis** perdent `!À traiter` (dans cet ordre : si la pose échoue, la carte garde son repère). Aperçu (« N cartes : #Domaine + retrait de !À traiter ») puis « Appliquer ».
    - Le script retire **`!À traiter` et seulement elle** : bouton au texte exact `!À traiter` (le texte du bouton est « nom » + saut de ligne + nombre). Un test du faux site vérifie qu'aucune autre étiquette n'est retirée, et qu'une carte encore ambiguë garde `!À traiter`.
    - Comportement du site observé le 2026-10-13 : voir `docs/wikimasters.md`, « Retirer l'étiquette » (pas de `confirm`, bilan « N carte désétiquetée. », **fenêtre qui ne se ferme pas seule → cliquer « Terminé »**, **sélection gardée après**). Le rejouer d'abord dans `test/faux-site.js` (aujourd'hui le bouton y est vide).
@@ -137,6 +137,7 @@ Chacune avec le contexte et la recommandation à proposer. Ne pas trancher à la
 
 ## Historique des versions
 
+- **v1.9.7** : Ranger retire `!À traiter` (et elle seule) des cartes que les règles rangent, après avoir posé leur domaine ; l'aperçu les annonce.
 - **v1.9.6** : `★Village Polonais` aussi pour « commune polonaise » et « gmina rurale polonaise » ; bouton Doublons (pose `!Doublon`).
 - **v1.9.5** : une date seule ne range plus en Histoire (`année`, `mois`, jours retirés) ; dates et `classe`, `distribution`, `formation`, `thomas` jamais proposés par Suggestions.
 - **v1.9.4** : ~75 mots (4e tour), dont `films` et `artiste-peintre` (trous du moteur) ; pas de mois.
