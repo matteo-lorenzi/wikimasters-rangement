@@ -1,0 +1,33 @@
+{
+ "description": "Vérité pour npm run essai (scripts/essai-wikipedia.js) : cartes réelles, phrase Wikipédia lue par Ranger, domaines attendus. Juste = au moins un domaine de « attendu » proposé, et aucun domaine hors de « attendu » et « acceptables ». « attendu » vide : rien ne doit être proposé.",
+ "source": "Essai Wikipédia de 40 cartes fait par la personne le 2026-10-23 (v1.9.9) : les 23 cartes classées, plus 3 cas sans classement attendu.",
+ "statut": "« attendu » = jugement de Claude, à valider par la personne.",
+ "cartes": [
+  {"titre":"K-186 Omsk","phrase":"sous-marin nucléaire lanceur de missiles de croisière du Projet 949A « Anteï » (code OTAN : classe Oscar-II), appartenant à la Flotte du Pacifique de la Marine soviétique puis de la Marine russe","attendu":["Transports"]},
+  {"titre":"Porte de la Mecque","phrase":"arche monumentale construite en 1979 au-dessus de l'autoroute Djeddah-La Mecque (province de la Mecque, Arabie saoudite)","attendu":["Patrimoine","Transports"]},
+  {"titre":"FireBee","phrase":"ordinateur grand public produit (sans bénéfice !) depuis 2014 par Medusa Computer Systems (en Suisse) aidé de dizaines de bénévoles","attendu":["Sciences"]},
+  {"titre":"Corso di Buono","phrase":"peintre de l'école florentine mentionné en Toscane au Duecento connue par une fresque datée et signée à Montelupo Fiorentino","attendu":["Arts"]},
+  {"titre":"Jacques Maboul","phrase":"ecclésiastique qui fut évêque d'Alet de 1708 à 1723","attendu":["Religion & Mythes"]},
+  {"titre":"Arbanitis shawi","phrase":"espèce d'araignées mygalomorphes de la famille des Idiopidae","attendu":["Nature"]},
+  {"titre":"Tobera","phrase":"commune ou contrée de la municipalité de Berantevilla dans la province d'Alava dans la Communauté autonome basque (Espagne)","attendu":["Géographie"]},
+  {"titre":"American Star Bicycle","phrase":"bicyclette inventée en 1880 par G. W. Pressey et fabriquée par l'entreprise de Hezekiah Bradley Smith à Smithville, dans le comté de Burlington, au New Jersey","attendu":["Transports","Économie"]},
+  {"titre":"Hubert Toint","phrase":"producteur de cinéma et réalisateur belge","attendu":["Cinéma & TV"]},
+  {"titre":"Friedrich Lützow","phrase":"vice-amiral et écrivain militaire allemand","attendu":["Histoire"],"acceptables":["Littérature"]},
+  {"titre":"Eshmoun","phrase":"dieu phénicien de la ville de Sidon","attendu":["Religion & Mythes"]},
+  {"titre":"Moyglare Stud Stakes","phrase":"course hippique de groupe I qui se court fin août, début septembre, à The Curragh, Comté de Kildare, en Irlande","attendu":["Sport"]},
+  {"titre":"Stuart J Edelstein","phrase":"biophysicien, professeur émérite de l'Université de Genève, professeur extraordinaire à l'École Normale Supérieure et chercheur invité à l'Institut Babraham","attendu":["Sciences"]},
+  {"titre":"Otto Lopez","phrase":"joueur de baseball professionnel dominico-canadien évoluant principalement à l'avant-champ","attendu":["Sport"]},
+  {"titre":"Stjörnuvöllur","phrase":"stade à multi-usages basé à Garðabær, en Islande","attendu":["Sport"]},
+  {"titre":"Zulmasuchus","phrase":"genre fossile de crocodyliformes, un clade qui comprend les crocodiliens modernes et leurs plus proches parents fossiles","attendu":["Nature"]},
+  {"titre":"Addington Palace","phrase":"manoir du XVIIIe siècle situé à Addington, près de Croydon, dans le sud de Londres, dans le comté historique de Surrey","attendu":["Patrimoine"]},
+  {"titre":"IlianA","phrase":"groupe belge de musique folk fondé en 2009","attendu":["Musique"]},
+  {"titre":"Pilot chart","phrase":"carte marine employée dans le domaine maritime afin de déterminer une route en fonction des conditions climatiques moyennes pour chaque mois de l'année","attendu":["Transports"]},
+  {"titre":"Bubsy","phrase":"série de jeux vidéo de plates-formes créée par Michael Berlyn, et développée et distribuée par Accolade","attendu":["Fiction & Jeux"]},
+  {"titre":"Gallaher Group","phrase":"multinationale anglaise active dans la fabrication et la vente de produits à base de tabac","attendu":["Économie"]},
+  {"titre":"Hakea victoria","phrase":"plante buissonnante du genre Hakea originaire d'Australie Occidentale remarquable par son feuillage ornemental","attendu":["Nature"]},
+  {"titre":"Web Security Guard","phrase":"logiciel gratuit de sécurité développé par la firme Crawler LLC basée à Boca Raton aux États-Unis","attendu":["Sciences"]},
+  {"titre":"Hanabie.","cause":"extrait-vide-ou-stub","extrait":"Hanabie.","attendu":[],"note":"extrait réduit au titre (vu sur le vrai site)"},
+  {"titre":"Mercure","cause":"homonymie","attendu":[],"note":"page d'homonymie (cas construit)"},
+  {"titre":"Xqzv Titre Absent","cause":"titre-absent","attendu":[],"note":"titre absent de Wikipédia (cas construit)"}
+ ]
+}

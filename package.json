@@ -5,7 +5,8 @@
   "description": "Userscript Tampermonkey qui étiquette les cartes WikiMasters par domaine.",
   "scripts": {
     "test": "node --test \"test/**/*.test.js\"",
-    "build": "sh build.sh"
+    "build": "sh build.sh",
+    "essai": "node scripts/essai-wikipedia.js"
   },
   "devDependencies": {
     "jsdom": "^24.0.0"

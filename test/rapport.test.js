@@ -28,7 +28,8 @@ const apercu = async (site) => {
   assert.ok(await attendreQue(() => p.root.querySelector('[data-go]') || /à ranger|⚠️/.test(st()), 30000), st());
   return p;
 };
-const rapport = (site) => site.wmr.store.get('wp_rapport', null);
+// lu dans la page (un autre « monde ») puis recopié, pour que deepEqual compare les valeurs
+const rapport = (site) => { const r = site.wmr.store.get('wp_rapport', null); return r && JSON.parse(JSON.stringify(r)); };
 const parTitre = (r) => Object.fromEntries(r.cartes.map((c) => [c.titre, c]));
 
 // Une carte par cause que le faux Wikipédia sait rejouer.

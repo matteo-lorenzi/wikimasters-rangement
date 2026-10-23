@@ -1068,6 +1068,7 @@ const appelWikipedia = async (titres) => {
   let r;
   for (let essai = 1; essai <= 3; essai++) {
     arret();
+    if (wikiMesure) wikiMesure.requetes++;
     r = await fetch(url);
     if (r.ok || (r.status < 500 && r.status !== 429)) break;
     if (essai < 3) await sleep(3000);
@@ -1095,16 +1096,21 @@ const lireTitreWikipedia = (q, titre) => {
 const lireWikipedia = async (cartes) => {
   const titres = [...new Set(cartes.map((c) => nfc(c.t)).filter((t) => t && !t.includes('|')))];
   const aLire = titres.filter((t) => !wikiFrais(wikiEntree(t)));
+  if (wikiMesure) wikiMesure.aLire = new Set(aLire);
   const file = [...aLire], essais = new Map();
   let faits = 0;
   while (file.length) {
     arret();
     ui.statut(`Wikipédia : ${faits} / ${aLire.length} titre(s) lu(s)…`);
     const lot = file.splice(0, WIKI_LOT);
+    const mesureLot = { titres: lot.length, debut: Date.now(), ok: false };
+    if (wikiMesure) wikiMesure.lots.push(mesureLot);
     let q;
     try { q = await appelWikipedia(lot); } catch (e) { if (STOP) throw e; return e; }
+    Object.assign(mesureLot, { ok: true, ms: Date.now() - mesureLot.debut });
     for (const t of lot) {
       const res = lireTitreWikipedia(q, t);
+      if (wikiMesure) noterLuWikipedia(q, t);
       if (res) { store.set(wikiCle(t), { ...res, date: Date.now() }); faits++; continue; }
       const n = (essais.get(t) || 0) + 1;
       essais.set(t, n);
@@ -1123,10 +1129,13 @@ const lectureWikipedia = async (cartes, complete) => {
   const concernees = cartes.filter(concerneeWiki);
   const essai = !!store.get('wiki_essai', true);
   const lues = essai ? concernees.slice(0, WIKI_ESSAI) : concernees;
-  let erreur = null;
+  let erreur = null, echec = null;
+  const debutMesure = Date.now();
+  wikiMesure = lues.length ? { requetes: 0, lots: [], reseau: new Set(), redirections: {}, aLire: new Set() } : null;
   if (lues.length) {
     ui.journal(`Wikipédia : ${lues.length} carte(s) sur ${concernees.length} concernée(s)${essai ? ' (essai)' : ''}.`);
     const e = await lireWikipedia(lues);
+    echec = e;
     if (e) {
       erreur = `Wikipédia n'a pas pu être lue (${e.message}) : le navigateur ou le site bloque peut-être cet appel. Ranger continue sans Wikipédia : `
         + 'les cartes sans description restent comme elles sont. Copie le journal des bugs pour Claude, il adaptera l\'appel.';
@@ -1140,7 +1149,104 @@ const lectureWikipedia = async (cartes, complete) => {
   if (erreur) store.set('wiki_reste', { raison: 'erreur', version: VERSION });
   else if (lues.length < concernees.length) store.set('wiki_reste', { raison: 'essai' });
   else if (complete) store.set('wiki_reste', null); // une lecture partielle ne dit rien des cartes déjà laissées de côté
-  return { phrases, wiki: { erreur, essai, concernees: concernees.length, lues: lues.length } };
+  // mesure (diagnostic seulement) : le rapport est écrit à chaque Ranger où Wikipédia a tourné, rien d'autre n'en dépend
+  if (wikiMesure) store.set('wp_rapport', rapportWikipedia(concernees, lues, wikiMesure, echec, essai, debutMesure));
+  const rapport = !!wikiMesure;
+  wikiMesure = null;
+  return { phrases, wiki: { erreur, essai, concernees: concernees.length, lues: lues.length, rapport } };
+};
+
+// ── Mesure Wikipédia (diagnostic) : couverture, précision et cause de chaque échec ──
+// Le rapport (stockage « wp_rapport ») se copie depuis l'aperçu de Ranger pour Claude ; `npm run essai`
+// (scripts/essai-wikipedia.js) le rejoue hors navigateur. Format et causes : docs/tests.md, « Mesure Wikipédia ».
+let wikiMesure = null; // pendant une lecture : { requetes, lots, reseau, redirections, aLire }
+const CAUSES_WIKIPEDIA = ['classee', 'titre-absent', 'homonymie', 'extrait-vide-ou-stub', 'pas-de-est-un',
+  'phrase-sans-regle', 'phrase-ambigue', 'non-lue-essai', 'appel-bloque', 'redirection'];
+const court = (s, n = 250) => (s.length > n ? s.slice(0, n - 1) + '…' : s);
+const noterLuWikipedia = (q, t) => {
+  const vers = (liste, x) => { const r = (liste || []).find((y) => y.from === x); return r ? r.to : x; };
+  const n = vers(q.normalized, t), cible = vers(q.redirects, n);
+  wikiMesure.reseau.add(t);
+  if (cible !== n) wikiMesure.redirections[t] = cible;
+};
+// Un extrait sans « est un… » : vide ou réduit au titre (« Hanabie. »), ou de moins de 4 mots → ébauche ; sinon pas de « est un ».
+const sansPonctuation = (s) => nfc(s).replace(/[\s.,;:!?…]+$/u, '').toLowerCase();
+const estEbauche = (titre, extrait) => {
+  const x = sansPonctuation(extrait);
+  return !x || x === sansPonctuation(titre) || x.split(/\s+/).length < 4;
+};
+// Le moteur sur une phrase Wikipédia, comme Ranger (planAvecPhrase) : la phrase tient lieu de description.
+const classerPhrase = (c, phrase) => {
+  const w = classer({ ...c, d: phrase });
+  const cause = w.statut === 'classee' ? 'classee' : w.statut === 'a_traiter' ? 'phrase-ambigue' : 'phrase-sans-regle';
+  return { cause, domaines: cause === 'classee' ? w.etiquettes.filter((x) => DOMAINES[x]) : [], mots: [...w.mots] };
+};
+// La cause d'une carte lue (entrée du cache, ou null).
+const causeWikipedia = (c, e) => {
+  if (!e || e.absent) return { cause: 'titre-absent', domaines: [] };
+  if (e.homonymie) return { cause: 'homonymie', domaines: [] };
+  const phrase = morceauWikipedia(e.extrait);
+  if (!phrase) return { cause: estEbauche(c.t, e.extrait) ? 'extrait-vide-ou-stub' : 'pas-de-est-un', domaines: [], extrait: court(nfc(e.extrait).replace(/\s+/g, ' ')) };
+  return { phrase: court(phrase), ...classerPhrase(c, phrase) };
+};
+// Juste si au moins un domaine attendu est proposé et rien hors des attendus et acceptables ; attendu vide : rien ne doit être proposé.
+const jugerWikipedia = (domaines, v) => {
+  if (!v.attendu.length) return domaines.length ? 'fausse' : 'juste';
+  const ok = new Set([...v.attendu, ...(v.acceptables || [])]);
+  return domaines.some((d) => v.attendu.includes(d)) && domaines.every((d) => ok.has(d)) ? 'juste' : 'fausse';
+};
+// Nombre par cause, couverture (classées / cartes lues, hors « non-lue-essai ») et précision (classées justes / classées
+// vérifiées, seulement avec une vérité : { titre NFC → { attendu, acceptables } }).
+const taux = (a, b) => (b ? Math.round((a / b) * 1000) / 1000 : null);
+const bilanWikipedia = (cartes, verite = null) => {
+  const parCause = Object.fromEntries(CAUSES_WIKIPEDIA.map((k) => [k, 0]));
+  for (const c of cartes) parCause[c.cause] = (parCause[c.cause] || 0) + 1;
+  const lues = cartes.filter((c) => c.cause !== 'non-lue-essai').length;
+  const couverture = { classees: parCause.classee, lues, taux: taux(parCause.classee, lues) };
+  if (!verite) return { parCause, couverture, precision: null };
+  const verifiees = cartes.filter((c) => c.cause === 'classee' && verite[nfc(c.titre)]);
+  const justes = verifiees.filter((c) => jugerWikipedia(c.domaines, verite[nfc(c.titre)]) === 'juste').length;
+  return { parCause, couverture, precision: verifiees.length ? { verifiees: verifiees.length, justes, taux: taux(justes, verifiees.length) } : null };
+};
+const rapportWikipedia = (concernees, lues, m, echec, essai, debut) => {
+  const lus = new Set(lues.map(cle)), vus = new Set(), cartes = [];
+  for (const c of concernees) {
+    if (vus.has(cle(c))) continue; // un exemplaire en double : une seule ligne
+    vus.add(cle(c));
+    const t = nfc(c.t), base = { titre: c.t, rarete: c.r };
+    let x;
+    if (!lus.has(cle(c))) x = { etape: 'non-lue-essai', cause: 'non-lue-essai', domaines: [] };
+    else if (m.reseau.has(t)) x = { etape: 'reseau', ...causeWikipedia(c, wikiEntree(c.t)) };
+    else if (echec && m.aLire.has(t)) x = { etape: 'appel-bloque', cause: 'appel-bloque', domaines: [] };
+    else x = { etape: 'cache', ...causeWikipedia(c, wikiEntree(c.t)) };
+    cartes.push({ ...base, ...x, ...(m.redirections[t] ? { redirection: m.redirections[t] } : {}) });
+  }
+  const fin = Date.now();
+  return {
+    outil: 'wmr-rapport-wikipedia', format: 1, version: VERSION, date: new Date(fin).toISOString(), essai,
+    dureeMs: fin - debut, requetes: m.requetes,
+    lots: m.lots.map((l) => ({ titres: l.titres, ms: l.ms ?? fin - l.debut, ok: l.ok })),
+    erreurs: echec ? [echec.message] : [], concernees: concernees.length, lues: lues.length,
+    bilan: bilanWikipedia(cartes), cartes,
+  };
+};
+// Le rapport en JSON lisible : l'en-tête indenté, une ligne par carte.
+const jsonRapport = (r) => {
+  const { cartes = [], ...tete } = r;
+  return JSON.stringify(tete, null, 1).replace(/\n}$/, '') + ',\n "cartes": [\n'
+    + cartes.map((c) => '  ' + JSON.stringify(c)).join(',\n') + '\n ]\n}';
+};
+const apercuRapportWikipedia = (r) => {
+  const b = r.bilan || {}, cv = b.couverture || {}, pr = b.precision;
+  const pc = (x) => (x == null ? '—' : Math.round(x * 100) + ' %');
+  const lignes = Object.entries(b.parCause || {}).filter(([, n]) => n).map(([k, n]) => `<tr><td>${esc(k)}</td><td class="n">${n}</td></tr>`).join('');
+  return `<h4>Mesure Wikipédia</h4>
+    <div>Couverture : ${cv.classees} / ${cv.lues} (${pc(cv.taux)}) classée(s) d'après Wikipédia sur les cartes lues.</div>
+    ${pr ? `<div>Précision : ${pr.justes} / ${pr.verifiees} (${pc(pr.taux)})</div>` : ''}
+    <table>${lignes}</table>
+    <p class="hint">Copie ce rapport pour Claude : il dit, carte par carte, ce que Wikipédia a donné et pourquoi une carte n'est pas classée.</p>
+    <textarea readonly rows="4" data-wp-rapport>${esc(jsonRapport(r))}</textarea>
+    <div class="row"><button class="b" data-copier-wp>Copier le rapport Wikipédia (JSON)</button></div>`;
 };
 // Les cartes laissées de côté par l'essai (case décochée depuis) ou par un appel en échec (nouvelle version du script)
 // sont-elles à relire ?
@@ -1267,7 +1373,8 @@ const apercuWikipedia = (cartes, plans, wiki) => {
       <p class="hint">Mots que les règles ne connaissent pas, sur ${SUGG_MIN_CARTES} cartes ou plus de ce lot (les phrases Wikipédia comme descriptions). Copie la liste pour Claude : il écrit la règle, le script ne crée jamais de domaine tout seul.</p>
       ${lignesMots(candidats)}
       <textarea readonly rows="6">${esc(texteMots(`Mots manquants WikiMasters v${VERSION}, lot de ${cartes.length} cartes (Ranger)`, candidats))}</textarea>
-      <div class="row"><button class="b p" data-copier>Copier pour Claude</button></div>` : '');
+      <div class="row"><button class="b p" data-copier>Copier pour Claude</button></div>` : '')
+    + (wiki.rapport && store.get('wp_rapport', null) ? apercuRapportWikipedia(store.get('wp_rapport', null)) : '');
 };
 const afficherRanger = (cartes, depuis, viaApi, wiki = {}) => {
   const { plans, cibles, neuves, marquees, plusRecente, groupes } = preparerRanger(cartes, depuis, wiki.phrases);
@@ -1287,6 +1394,8 @@ const afficherRanger = (cartes, depuis, viaApi, wiki = {}) => {
       ${depuis ? '<button class="b" data-tout>Revoir toutes les cartes sans étiquette</button>' : ''}</div>`;
   const motsManquants = ui.out.querySelector('textarea');
   if (motsManquants) brancherCopie(motsManquants.value, 'Liste copiée : colle-la dans la conversation avec Claude.');
+  const rapportWp = ui.out.querySelector('[data-wp-rapport]');
+  if (rapportWp) brancherCopie(rapportWp.value, 'Rapport copié : colle-le dans la conversation avec Claude.', '[data-wp-rapport]', '[data-copier-wp]');
   if (!cibles.length) { // rien à poser : ces cartes ne seront plus relues
     if (viaApi && plusRecente) retenirDepuis(plusRecente);
     store.set('ranger_lecture', null);
@@ -1730,6 +1839,8 @@ if (window.__WMR_TEST__ || store.get('debug', false)) {
     lireVue, lireApi, parcourirVue, changerPage, choisirFiltre, choisirTri, listerEtiquettes,
     modeSelection, poserEtiquette, appliquerSurPage, appliquerRanger, modeRanger, modeMigration, motsGroupes, rechercher,
     supprimerEtiquette, rapportSuppression, suggestions, morceauWikipedia, monterUI, ui: () => ui, stop: () => { STOP = true; },
+    // mesure Wikipédia, aussi pour scripts/essai-wikipedia.js
+    CAUSES_WIKIPEDIA, causeWikipedia, classerPhrase, jugerWikipedia, bilanWikipedia, jsonRapport, VERSION,
   };
 }
 
