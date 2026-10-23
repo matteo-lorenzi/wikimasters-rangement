@@ -203,6 +203,23 @@ test('rapport Wikipédia : l\'affichage du rapport lève une exception, l\'aper�
   site.fermer();
 });
 
+test('rapport Wikipédia : la mesure plante en pleine lecture, la lecture et Ranger continuent (journal des bugs)', async () => {
+  const site = await siteCauses();
+  site.wmr.store.set('wiki_essai', false);
+  // seule la mesure écrit « redirections['Pierre F.'] = … » : ce titre-là la fait lever, rien d'autre n'est touché
+  Object.defineProperty(site.window.Object.prototype, 'Pierre F.', { set() { throw new Error('mesure impossible'); }, configurable: true });
+  const p = await apercu(site);
+  delete site.window.Object.prototype['Pierre F.'];
+  assert.ok(p.root.querySelector('[data-go]'), 'le bouton Appliquer est là');
+  assert.match(p.root.querySelector('.out').textContent, /Classées d'après Wikipédia \(3\)/, 'chaque titre lu malgré la mesure');
+  assert.equal(site.titresWikipedia().length, 8);
+  const bugs = site.wmr.store.get('bugs', []);
+  assert.equal(bugs.length, 1, 'un seul bug, pas un par titre');
+  assert.match(bugs[0].contexte + ' ' + bugs[0].message, /mesure Wikipédia.*mesure impossible/s);
+  assert.equal(rapport(site), null, 'pas de rapport faussé par une mesure incomplète');
+  site.fermer();
+});
+
 // ── npm run essai (scripts/essai-wikipedia.js) ──
 
 const essai = (args) => {
@@ -275,16 +292,17 @@ test('essai : référence figée (moteur v1.9.11), 20 justes sur 23 classées, c
   const r = essai([path.join('test', 'reference-wikipedia.json')]);
   assert.equal(r.status, 0, r.stderr);
   const x = r.resultat;
-  assert.deepEqual({ ...x.couverture }, { classees: 23, lues: 26, taux: 0.885 });
-  assert.deepEqual({ ...x.precision }, { verifiees: 23, justes: 20, taux: 0.87 });
+  const QUOI_FAIRE = 'moteur ou règles changés : relance npm run essai, mets à jour couverture, précision et les 3 fausses ici et dans le nom du test, puis docs/tests.md';
+  assert.deepEqual({ ...x.couverture }, { classees: 23, lues: 26, taux: 0.885 }, QUOI_FAIRE);
+  assert.deepEqual({ ...x.precision }, { verifiees: 23, justes: 20, taux: 0.87 }, QUOI_FAIRE);
   // chacune a un domaine attendu PLUS un domaine en trop
   assert.deepEqual(x.fausses.map((f) => [f.titre, f.domaines, f.motsResponsables]), [
     ['Corso di Buono', ['Arts', 'Sciences'], ['école']],
     ['Addington Palace', ['Patrimoine', 'Histoire'], ['historique']],
     ['Pilot chart', ['Patrimoine', 'Transports'], ['domaine']],
-  ]);
-  assert.match(r.stdout, /Couverture : 23 \/ 26 \(89 %\)/);
-  assert.match(r.stdout, /Précision : 20 \/ 23 \(87 %\)/);
+  ], QUOI_FAIRE);
+  assert.match(r.stdout, /Couverture : 23 \/ 26 \(89 %\)/, QUOI_FAIRE);
+  assert.match(r.stdout, /Précision : 20 \/ 23 \(87 %\)/, QUOI_FAIRE);
 });
 
 test('essai : sur la référence (test/reference-wikipedia.json), sans réseau, taux cohérents et cas sans classement jamais devinés', () => {

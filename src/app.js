@@ -1068,7 +1068,7 @@ const appelWikipedia = async (titres) => {
   let r;
   for (let essai = 1; essai <= 3; essai++) {
     arret();
-    if (wikiMesure) wikiMesure.requetes++;
+    mesurer((m) => { m.requetes++; });
     r = await fetch(url);
     if (r.ok || (r.status < 500 && r.status !== 429)) break;
     if (essai < 3) await sleep(3000);
@@ -1096,7 +1096,7 @@ const lireTitreWikipedia = (q, titre) => {
 const lireWikipedia = async (cartes) => {
   const titres = [...new Set(cartes.map((c) => nfc(c.t)).filter((t) => t && !t.includes('|')))];
   const aLire = titres.filter((t) => !wikiFrais(wikiEntree(t)));
-  if (wikiMesure) wikiMesure.aLire = new Set(aLire);
+  mesurer((m) => { m.aLire = new Set(aLire); });
   const file = [...aLire], essais = new Map();
   let faits = 0;
   while (file.length) {
@@ -1104,13 +1104,13 @@ const lireWikipedia = async (cartes) => {
     ui.statut(`Wikipédia : ${faits} / ${aLire.length} titre(s) lu(s)…`);
     const lot = file.splice(0, WIKI_LOT);
     const mesureLot = { titres: lot.length, debut: Date.now(), ok: false };
-    if (wikiMesure) wikiMesure.lots.push(mesureLot);
+    mesurer((m) => m.lots.push(mesureLot));
     let q;
     try { q = await appelWikipedia(lot); } catch (e) { if (STOP) throw e; return e; }
     Object.assign(mesureLot, { ok: true, ms: Date.now() - mesureLot.debut });
     for (const t of lot) {
       const res = lireTitreWikipedia(q, t);
-      if (wikiMesure) noterLuWikipedia(q, t);
+      mesurer(() => noterLuWikipedia(q, t));
       if (res) { store.set(wikiCle(t), { ...res, date: Date.now() }); faits++; continue; }
       const n = (essais.get(t) || 0) + 1;
       essais.set(t, n);
@@ -1132,39 +1132,49 @@ const lectureWikipedia = async (cartes, complete) => {
   let erreur = null, echec = null;
   const debutMesure = Date.now();
   wikiMesure = lues.length ? { requetes: 0, lots: [], reseau: new Set(), redirections: {}, aLire: new Set() } : null;
-  if (lues.length) {
-    ui.journal(`Wikipédia : ${lues.length} carte(s) sur ${concernees.length} concernée(s)${essai ? ' (essai)' : ''}.`);
-    const e = await lireWikipedia(lues);
-    echec = e;
-    if (e) {
-      erreur = `Wikipédia n'a pas pu être lue (${e.message}) : le navigateur ou le site bloque peut-être cet appel. Ranger continue sans Wikipédia : `
-        + 'les cartes sans description restent comme elles sont. Copie le journal des bugs pour Claude, il adaptera l\'appel.';
-      noterBug(e, 'Wikipédia bloquée ou en erreur : Ranger continue sans Wikipédia');
-      ui.journal('⚠️ ' + erreur);
+  try { // la mesure est oubliée dans tous les cas, même sur « Stop » pendant la lecture
+    if (lues.length) {
+      ui.journal(`Wikipédia : ${lues.length} carte(s) sur ${concernees.length} concernée(s)${essai ? ' (essai)' : ''}.`);
+      const e = await lireWikipedia(lues);
+      echec = e;
+      if (e) {
+        erreur = `Wikipédia n'a pas pu être lue (${e.message}) : le navigateur ou le site bloque peut-être cet appel. Ranger continue sans Wikipédia : `
+          + 'les cartes sans description restent comme elles sont. Copie le journal des bugs pour Claude, il adaptera l\'appel.';
+        noterBug(e, 'Wikipédia bloquée ou en erreur : Ranger continue sans Wikipédia');
+        ui.journal('⚠️ ' + erreur);
+      }
     }
-  }
-  const phrases = {};
-  for (const c of lues) { const m = wikiPhrase(wikiEntree(c.t)); if (m) phrases[cle(c)] = m; }
-  // des cartes laissées de côté (essai) ou sans réponse (appel en échec) : Ranger les relira quand ce sera réglé
-  if (erreur) store.set('wiki_reste', { raison: 'erreur', version: VERSION });
-  else if (lues.length < concernees.length) store.set('wiki_reste', { raison: 'essai' });
-  else if (complete) store.set('wiki_reste', null); // une lecture partielle ne dit rien des cartes déjà laissées de côté
-  // mesure (diagnostic seulement) : le rapport est écrit à chaque Ranger où Wikipédia a tourné, rien d'autre n'en dépend
-  let rapport = false;
-  try {
-    if (wikiMesure) { store.set('wp_rapport', rapportWikipedia(concernees, lues, wikiMesure, echec, essai, debutMesure)); rapport = true; }
-  } catch (e) {
-    noterBug(e, 'rapport Wikipédia impossible à construire : Ranger continue sans lui');
+    const phrases = {};
+    for (const c of lues) { const m = wikiPhrase(wikiEntree(c.t)); if (m) phrases[cle(c)] = m; }
+    // des cartes laissées de côté (essai) ou sans réponse (appel en échec) : Ranger les relira quand ce sera réglé
+    if (erreur) store.set('wiki_reste', { raison: 'erreur', version: VERSION });
+    else if (lues.length < concernees.length) store.set('wiki_reste', { raison: 'essai' });
+    else if (complete) store.set('wiki_reste', null); // une lecture partielle ne dit rien des cartes déjà laissées de côté
+    // mesure (diagnostic seulement) : le rapport est écrit à chaque Ranger où Wikipédia a tourné, rien d'autre n'en dépend
+    let rapport = false;
+    try {
+      if (wikiMesure) { store.set('wp_rapport', rapportWikipedia(concernees, lues, wikiMesure, echec, essai, debutMesure)); rapport = true; }
+    } catch (e) {
+      noterBug(e, 'rapport Wikipédia impossible à construire : Ranger continue sans lui');
+    }
+    return { phrases, wiki: { erreur, essai, concernees: concernees.length, lues: lues.length, rapport } };
   } finally {
     wikiMesure = null;
   }
-  return { phrases, wiki: { erreur, essai, concernees: concernees.length, lues: lues.length, rapport } };
 };
 
 // ── Mesure Wikipédia (diagnostic) : couverture, précision et cause de chaque échec ──
 // Le rapport (stockage « wp_rapport ») se copie depuis l'aperçu de Ranger pour Claude ; `npm run essai`
 // (scripts/essai-wikipedia.js) le rejoue hors navigateur. Format et causes : docs/tests.md, « Mesure Wikipédia ».
 let wikiMesure = null; // pendant une lecture : { requetes, lots, reseau, redirections, aLire }
+// Une mesure pendant la lecture : si elle lève, la lecture continue sans mesure (pas de rapport faussé), un bug noté.
+const mesurer = (f) => {
+  if (!wikiMesure) return;
+  try { f(wikiMesure); } catch (e) {
+    wikiMesure = null;
+    noterBug(e, 'mesure Wikipédia impossible : la lecture continue sans elle, pas de rapport');
+  }
+};
 const CAUSES_WIKIPEDIA = ['classee', 'titre-absent', 'homonymie', 'extrait-vide-ou-stub', 'pas-de-est-un',
   'phrase-sans-regle', 'phrase-ambigue', 'non-lue-essai', 'appel-bloque', 'redirection'];
 const court = (s, n = 250) => (s.length > n ? s.slice(0, n - 1) + '…' : s);

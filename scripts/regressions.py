@@ -142,6 +142,10 @@ MUTATIONS = [
      "noterBug(e, 'rapport Wikipédia impossible à afficher : aperçu sans lui');",
      "throw e;",
      "rapport Wikipédia : l'affichage du rapport lève"),
+    ('Mesure Wikipédia : mesure sans protection pendant la lecture, Ranger s\'arrête', 'app.js',
+     "  try { f(wikiMesure); } catch (e) {\n    wikiMesure = null;\n    noterBug(e, 'mesure Wikipédia impossible : la lecture continue sans elle, pas de rapport');\n  }",
+     "  f(wikiMesure);",
+     "rapport Wikipédia : la mesure plante en pleine lecture"),
 ]
 
 
