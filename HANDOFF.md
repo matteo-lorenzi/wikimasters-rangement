@@ -1,6 +1,6 @@
 # Passation — userscript WikiMasters
 
-Mis à jour le 2026-10-23 : **v1.9.7 sur `main`** (Ranger retire `!À traiter` des cartes que les règles rangent), essayée par la personne sur le vrai site et poussée avec son accord. Avant : v1.9.6, validée aussi. Les instructions durables sont dans `CLAUDE.md` ; ce fichier garde l'état, les décisions, la suite et les questions en suspens.
+Mis à jour le 2026-10-23 : **v1.9.8** sur la branche `claude/v198-integration` (bouton « Compléter les cartes rangées » + règles du tour 5), en attente du oui de la personne pour `main`. **v1.9.7 sur `main`**, essayée sur le vrai site et validée. Les instructions durables sont dans `CLAUDE.md` ; ce fichier garde l'état, les décisions, la suite et les questions en suspens.
 
 ## Avant tout, en début de session : ce que la personne fait
 
@@ -19,13 +19,13 @@ Si Claude doit regarder le vrai site (observer un bouton, lire une carte) : Chro
 ## Reprendre une session (côté Claude)
 
 1. Lire `CLAUDE.md`, puis ce fichier en entier (surtout « Questions en suspens »).
-2. Dépôt absent → `git clone https://github.com/matteo-lorenzi/wikimasters-rangement`, puis `npm install`. `npm test` doit donner **226 tests verts** ; `PYTHONIOENCODING=utf-8 python scripts/regressions.py` **18/18 mutations détectées**.
+2. Dépôt absent → `git clone https://github.com/matteo-lorenzi/wikimasters-rangement`, puis `npm install`. `npm test` doit donner **267 tests verts** ; `PYTHONIOENCODING=utf-8 python scripts/regressions.py` **18/18 mutations détectées**.
 3. Travailler sur une nouvelle branche partie de `main` ; `main` n'avance qu'après le oui de la personne (`CLAUDE.md`).
 4. Si la personne n'a pas encore fait « Avant tout » (ci-dessus), le lui donner avant de coder ou de trancher quoi que ce soit.
 
 ## État
 
-- **v1.9.8 sur la branche `claude/completer-rangees`** (2026-10-23, pas encore sur `main`, pas encore essayée sur le vrai site) : bouton « Compléter les cartes rangées ». **v1.9.7 est sur `main`**, 226 tests, 18 bugs surveillés par `scripts/regressions.py`. La personne l'a installée et a rangé avec (36 cartes sans `!À traiter`). Node.js 26 et Python 3.13 installés sur la machine de travail le 2026-10-23.
+- **v1.9.8 sur la branche `claude/v198-integration`** (2026-10-23, pas encore sur `main`, **ni « Compléter » ni les règles du tour 5 essayés sur le vrai site**), 267 tests, 18 bugs surveillés par `scripts/regressions.py`. Elle réunit `claude/completer-rangees` et `claude/regles-tour5`. **v1.9.7 est sur `main`** : la personne l’a installée et a rangé avec (36 cartes sans `!À traiter`). Node.js 26 et Python 3.13 installés sur la machine de travail le 2026-10-23.
 - Le panneau du script a six boutons :
   - **Ranger les nouvelles cartes** : lit les cartes sans étiquette (seulement les nouvelles, ou **toutes si les règles ont changé** depuis le dernier rangement, v1.9.3), montre l'aperçu, pose les domaines après « Appliquer ». Recherches groupées à partir de 200 cartes (`docs/piste-1.md`). Rechargement et reprise automatiques sur raté du site.
   - **Suggestions** (v1.9.0–1.9.1, lecture seule) : compteur des cartes sans domaine, mots inconnus des règles (dès 3 cartes, domaine proposé d'après les cartes déjà étiquetées), « Copier pour Claude » et « Copier les cartes sans règle ». C'est l'outil du chantier en cours (voir plus bas).
@@ -77,7 +77,7 @@ Mots proposés (numéros tels que donnés à la personne ; ⚠ = risqué) :
 
 Fait : une carte réelle par groupe dans `test/classement.test.js` (rouge sans les mots : 17 échecs), les mots dans `regles.js` (commentaire « Suggestions du 2026-10-14 (4e tour) »), v1.9.4. Les ~410 cartes restantes : noms propres et espèces latines → Wikipédia (question A).
 
-### Tour 5 (2026-10-23) : règles écrites sur `claude/regles-tour5`, pas encore livrées
+### Tour 5 (2026-10-23) : règles écrites, dans la v1.9.8 (pas encore sur `main`)
 
 Réponses de la personne : quatre idées acceptées, treize mots refusés (voir « Refusé par la personne »). Chaque règle a sa carte réelle dans `test/classement.test.js` (rouge d'abord), marquée « Suggestions du 2026-10-23 (5e tour) » dans `regles.js`. Les 19 cartes citées passent de « sans règle » ou `!À traiter` à rangées, toutes bien classées :
 1. Saisons sportives : `saison 19*` et `saison 20*` → Sport (7 cartes : AS Monaco, AJ Auxerre, Celtics, Orioles, LAH, Storm, Astros). Limite connue : une carte « Saison 20 de <série> » sans description de série irait en Sport ; avec « saison de la série » en description, Cinéma & TV garde la main (testé).
@@ -149,7 +149,7 @@ Chacune avec le contexte et la recommandation à proposer. Ne pas trancher à la
 
 ## Historique des versions
 
-- **v1.9.8** : bouton « Compléter les cartes rangées » (ajoute aux cartes rangées les domaines manquants que les règles trouvent, 5 au plus, jamais de retrait).
+- **v1.9.8** : bouton « Compléter les cartes rangées » (ajoute aux cartes rangées les domaines manquants que les règles trouvent, 5 au plus, jamais de retrait). Avec les règles du tour 5 : 13 mots refusés, `saison 19*`/`saison 20*`, `politique dans/en`, motifs de titre (`MOTIFS_DE_TITRE`: « Famille … », « … (groupe) »).
 - **v1.9.7** : Ranger retire `!À traiter` (et elle seule) des cartes que les règles rangent, après avoir posé leur domaine ; l'aperçu les annonce.
 - **v1.9.6** : `★Village Polonais` aussi pour « commune polonaise » et « gmina rurale polonaise » ; bouton Doublons (pose `!Doublon`).
 - **v1.9.5** : une date seule ne range plus en Histoire (`année`, `mois`, jours retirés) ; dates et `classe`, `distribution`, `formation`, `thomas` jamais proposés par Suggestions.

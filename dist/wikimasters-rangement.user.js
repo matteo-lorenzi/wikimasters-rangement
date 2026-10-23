@@ -23,6 +23,8 @@
 //  • Les expressions longues passent avant les mots seuls :
 //    "auteur-compositeur" (Musique) l'emporte sur "auteur" (Littérature).
 //  • Le moteur lit la description ; si elle ne donne aucun domaine, il lit aussi le titre.
+//  • Un titre peut aussi ranger une carte par sa FORME : voir MOTIFS_DE_TITRE plus bas
+//    (« Famille Whitney » → Histoire, « Kix (groupe) » → Musique). Une ligne par motif.
 // ═══════════════════════════════════════════════════════════════════
 
 const DOMAINES = {
@@ -111,6 +113,9 @@ const DOMAINES = {
     'randonnée', 'lhjmq', 'piha',
     // Suggestions du 2026-10-14 (4e tour)
     'cup', 'racing', 'running', 'fútbol', 'eurobowl', 'coupe',
+    // Suggestions du 2026-10-23 (5e tour) : « saison 2018-2019 de… », « saison 2009 des… »
+    // (« saison 3 de la série » n'est pas touchée : il faut 19… ou 20…)
+    'saison 19*', 'saison 20*',
   ],
   'Politique & Droit': [
     'homme politique', 'femme politique', 'personnalité politique', 'politicien', 'politicienne', 'ministre',
@@ -133,6 +138,8 @@ const DOMAINES = {
     // Suggestions du 2026-10-14 (4e tour)
     'agence fédérale', 'candidat politique', 'juridiction', 'système politique', 'relations entre',
     'droits de l\'homme', 'identité de genre', 'garde républicaine', 'commission', 'accord de',
+    // Suggestions du 2026-10-23 (5e tour) : « politique » seul reste refusé
+    'politique dans', 'politique en',
   ],
   'Économie': [
     'homme d\'affaires', 'femme d\'affaires', 'entrepreneur', 'entrepreneuse', 'chef d\'entreprise',
@@ -337,6 +344,8 @@ const IGNORER = [
 const PAS_SUGGERER = [
   // refusés (2026-10-13)
   'politique',
+  // refusés (2026-10-23) : prénoms (jacques, albert, alexandre, hubert, john), mots trop larges
+  'jacques', 'albert', 'alexandre', 'hubert', 'john', 'the', 'san', 'nord', 'siècle', 'action', 'ligne', 'ier', 'campagne',
   // refusés (2026-10-14) : plusieurs sens (classe de navires / de trains / sociale ; formation géologique /
   // d'élèves ; distribution Linux / de probabilité / entreprise), « thomas » est un prénom
   'classe', 'distribution', 'formation', 'thomas',
@@ -385,6 +394,19 @@ const COLLECTIONS = [
 // Domaines qui ne comptent que s'ils sont le sujet principal (premier domaine trouvé).
 // Évite #Géographie sur « église située dans la commune de… ».
 const SEULEMENT_EN_PREMIER = ['Géographie'];
+
+// Motifs de titre : la FORME du titre donne le domaine (Suggestions du 2026-10-23, 5e tour).
+//   commence : le titre commence par ce mot, suivi d'un nom   « Famille Whitney »
+//   finit    : le titre finit par ce texte                    « Kix (groupe) »
+//   sauf     : (facultatif) pas si le titre contient déjà un mot sûr de l'un de ces domaines
+//              (« Famille de plantes » reste en Nature)
+// Comme les mots de DOMAINES, un motif sert quand la description ne donne aucun domaine. Une page à ignorer
+// (homonymie, prénom, nom de famille…) l'emporte toujours. Le mot seul (« famille », « groupe ») reste
+// ambigu ailleurs : seul le motif complet range la carte.
+const MOTIFS_DE_TITRE = [
+  { commence: 'famille', domaine: 'Histoire', sauf: ['Nature'] },
+  { finit: '(groupe)', domaine: 'Musique' },
+];
 
 const MAX_DOMAINES = 5;
 const A_TRAITER = '!À traiter';
@@ -457,7 +479,18 @@ const classer = (carte) => {
   const titre = () => {
     const paren = (carte.t.match(/\(([^)]*)\)/) || [])[1] || '';
     const reste = carte.t.replace(/\([^)]*\)/g, ' ').trim();
-    return [...scan(paren), ...scan(reste).map((h) => ({ ...h, pos: h.pos + 1000 }))];
+    const lus = [...scan(paren), ...scan(reste).map((h) => ({ ...h, pos: h.pos + 1000 }))];
+    // motifs de titre (MOTIFS_DE_TITRE) : jamais sur une page à ignorer, ni quand un domaine « sauf » est déjà là
+    if (lus.some((h) => h.kind === 'ignore')) return lus;
+    const nt = norm(carte.t).trim();
+    const motifs = [];
+    for (const m of MOTIFS_DE_TITRE) {
+      const debut = m.commence && nt.startsWith(norm(m.commence)) && /^\s+[a-z]/.test(nt.slice(norm(m.commence).length));
+      const fin = m.finit && nt.endsWith(norm(m.finit));
+      const exclu = (m.sauf || []).some((d) => lus.some((h) => h.kind === 'sur' && h.doms.includes(d)));
+      if ((debut || fin) && !exclu) motifs.push({ pos: 0, kind: 'sur', doms: [m.domaine], kw: m.commence || m.finit });
+    }
+    return [...motifs, ...lus];
   };
   let hits, source;
   if (carte.d && carte.d.trim()) {
@@ -1488,7 +1521,7 @@ const resumePlan = (cartes, plans) => {
 // Si les règles ont changé depuis cette date (nouvelle version, regles.js modifié), toutes les cartes
 // sans étiquette sont relues : les anciennes que les nouvelles règles savent ranger ne restent pas de côté.
 const EMPREINTE_REGLES = (() => {
-  const s = JSON.stringify([DOMAINES, AMBIGUS, IGNORER, COLLECTIONS, SEULEMENT_EN_PREMIER, MAX_DOMAINES]) + classer + scan + kwRegex;
+  const s = JSON.stringify([DOMAINES, AMBIGUS, IGNORER, COLLECTIONS, SEULEMENT_EN_PREMIER, MOTIFS_DE_TITRE, MAX_DOMAINES, A_TRAITER, FEMININS]) + classer + scan + kwRegex;
   let h = 2166136261;
   for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619) >>> 0;
   return h.toString(36);
