@@ -19,13 +19,13 @@ Si Claude doit regarder le vrai site (observer un bouton, lire une carte) : Chro
 ## Reprendre une session (côté Claude)
 
 1. Lire `CLAUDE.md`, puis ce fichier en entier (surtout « Questions en suspens »).
-2. Dépôt absent → `git clone https://github.com/matteo-lorenzi/wikimasters-rangement`, puis `npm install`. `npm test` doit donner **305 tests verts** ; `PYTHONIOENCODING=utf-8 python scripts/regressions.py` **26/26 mutations détectées**.
+2. Dépôt absent → `git clone https://github.com/matteo-lorenzi/wikimasters-rangement`, puis `npm install`. `npm test` doit donner **320 tests verts** ; `PYTHONIOENCODING=utf-8 python scripts/regressions.py` **31/31 mutations détectées**.
 3. Travailler sur une nouvelle branche partie de `main` ; `main` n'avance qu'après le oui de la personne (`CLAUDE.md`).
 4. Si la personne n'a pas encore fait « Avant tout » (ci-dessus), le lui donner avant de coder ou de trancher quoi que ce soit.
 
 ## État
 
-- **v1.9.11 sur la branche `claude/mots-vides-doublons`** (305 tests, 26 mutations) ; **v1.9.10 et v1.9.9 sur `main`** (voir la section Wikipédia), seul l’essai de 40 cartes a été fait sur le vrai site. **v1.9.8 est sur `main`** (2026-10-23) : elle réunit « Compléter les cartes rangées » et les règles du tour 5, **ni l'un ni l'autre essayés sur le vrai site**. v1.9.7 : la personne l’a installée et a rangé avec (36 cartes sans `!À traiter`). Node.js 26 et Python 3.13 installés sur la machine de travail le 2026-10-23.
+- **v1.9.11 sur la branche `claude/mots-vides-doublons`** (320 tests, 31 mutations) ; **v1.9.10 et v1.9.9 sur `main`** (voir la section Wikipédia), seul l’essai de 40 cartes a été fait sur le vrai site. **v1.9.8 est sur `main`** (2026-10-23) : elle réunit « Compléter les cartes rangées » et les règles du tour 5, **ni l'un ni l'autre essayés sur le vrai site**. v1.9.7 : la personne l’a installée et a rangé avec (36 cartes sans `!À traiter`). Node.js 26 et Python 3.13 installés sur la machine de travail le 2026-10-23.
 - Le panneau du script a six boutons :
   - **Ranger les nouvelles cartes** : lit les cartes sans étiquette (seulement les nouvelles, ou **toutes si les règles ont changé** depuis le dernier rangement, v1.9.3), montre l'aperçu, pose les domaines après « Appliquer ». Recherches groupées à partir de 200 cartes (`docs/piste-1.md`). Rechargement et reprise automatiques sur raté du site.
   - **Suggestions** (v1.9.0–1.9.1, lecture seule) : compteur des cartes sans domaine, mots inconnus des règles (dès 3 cartes, domaine proposé d'après les cartes déjà étiquetées), « Copier pour Claude » et « Copier les cartes sans règle ». C'est l'outil du chantier en cours (voir plus bas).
@@ -106,7 +106,7 @@ Moteur : nouvelle constante `MOTIFS_DE_TITRE` dans `regles.js` (une ligne par mo
 
 ## Wikipédia dans Ranger (question A, décidée avec la personne) — branche `claude/wikipedia-ranger`
 
-**État** : écrit et testé sur le faux site, **pas encore livré** (version non changée, `dist` non reconstruit : 291 tests, 25 mutations sur cette branche), **jamais essayé sur le vrai site**. Doc : `docs/wikimasters.md` (« API de Wikipédia »), `docs/tests.md`, `GLOSSARY.md`.
+**État** : écrit et testé sur le faux site, **pas encore livré** (version non changée, `dist` non reconstruit : 320 tests, 31 mutations sur cette branche), **jamais essayé sur le vrai site**. Doc : `docs/wikimasters.md` (« API de Wikipédia »), `docs/tests.md`, `GLOSSARY.md`.
 
 **Ce que fait Ranger en plus** : pour les cartes lues qui n'ont pas de description utile (statut `inconnue` sans description, ou `a_traiter` / marquées `!À traiter` ; jamais les `ignoree`), il lit la première phrase de leur article fr.wikipedia.org (lecture seule, `fetch` simple avec `origin=*`, lots de 20 titres en série, ~1 requête par seconde), garde ce qui suit le premier « est un / une / le / la » et le donne au moteur comme description (`planAvecPhrase`). La carte garde sa vraie description (vide) à l'écran et sous sa clé `titre|description|rareté`. Aperçu : groupe « Classées d'après Wikipédia » (titre — phrase → domaine), bloc « Mots manquants » (calcul de Suggestions sur le lot, domaine proposé d'après la lecture complète si elle est à jour, sinon les cartes classées du lot ; « Copier pour Claude »). « Appliquer » reste obligatoire. Le script ne crée jamais de domaine : la personne décide, Claude écrit la règle.
 

@@ -73,7 +73,7 @@ Le calcul (`suggestions`) sur une petite collection inventée : compteur des car
 
 ## `scripts/regressions.py` — les bugs déjà livrés
 
-`python scripts/regressions.py` lance d'abord toute la suite sur les sources intactes, puis réintroduit chaque bug passé, un à la fois, dans une copie des sources, lance **seulement le test qui le surveille** (`--test-name-pattern`), et exige qu'il le **détecte** (rouge). Environ 3 minutes. Les 25 actuels :
+`python scripts/regressions.py` lance d'abord toute la suite sur les sources intactes, puis réintroduit chaque bug passé, un à la fois, dans une copie des sources, lance **seulement le test qui le surveille** (`--test-name-pattern`), et exige qu'il le **détecte** (rouge). Environ 3 minutes. Les 31 actuels :
 1. carte sans `p` ignorée ;
 2. « Terminé » non géré ;
 3. compteur « (n) » gardé dans le libellé du filtre ;
@@ -98,7 +98,13 @@ Le calcul (`suggestions`) sur une petite collection inventée : compteur des car
 22. Wikipédia : page d'homonymie lue comme un résumé ;
 23. Wikipédia : essai de 40 cartes ignoré ;
 24. Wikipédia bloquée : Ranger s'arrête au lieu de continuer sans Wikipédia ;
-25. Wikipédia : cartes laissées de côté par l'essai oubliées.
+25. Wikipédia : cartes laissées de côté par l'essai oubliées ;
+26. Suggestions : un exemplaire en double compte pour deux cartes ;
+27. Mesure Wikipédia : phrase ambiguë notée comme phrase sans règle ;
+28. Mesure Wikipédia : jugement sans la condition « aucun domaine non attendu » (un domaine en trop jugé juste) ;
+29. Mesure Wikipédia : construction du rapport sans protection, Ranger s'arrête ;
+30. Mesure Wikipédia : affichage du rapport sans protection, aperçu perdu ;
+31. Mesure Wikipédia : mesure sans protection pendant la lecture, Ranger s'arrête.
 
 Un nouveau bug corrigé y ajoute sa mutation : `(nom, fichier, texte d'origine, texte fautif, test)`, où `test` est le début du nom du test qui passe au rouge. Choisir un test qui échoue **à coup sûr**, pas selon la charge de la machine : vérifier qu'il échoue lancé seul (`node --test --test-name-pattern="^début du nom"` avec `WMR_SRC` sur la copie mutée). Quand le code autour change, une mutation dont le texte n'est plus trouvé, ou dont le test a été renommé, est signalée « à mettre à jour » et compte comme ratée ; `build.sh` vérifie les textes à chaque build (`--ancres`, instantané).
 
