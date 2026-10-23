@@ -258,6 +258,35 @@ test('essai : précision avec un fichier de vérité, et le mot responsable de c
   assert.match(r.stdout, /Paul Exemple/);
 });
 
+test('essai : jugement, un domaine attendu PLUS un domaine non attendu est « fausse »', async () => {
+  const site = await creerSite({ cartes: [] });
+  const juger = site.wmr.jugerWikipedia;
+  assert.equal(juger(['Arts', 'Sciences'], { attendu: ['Arts'], acceptables: [] }), 'fausse', 'Sciences en trop');
+  assert.equal(juger(['Arts'], { attendu: ['Arts'], acceptables: [] }), 'juste');
+  assert.equal(juger(['Histoire', 'Littérature'], { attendu: ['Histoire'], acceptables: ['Littérature'] }), 'juste', 'acceptable toléré');
+  assert.equal(juger(['Littérature'], { attendu: ['Histoire'], acceptables: ['Littérature'] }), 'fausse', 'aucun domaine attendu');
+  assert.equal(juger(['Patrimoine', 'Transports'], { attendu: ['Patrimoine', 'Transports'], acceptables: [] }), 'juste', 'l\'un ou l\'autre');
+  assert.equal(juger([], { attendu: [] }), 'juste');
+  assert.equal(juger(['Musique'], { attendu: [] }), 'fausse', 'rien ne devait être proposé');
+  site.fermer();
+});
+
+test('essai : référence figée (moteur v1.9.11), 20 justes sur 23 classées, couverture 23/26', () => {
+  const r = essai([path.join('test', 'reference-wikipedia.json')]);
+  assert.equal(r.status, 0, r.stderr);
+  const x = r.resultat;
+  assert.deepEqual({ ...x.couverture }, { classees: 23, lues: 26, taux: 0.885 });
+  assert.deepEqual({ ...x.precision }, { verifiees: 23, justes: 20, taux: 0.87 });
+  // chacune a un domaine attendu PLUS un domaine en trop
+  assert.deepEqual(x.fausses.map((f) => [f.titre, f.domaines, f.motsResponsables]), [
+    ['Corso di Buono', ['Arts', 'Sciences'], ['école']],
+    ['Addington Palace', ['Patrimoine', 'Histoire'], ['historique']],
+    ['Pilot chart', ['Patrimoine', 'Transports'], ['domaine']],
+  ]);
+  assert.match(r.stdout, /Couverture : 23 \/ 26 \(89 %\)/);
+  assert.match(r.stdout, /Précision : 20 \/ 23 \(87 %\)/);
+});
+
 test('essai : sur la référence (test/reference-wikipedia.json), sans réseau, taux cohérents et cas sans classement jamais devinés', () => {
   const ref = JSON.parse(fs.readFileSync(path.join(RACINE, 'test', 'reference-wikipedia.json'), 'utf8'));
   assert.equal(ref.cartes.length, 26, '23 cartes de l\'essai du 2026-10-23 + 3 cas sans classement');

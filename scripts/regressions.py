@@ -126,6 +126,22 @@ MUTATIONS = [
      "if (x.cles.has(cle(c))) continue; // un exemplaire en double ne compte pas pour une deuxième carte",
      "if (false) continue; // un exemplaire en double ne compte pas pour une deuxième carte",
      "suggestions : un exemplaire en double"),
+    ('Mesure Wikipédia : phrase ambiguë notée comme phrase sans règle', 'app.js',
+     "w.statut === 'a_traiter' ? 'phrase-ambigue' : 'phrase-sans-regle';",
+     "w.statut === 'a_traiter' ? 'phrase-sans-regle' : 'phrase-sans-regle';",
+     "rapport Wikipédia : écrit dans le stockage"),
+    ('Mesure Wikipédia : jugement sans la condition « aucun domaine non attendu »', 'app.js',
+     "return domaines.some((d) => v.attendu.includes(d)) && domaines.every((d) => ok.has(d)) ? 'juste' : 'fausse';",
+     "return domaines.some((d) => v.attendu.includes(d)) ? 'juste' : 'fausse';",
+     "essai : jugement"),
+    ('Mesure Wikipédia : construction du rapport sans protection, Ranger s\'arrête', 'app.js',
+     "noterBug(e, 'rapport Wikipédia impossible à construire : Ranger continue sans lui');",
+     "throw e;",
+     "rapport Wikipédia : la construction du rapport lève"),
+    ('Mesure Wikipédia : affichage du rapport sans protection, aperçu perdu', 'app.js',
+     "noterBug(e, 'rapport Wikipédia impossible à afficher : aperçu sans lui');",
+     "throw e;",
+     "rapport Wikipédia : l'affichage du rapport lève"),
 ]
 
 
