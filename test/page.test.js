@@ -390,6 +390,108 @@ test('Ranger : aperçu des cartes qui perdent !À traiter, et rien à faire quan
   site2.fermer();
 });
 
+// ── Compléter les cartes rangées (v1.9.8) ──
+// 60 cartes #Sport que les règles mettent aussi en Musique (2 pages dans la vue #Sport), et des cas isolés.
+const rangees = () => [
+  ...serie(60, (i) => ({ t: nom(i), d: 'footballeur et chanteur', tags: ['Sport'], obtenu: date(i) })),
+  { t: 'Gestion', d: 'footballeur et chanteur', tags: ['Sport', '!À vendre'], obtenu: date(70) },
+  { t: 'Déjà complète', d: 'footballeur et chanteur', tags: ['Sport', 'Musique'], obtenu: date(71) },
+  { t: 'Rangée à la main', d: 'footballeur', tags: ['Arts'], obtenu: date(72) },
+  // 4 domaines posés, les règles en trouvent 5 : une seule place, la première trouvée (Sport)
+  { t: 'Plafond', d: 'footballeur, chanteur, acteur, homme politique et astéroïde', tags: ['Nature', 'Géographie', 'Arts', 'Histoire'], obtenu: date(73) },
+  { t: 'Sans étiquette', d: 'footballeur et chanteur', obtenu: date(74) },
+  { t: 'Nationalité seule', d: 'footballeur et chanteur', tags: ['Français'], obtenu: date(75) },
+];
+const ajouts = (site) => site.poses().filter((a) => a.etiquette !== '!Doublon');
+const completerApercu = async (site) => {
+  const p = panneau(site);
+  p.cliquer('[data-a=completer]');
+  assert.ok(await attendreQue(() => /^\d+ carte|^Rien à compléter|⚠️/.test(p.statut())), p.statut());
+  return p;
+};
+const completerTout = async (site) => {
+  const p = await completerApercu(site);
+  assert.ok(p.root.querySelector('[data-go]'), p.statut());
+  p.appliquer();
+  assert.ok(await attendreQue(() => BILAN.test(p.statut()), 60000), 'bilan : ' + p.statut());
+  return p;
+};
+const etiquettesDe = (site, t) => site.cartes.find((c) => c.t === t).tags;
+
+test('Compléter : une carte à 1 domaine gagne le 2e que les règles lui trouvent, rien n\'est retiré, les autres cartes sont intactes', async () => {
+  const site = await creerSite({ cartes: rangees() });
+  const p = await completerTout(site);
+  assert.match(p.statut(), /✅/);
+  for (const c of site.cartes.filter((x) => /^[A-Z][a-z]+$/.test(x.t) && x.d === 'footballeur et chanteur' && x.tags.includes('Sport') && x.t !== 'Gestion' && x.t !== 'Déjà complète')) {
+    assert.deepEqual(c.tags, ['Sport', 'Musique'], c.t);
+  }
+  assert.deepEqual(etiquettesDe(site, 'Rangée à la main'), ['Arts', 'Sport'], 'le domaine posé à la main reste, le domaine des règles s\'ajoute');
+  assert.deepEqual(etiquettesDe(site, 'Déjà complète'), ['Sport', 'Musique'], 'carte déjà complète : intacte');
+  assert.deepEqual(etiquettesDe(site, 'Sans étiquette'), [], 'une carte sans étiquette est le travail de Ranger');
+  assert.deepEqual(etiquettesDe(site, 'Nationalité seule'), ['Français'], 'sans domaine : intacte');
+  assert.ok(!site.poses().some((a) => a.titres.includes('Déjà complète')), 'la carte complète n\'est jamais cochée');
+  sansIncident(site);
+  site.fermer();
+});
+
+test('Compléter : 5 domaines au plus, les premiers trouvés par les règles', async () => {
+  const site = await creerSite({ cartes: rangees() });
+  await completerTout(site);
+  assert.deepEqual(etiquettesDe(site, 'Plafond'), ['Nature', 'Géographie', 'Arts', 'Histoire', 'Sport']);
+  site.fermer();
+});
+
+test('Compléter : aucun retrait, une autre étiquette de gestion jamais touchée, seuls des domaines sont posés', async () => {
+  const site = await creerSite({ cartes: rangees() });
+  await completerTout(site);
+  assert.deepEqual(site.actions.filter((a) => a.type === 'retrait'), [], 'aucun retrait');
+  assert.deepEqual(etiquettesDe(site, 'Gestion'), ['Sport', '!À vendre', 'Musique']);
+  assert.deepEqual([...new Set(ajouts(site).map((a) => a.etiquette))].sort(), ['Musique', 'Sport']);
+  assert.ok(!site.actions.some((a) => a.type === 'DÉFAUSSER'));
+  site.fermer();
+});
+
+test('Compléter : aperçu groupé par domaine ajouté, puis « Appliquer » obligatoire (rien n\'est posé avant)', async () => {
+  const site = await creerSite({ cartes: rangees() });
+  const p = await completerApercu(site);
+  const apercu = p.root.querySelector('.out').textContent;
+  assert.match(apercu, /\+ #Musique : 61 cartes/);
+  assert.match(apercu, /\+ #Sport : 2 cartes/);
+  assert.ok(p.root.querySelector('[data-go]'));
+  assert.deepEqual(site.poses(), [], 'rien de posé avant « Appliquer »');
+  assert.ok(!site.actions.some((a) => a.type === 'filtre'), 'la lecture passe par l\'API, pas par l\'écran');
+  site.fermer();
+});
+
+test('Compléter : rien à compléter, pas de bouton Appliquer', async () => {
+  const site = await creerSite({ cartes: [
+    { t: 'Complète', d: 'footballeur et chanteur', tags: ['Sport', 'Musique'] }, { t: 'Seule', d: 'footballeur', tags: ['Sport'] }, { t: 'Libre', d: 'footballeur' },
+  ] });
+  const p = await completerApercu(site);
+  assert.ok(!p.root.querySelector('[data-go]'), 'rien à poser : pas de bouton Appliquer');
+  assert.match(p.statut(), /Rien à compléter/);
+  site.fermer();
+});
+
+test('Compléter : raté du site en cours de route, rechargement, reprise, aucune carte posée deux fois', async () => {
+  // le chargement n° 8 tombe en plein travail dans la vue #Sport
+  const site = await creerSite({ cartes: rangees(), chargementsEnEchec: [8] });
+  const p = await completerTout(site);
+  assert.equal(site.rechargements(), 1);
+  const iFiltre = site.actions.findIndex((a) => a.type === 'filtre' && a.filtre === 'Sport');
+  assert.ok(iFiltre >= 0 && site.actions.findIndex((a) => a.type === 'rechargement') > iFiltre, 'le raté tombe dans une vue de domaine');
+  assert.match(p.statut(), /✅/);
+  assert.deepEqual(etiquettesDe(site, nom(0)), ['Sport', 'Musique']);
+  assert.deepEqual(etiquettesDe(site, nom(59)), ['Sport', 'Musique']);
+  for (const t of ['Musique', 'Sport']) {
+    const titres = ajouts(site).filter((a) => a.etiquette === t).flatMap((a) => a.titres);
+    assert.equal(titres.length, new Set(titres).size, `#${t} : aucune carte cochée deux fois`);
+  }
+  assert.deepEqual(site.actions.filter((a) => a.type === 'retrait'), []);
+  sansIncident(site);
+  site.fermer();
+});
+
 // ── ratés du site : réessai, rechargement et reprise, journal des bugs ──
 
 const toutRange = (site) => {

@@ -861,6 +861,7 @@ const monterUI = () => {
       <div class="row">
         <button class="b p" data-a="ranger">Ranger les nouvelles cartes</button>
         <button class="b" data-a="suggestions">Suggestions</button>
+        <button class="b" data-a="completer">Compléter les cartes rangées</button>
         <button class="b" data-a="doublons">Doublons</button>
         <button class="b" data-a="migration">Migration (une fois)</button>
         <button class="b d" data-a="stop" disabled>Arrêter</button>
@@ -883,6 +884,7 @@ const monterUI = () => {
   root.querySelector('[data-a=stop]').onclick = () => { STOP = true; ui.statut('Arrêt demandé…'); };
   root.querySelector('[data-a=ranger]').onclick = () => lancer(() => modeRanger(false), { etape: 'lecture', tout: false });
   root.querySelector('[data-a=suggestions]').onclick = () => lancer(modeSuggestions);
+  root.querySelector('[data-a=completer]').onclick = () => lancer(modeCompleter, { etape: 'completer-lecture' });
   root.querySelector('[data-a=doublons]').onclick = () => lancer(modeDoublons);
   root.querySelector('[data-a=migration]').onclick = () => lancer(modeMigration);
   root.querySelector('[data-a=bugs]').onclick = afficherBugs;
@@ -903,7 +905,7 @@ const lancer = async (fn, reprise = null) => {
     // Un plafond par séance évite de boucler sur un site qui ne tient jamais longtemps.
     const r = reprise && store.get('ranger_reprise', null);
     const meme = r && r.etape === reprise.etape;
-    const poses = (store.get('ranger_fait', []) || []).length + (store.get('ranger_fait_m', []) || []).length;
+    const poses = ['ranger_fait', 'ranger_fait_m', 'completer_fait'].reduce((n, k) => n + (store.get(k, []) || []).length, 0);
     const essais = meme && poses <= (r.poses || 0) ? r.essais : 0;
     const total = meme ? r.total || r.essais : 0;
     if (reprise && e instanceof PanneSite && essais < MAX_RECHARGEMENTS && total < MAX_RECHARGEMENTS_SEANCE) {
@@ -1110,7 +1112,8 @@ const afficherRanger = (cartes, depuis, viaApi) => {
 const proposerReprise = () => {
   const r = store.get('ranger_reprise', null);
   const lu = store.get('ranger_lecture', null);
-  if (r && Date.now() - r.at < 15 * 60e3 && (r.etape === 'lecture' || lu)) {
+  const completer = r && /^completer/.test(r.etape);
+  if (r && Date.now() - r.at < 15 * 60e3 && (r.etape === 'lecture' || completer || lu)) {
     montrer(ui.$('.pan'), true);
     lancer(async () => {
       ui.journal(`Reprise automatique après rechargement de la page (${r.essais}/${MAX_RECHARGEMENTS}).`);
@@ -1120,6 +1123,8 @@ const proposerReprise = () => {
         throw new PanneSite('La page Collection ne s\'est pas affichée après le rechargement.');
       }
       if (r.etape === 'lecture') await modeRanger(r.tout);
+      else if (r.etape === 'completer-lecture') await modeCompleter();
+      else if (r.etape === 'completer') await appliquerCompleter(store.get('completer_lecture', null));
       else await appliquerLecture(lu);
     }, { etape: r.etape, tout: r.tout });
     return;
@@ -1129,6 +1134,24 @@ const proposerReprise = () => {
   ui.out.innerHTML = `<p class="hint">Une lecture de ${l.cartes.length} carte(s) faite à ${new Date(l.at).toLocaleTimeString()} n'a pas encore été appliquée.</p>
     <div class="row"><button class="b p" data-reprise>Reprendre cette lecture</button></div>`;
   ui.out.querySelector('[data-reprise]').onclick = () => lancer(async () => { afficherRanger(l.cartes, l.depuis, l.viaApi); });
+};
+
+// Pose, dans la vue (petite) de chaque domaine « tête », les étiquettes prévues pour ses cartes.
+// parTete : Map(domaine → Map(clé de carte → [étiquettes à poser])). Les cartes restent dans leur vue : la pagination ne bouge pas.
+const poserParVues = async (parTete, fait, noter, libelle) => {
+  let i = 0;
+  for (const [tete, plan] of parTete) {
+    arret();
+    i++;
+    ui.statut(`${libelle} : #${tete} (${i}/${parTete.size}) — ${plan.size} carte(s)`);
+    await choisirFiltre(tete);
+    await choisirTri('Date d\'ajout');
+    const enAttente = () => [...plan].some(([k, tags]) => tags.some((t) => !fait.has(k + '§' + t)));
+    await parcourirVue(async (num) => {
+      await appliquerSurPage(plan, fait, noter(`#${tete} p${num} `), num);
+      return enAttente();
+    });
+  }
 };
 
 const appliquerRanger = async (cibles, plans, groupes = []) => {
@@ -1189,19 +1212,7 @@ const appliquerRanger = async (cibles, plans, groupes = []) => {
     if (!parTete.has(tete)) parTete.set(tete, new Map());
     parTete.get(tete).set(k, reste);
   }
-  let i = 0;
-  for (const [tete, plan] of parTete) {
-    arret();
-    i++;
-    ui.statut(`Passe 2 : #${tete} (${i}/${parTete.size}) — ${plan.size} carte(s)`);
-    await choisirFiltre(tete);
-    await choisirTri('Date d\'ajout');
-    const enAttente = () => [...plan].some(([k, tags]) => tags.some((t) => !fait.has(k + '§' + t)));
-    await parcourirVue(async (num) => {
-      await appliquerSurPage(plan, fait, noter(`#${tete} p${num} `), num);
-      return enAttente();
-    });
-  }
+  await poserParVues(parTete, fait, noter, 'Passe 2');
   // Passe 3 : les cartes « !À traiter » que les règles rangent maintenant. Dans leur vue, d'abord leurs domaines,
   // puis (dans cet ordre : si la pose échoue, la carte garde son repère) le retrait de !À traiter, et de lui seul.
   // Compte à part (« ranger_fait_m ») : une carte sans étiquette qui a la même clé ne doit pas la faire croire rangée.
@@ -1241,7 +1252,7 @@ const lireCollection = async () => {
     toutes = await lireApi({ sort: 'rarity' }, { progression: (n, tot) => ui.statut(`Lecture de la collection : ${n}${tot ? ' / ' + tot : ''} cartes…`) });
   } catch (e) {
     if (STOP || e instanceof PanneSite) throw e;
-    throw new Error(`Lecture de la collection impossible (${e.message}). Les suggestions ont besoin de la lecture rapide : réessaie dans quelques minutes.`);
+    throw new Error(`Lecture de la collection impossible (${e.message}). Ce mode a besoin de la lecture rapide : réessaie dans quelques minutes.`);
   }
   const cartes = {}, membres = {};
   for (const c of toutes) {
@@ -1293,6 +1304,69 @@ const afficherSuggestions = (lecture) => {
     <div class="row"><button class="b" data-copier-cartes>Copier les cartes sans règle (${sansRegle.length + ambigues.length})</button></div>`;
   brancherCopie(copie, 'Liste copiée : colle-la dans la conversation avec Claude.');
   brancherCopie(cartes, 'Cartes copiées : colle-les dans la conversation avec Claude.', '[data-cartes]', '[data-copier-cartes]');
+};
+
+// ── Mode Compléter les cartes rangées : les domaines que les règles trouvent en plus ──
+// Cartes qui portent déjà au moins un domaine : on leur AJOUTE les domaines que les règles leur trouvent et qu'elles n'ont
+// pas, MAX_DOMAINES au total. Jamais de retrait, jamais d'autre étiquette (une carte rangée à la main en #Arts que les règles
+// mettent en Musique finit avec les deux). tailles : nombre de cartes par domaine, pour travailler dans la plus petite vue.
+const preparerCompleter = (cartes, tailles) => {
+  const plan = new Map(), cibles = [], parTete = new Map();
+  for (const c of cartes) {
+    const ont = c.tags.filter((t) => DOMAINES[t]);
+    if (!ont.length || plan.has(cle(c))) continue;
+    const place = Math.max(0, MAX_DOMAINES - ont.length);
+    const ajouts = planCarte(c).tags.filter((t) => DOMAINES[t] && !ont.includes(t)).slice(0, place);
+    if (!ajouts.length) continue;
+    plan.set(cle(c), ajouts);
+    cibles.push(c);
+    const tete = [...ont].sort((a, b) => (tailles[a] || 0) - (tailles[b] || 0))[0];
+    if (!parTete.has(tete)) parTete.set(tete, new Map());
+    parTete.get(tete).set(cle(c), ajouts);
+  }
+  return { plan, cibles, parTete };
+};
+const modeCompleter = async () => {
+  const lecture = await lireCollection();
+  const toutes = Object.values(lecture.cartes);
+  const tailles = {};
+  for (const c of toutes) for (const t of c.tags) if (DOMAINES[t]) tailles[t] = (tailles[t] || 0) + 1;
+  const { cibles } = preparerCompleter(toutes, tailles);
+  const l = { at: Date.now(), tailles, cartes: cibles.map(({ t, d, r, tags }) => ({ t, d, r, tags })) };
+  store.set('completer_lecture', l);
+  afficherCompleter(l, toutes.filter((c) => c.tags.some((t) => DOMAINES[t])).length);
+};
+const afficherCompleter = (l, rangees) => {
+  const { plan, cibles } = preparerCompleter(l.cartes, l.tailles);
+  const parDomaine = {};
+  for (const c of cibles) for (const t of plan.get(cle(c))) (parDomaine[t] = parDomaine[t] || []).push(c);
+  const lignes = Object.entries(parDomaine).sort((a, b) => b[1].length - a[1].length)
+    .map(([t, cs]) => `<tr><td><details><summary>+ #${esc(t)} : ${cs.length} carte${cs.length > 1 ? 's' : ''}</summary>${
+      cs.slice(0, 200).map((c) => `<div class="li">${esc(c.t)}</div>`).join('')}</details></td></tr>`).join('');
+  ui.statut(cibles.length ? `${cibles.length} carte(s) rangée(s) gagnent un domaine${rangees ? ` (sur ${rangees} qui en ont déjà un)` : ''}.`
+    : 'Rien à compléter : toutes tes cartes rangées ont déjà les domaines que les règles leur trouvent.');
+  ui.out.innerHTML = (cibles.length ? `<h4>Domaines ajoutés</h4><p class="hint">Rien n'est retiré, et seuls des domaines sont ajoutés (5 au plus par carte).</p><table>${lignes}</table>
+    <div class="row" style="margin-top:12px"><button class="b p" data-go>Appliquer</button></div>` : '');
+  const go = ui.out.querySelector('[data-go]');
+  if (go) go.onclick = () => {
+    go.remove();
+    store.set('completer_fait', null);
+    lancer(() => appliquerCompleter(l), { etape: 'completer' });
+  };
+};
+const appliquerCompleter = async (l) => {
+  if (!l || !l.cartes) throw new Error('Aucune lecture à appliquer : relance « Compléter les cartes rangées ».');
+  const { plan, cibles, parTete } = preparerCompleter(l.cartes, l.tailles);
+  // ce qui est posé est enregistré au fil de l'eau : une reprise après rechargement repart de là
+  const fait = new Set(store.get('completer_fait', []) || []);
+  const noter = (prefixe) => (t) => { ui.journal(prefixe + t); store.set('completer_fait', [...fait]); };
+  await poserParVues(parTete, fait, noter, 'Compléter');
+  await choisirFiltre(null);
+  store.set('lecture2_perimee', true);
+  const manquent = cibles.filter((c) => plan.get(cle(c)).some((t) => !fait.has(cle(c) + '§' + t)));
+  if (!manquent.length) store.set('completer_fait', null);
+  ui.statut(manquent.length ? `Terminé, mais ${manquent.length} carte(s) non complétée(s), dont « ${manquent[0].t} » : relance « Compléter les cartes rangées ».`
+    : `✅ ${cibles.length} carte(s) complétée(s).`);
 };
 
 // ── Mode Doublons : chaque exemplaire d'une carte possédée plusieurs fois reçoit !Doublon ──

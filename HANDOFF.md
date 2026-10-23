@@ -19,17 +19,18 @@ Si Claude doit regarder le vrai site (observer un bouton, lire une carte) : Chro
 ## Reprendre une session (côté Claude)
 
 1. Lire `CLAUDE.md`, puis ce fichier en entier (surtout « Questions en suspens »).
-2. Dépôt absent → `git clone https://github.com/matteo-lorenzi/wikimasters-rangement`, puis `npm install`. `npm test` doit donner **220 tests verts** ; `PYTHONIOENCODING=utf-8 python scripts/regressions.py` **16/16 mutations détectées**.
+2. Dépôt absent → `git clone https://github.com/matteo-lorenzi/wikimasters-rangement`, puis `npm install`. `npm test` doit donner **226 tests verts** ; `PYTHONIOENCODING=utf-8 python scripts/regressions.py` **18/18 mutations détectées**.
 3. Travailler sur une nouvelle branche partie de `main` ; `main` n'avance qu'après le oui de la personne (`CLAUDE.md`).
 4. Si la personne n'a pas encore fait « Avant tout » (ci-dessus), le lui donner avant de coder ou de trancher quoi que ce soit.
 
 ## État
 
-- **v1.9.7 sur `main`** (2026-10-23), 220 tests, 16 bugs surveillés par `scripts/regressions.py`. La personne l'a installée et a rangé avec (36 cartes sans `!À traiter`). Node.js 26 et Python 3.13 installés sur la machine de travail le 2026-10-23.
-- Le panneau du script a cinq boutons :
+- **v1.9.8 sur la branche `claude/completer-rangees`** (2026-10-23, pas encore sur `main`, pas encore essayée sur le vrai site) : bouton « Compléter les cartes rangées ». **v1.9.7 est sur `main`**, 226 tests, 18 bugs surveillés par `scripts/regressions.py`. La personne l'a installée et a rangé avec (36 cartes sans `!À traiter`). Node.js 26 et Python 3.13 installés sur la machine de travail le 2026-10-23.
+- Le panneau du script a six boutons :
   - **Ranger les nouvelles cartes** : lit les cartes sans étiquette (seulement les nouvelles, ou **toutes si les règles ont changé** depuis le dernier rangement, v1.9.3), montre l'aperçu, pose les domaines après « Appliquer ». Recherches groupées à partir de 200 cartes (`docs/piste-1.md`). Rechargement et reprise automatiques sur raté du site.
   - **Suggestions** (v1.9.0–1.9.1, lecture seule) : compteur des cartes sans domaine, mots inconnus des règles (dès 3 cartes, domaine proposé d'après les cartes déjà étiquetées), « Copier pour Claude » et « Copier les cartes sans règle ». C'est l'outil du chantier en cours (voir plus bas).
   - **Migration (une fois)** : faite par la personne (2026-10-13, v1.8.4). Sa lecture complète (`lecture2`) est partagée avec Suggestions.
+  - **Compléter les cartes rangées** (v1.9.8, branche `claude/completer-rangees`, **jamais lancé sur le vrai site**) : lit toute la collection par l'API ; pour chaque carte qui porte déjà un domaine, ajoute les domaines que les règles lui trouvent en plus (5 au plus), sans jamais rien retirer ni toucher aux autres étiquettes. Aperçu groupé (« + #Musique : 61 cartes »), « Appliquer » obligatoire, pose dans la vue du plus petit des domaines de la carte (les cartes y restent : la pagination ne bouge pas). Reprise : `completer_fait` (poses faites) et `completer_lecture` (la lecture), rechargement automatique sur raté. Une carte déjà complète n'est jamais cochée ; relancer le bouton après un arrêt ne refait rien de ce qui est fait.
   - **Doublons** (v1.9.6, demandé par la personne) : lit toute la collection par l'API, liste les cartes possédées en plusieurs exemplaires (même titre, description et rareté) qui n'ont pas encore `!Doublon`, puis après « Appliquer » cherche chaque titre et pose `!Doublon` sur tous ses exemplaires (le site ne les distingue pas). Pas encore lancé sur le vrai site.
   - **Journal des bugs** : la personne le copie dans la conversation ; lire d'abord « Page : » et « Journal : ».
 - Moteur (`src/regles.js`) : la description d'abord ; **si elle ne donne aucun domaine (et n'est pas une page à ignorer), le titre en secours** (v1.9.2). Une page à ignorer l'emporte sur un mot ambigu (v1.9.2).
@@ -86,7 +87,7 @@ Fait : une carte réelle par groupe dans `test/classement.test.js` (rouge sans l
    - Reprise sans perte (règle 4) : noter chaque retrait fait dans le stockage, comme `ranger_fait`.
    - Mettre à jour `docs/piste-1.md` (« Jamais Retirer l'étiquette ») et `CODING_STANDARDS.md` (règle 2 : retirer `!À traiter`, posée par le script, est réversible ; aucune autre étiquette).
    - Le premier usage réel se fait avec la personne présente, sur quelques cartes d'abord.
-3. **« Compléter les cartes rangées »** (décidé) : bouton dans Ranger ; cartes portant au moins un domaine ; ajout des domaines manquants trouvés par les règles (5 au total au plus), jamais de retrait ; aperçu groupé (« + #Sciences : 42 cartes »). Une carte rangée à la main en `#Arts` que les règles mettent en Musique finit avec les deux (accepté).
+3. **« Compléter les cartes rangées »** (décidé ; **fait en v1.9.8 sur la branche `claude/completer-rangees`, pas encore essayé sur le vrai site : premier usage avec la personne présente, sur le bouton seul, en regardant l'aperçu avant « Appliquer »**) : bouton dans Ranger ; cartes portant au moins un domaine ; ajout des domaines manquants trouvés par les règles (5 au total au plus), jamais de retrait ; aperçu groupé (« + #Sciences : 42 cartes »). Une carte rangée à la main en `#Arts` que les règles mettent en Musique finit avec les deux (accepté).
 4. **Wikipédia** : seulement quand la question A sera tranchée.
 
 ### Idées futures (de la personne, pas encore décidées)
@@ -137,6 +138,7 @@ Chacune avec le contexte et la recommandation à proposer. Ne pas trancher à la
 
 ## Historique des versions
 
+- **v1.9.8** : bouton « Compléter les cartes rangées » (ajoute aux cartes rangées les domaines manquants que les règles trouvent, 5 au plus, jamais de retrait).
 - **v1.9.7** : Ranger retire `!À traiter` (et elle seule) des cartes que les règles rangent, après avoir posé leur domaine ; l'aperçu les annonce.
 - **v1.9.6** : `★Village Polonais` aussi pour « commune polonaise » et « gmina rurale polonaise » ; bouton Doublons (pose `!Doublon`).
 - **v1.9.5** : une date seule ne range plus en Histoire (`année`, `mois`, jours retirés) ; dates et `classe`, `distribution`, `formation`, `thomas` jamais proposés par Suggestions.

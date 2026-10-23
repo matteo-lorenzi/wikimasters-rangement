@@ -86,6 +86,14 @@ MUTATIONS = [
      "const depuis = tout || changees ? null",
      "const depuis = tout ? null",
      "Ranger : les règles ont changé"),
+    ('Compléter : plus de 5 domaines sur une carte', 'app.js',
+     "&& !ont.includes(t)).slice(0, place);",
+     "&& !ont.includes(t));",
+     "Compléter : 5 domaines au plus"),
+    ('Compléter : reprise après rechargement qui oublie ce qui était déjà posé', 'app.js',
+     "const fait = new Set(store.get('completer_fait', []) || []);",
+     "const fait = new Set();",
+     "Compléter : raté du site en cours de route"),
 ]
 
 
