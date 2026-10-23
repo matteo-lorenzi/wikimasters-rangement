@@ -1,6 +1,6 @@
 # Passation — userscript WikiMasters
 
-Mis à jour le 2026-10-23 : **v1.9.7** sur la branche `claude/retrait-a-traiter` (Ranger retire `!À traiter` des cartes que les règles rangent), en attente du oui de la personne pour `main`. **v1.9.6 sur `main`**, validée par la personne : installée, cartes triées avec, aucun bug dans le journal. Les instructions durables sont dans `CLAUDE.md` ; ce fichier garde l'état, les décisions, la suite et les questions en suspens.
+Mis à jour le 2026-10-23 : **v1.9.7 sur `main`** (Ranger retire `!À traiter` des cartes que les règles rangent), essayée par la personne sur le vrai site et poussée avec son accord. Avant : v1.9.6, validée aussi. Les instructions durables sont dans `CLAUDE.md` ; ce fichier garde l'état, les décisions, la suite et les questions en suspens.
 
 ## Avant tout, en début de session : ce que la personne fait
 
@@ -25,7 +25,7 @@ Si Claude doit regarder le vrai site (observer un bouton, lire une carte) : Chro
 
 ## État
 
-- **v1.9.7** (2026-10-23, branche ci-dessus), 220 tests, 16 bugs surveillés par `scripts/regressions.py`. **v1.9.6 sur `main`** (2026-10-15) : la personne l'a installée et a rangé ses cartes avec (2026-10-23), sans bug au journal. Node.js 26 et Python 3.13 installés sur la machine de travail le 2026-10-23.
+- **v1.9.7 sur `main`** (2026-10-23), 220 tests, 16 bugs surveillés par `scripts/regressions.py`. La personne l'a installée et a rangé avec (36 cartes sans `!À traiter`). Node.js 26 et Python 3.13 installés sur la machine de travail le 2026-10-23.
 - Le panneau du script a cinq boutons :
   - **Ranger les nouvelles cartes** : lit les cartes sans étiquette (seulement les nouvelles, ou **toutes si les règles ont changé** depuis le dernier rangement, v1.9.3), montre l'aperçu, pose les domaines après « Appliquer ». Recherches groupées à partir de 200 cartes (`docs/piste-1.md`). Rechargement et reprise automatiques sur raté du site.
   - **Suggestions** (v1.9.0–1.9.1, lecture seule) : compteur des cartes sans domaine, mots inconnus des règles (dès 3 cartes, domaine proposé d'après les cartes déjà étiquetées), « Copier pour Claude » et « Copier les cartes sans règle ». C'est l'outil du chantier en cours (voir plus bas).
