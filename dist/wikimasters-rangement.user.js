@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WikiMasters — Rangement des cartes
 // @namespace    wikimasters-rangement
-// @version      1.9.8
+// @version      1.9.9
 // @description  Étiquette tes cartes WikiMasters par domaine (aperçu avant application, jamais de défausse).
 // @match        https://www.wiki-masters.com/*
 // @match        https://wiki-masters.com/*
@@ -234,7 +234,7 @@ const DOMAINES = {
     'empereur', 'impératrice', 'pharaon', 'nomarque', 'prince', 'princesse', 'duc', 'duchesse', 'marquis',
     'marquise', 'baron', 'baronne', 'noble', 'aristocrate', 'noblesse', 'famille noble', 'militaire', 'général!',
     'maréchal', 'amiral', 'officier', 'soldat', 'colonel', 'capitaine', 'chevalier', 'explorateur',
-    'exploratrice', 'navigateur', 'navigatrice', 'aviateur', 'aviatrice', 'pirate', 'corsaire', 'conquistador',
+    'exploratrice', 'navigatrice', 'aviateur', 'aviatrice', 'pirate', 'corsaire', 'conquistador',
     'catastrophe', 'attentat', 'massacre', 'génocide', 'épidémie', 'pandémie', 'accident', 'naufrage',
     'terrorisme', 'front', 'campagne militaire', 'opération militaire', 'unité militaire', 'régiment',
     'division militaire', 'escadrille', 'armée', 'civilisation', 'période', 'époque', 'âge du bronze',
@@ -332,6 +332,8 @@ const AMBIGUS = [
   'organisation', 'association', 'institution', 'prix', 'récompense', 'trophée', 'conseiller',
   'administrateur', 'manager', 'agent', 'consultant', 'collectionneur', 'mécène', 'philanthrope',
   'aventurier', 'aventurière', 'secrétaire général', 'directeur général', 'modèle', 'type', 'série', 'liste', 'résultats',
+  // Wikipédia, 2026-10-23 : un navigateur est un marin, un explorateur ou un navigateur web (« navigateur suisse » = Pierre Fehlmann, marin)
+  'navigateur',
 ];
 
 // Reconnues mais volontairement sans étiquette (la recherche suffit).
@@ -1215,9 +1217,11 @@ const ngrammes = (c) => {
 const couvre = (re, k) => { re.lastIndex = 0; const m = re.exec(k); return !!m && m.index === 0 && m[0].length === k.length; };
 const dejaConnu = (k) => scan(k).some((h) => couvre(kwRegex(h.kw), k)) || PAS_SUGGERER_RE.some((re) => couvre(re, k));
 
-const suggestions = (cartes) => {
+// reference : cartes de plus (une lecture complète de la collection) dont les domaines servent à proposer celui d'un mot,
+// quand les cartes lues n'en portent pas assez (Ranger, qui ne lit que des cartes sans étiquette).
+const suggestions = (cartes, reference = []) => {
   const compteur = { sansEtiquette: 0, rangeables: 0, inconnues: 0, aTraiter: 0, ignorees: 0, marqueesATraiter: 0 };
-  const sansRegle = [], ambigues = [], etiquetees = [];
+  const sansRegle = [], ambigues = [], etiquetees = reference.filter((c) => c.tags.some((t) => DOMAINES[t]));
   for (const c of cartes) {
     if (c.tags.some((t) => DOMAINES[t])) { etiquetees.push(c); continue; }
     const marquee = c.tags.includes(A_TRAITER);
@@ -1361,6 +1365,7 @@ details{margin:4px 0}summary{cursor:pointer;color:#cfd4d1}
 .li{color:#b9bfbb;font-size:12px;padding:2px 0 2px 10px}
 .ok{color:#34d399}.ko{color:#fbbf24}.log{font-family:ui-monospace,monospace;font-size:11px;color:#9aa19d;white-space:pre-wrap;max-height:140px;overflow:auto;background:#0e100f;border-radius:6px;padding:6px;margin-top:8px}
 .hint{font-size:12px;color:#9aa19d;margin:0 0 10px}
+.opt{display:block;margin:0 0 4px;font-size:12px;color:#cfd4d1;cursor:pointer}
 textarea{width:100%;background:#0e100f;color:#cfd4d1;border:1px solid #2a2e2c;border-radius:6px;padding:6px;font-family:ui-monospace,monospace;font-size:11px;margin-bottom:8px}
 `;
 
@@ -1388,6 +1393,8 @@ const monterUI = () => {
         <button class="b d" data-a="stop" disabled>Arrêter</button>
         <button class="b" data-a="bugs">Journal des bugs</button>
       </div>
+      <label class="opt"><input type="checkbox" data-essai> Essai Wikipédia : 40 cartes</label>
+      <p class="hint">Les cartes sans description utile sont classées d'après la première phrase de leur article Wikipédia (lecture seule). Décoche l'essai quand tu as validé les premiers résultats.</p>
       <div class="st"></div>
       <div class="out"></div>
       <div class="log" hidden style="display:none"></div>
@@ -1409,6 +1416,9 @@ const monterUI = () => {
   root.querySelector('[data-a=doublons]').onclick = () => lancer(modeDoublons);
   root.querySelector('[data-a=migration]').onclick = () => lancer(modeMigration);
   root.querySelector('[data-a=bugs]').onclick = afficherBugs;
+  const essai = $('[data-essai]');
+  essai.checked = !!store.get('wiki_essai', true);
+  essai.onchange = () => store.set('wiki_essai', essai.checked);
   majBoutonBugs();
   proposerReprise();
 };
@@ -1515,6 +1525,149 @@ const resumePlan = (cartes, plans) => {
     ${listeCartes('Ignorées volontairement (homonymies, listes…)', groupes.ignoree)}`;
 };
 
+// ═══════════════════════════════════════════════════════════════════
+//  WIKIPÉDIA — la première phrase de l'article, pour les cartes sans description utile
+//  Lecture seule, sur fr.wikipedia.org (pas sur le site WikiMasters : la règle 1 n'est pas en cause).
+//  Forme de l'API et pièges : docs/wikimasters.md, « API de Wikipédia ».
+// ═══════════════════════════════════════════════════════════════════
+
+const WIKI_API = 'https://fr.wikipedia.org/w/api.php';
+const WIKI_LOT = 20; // Wikipédia accepte 50 titres mais ne renvoie que 20 extraits par requête
+const WIKI_PAUSE = 1000; // environ une requête par seconde, en série
+const WIKI_TENTATIVES = 3; // un titre qui disparaît de la réponse est redemandé, 3 fois au plus
+const WIKI_RETENTE = 30 * 24 * 3600e3; // un titre absent ou sans résumé exploitable est retenté après 30 jours
+const WIKI_ESSAI = 40; // « Essai Wikipédia » : les 40 premières cartes concernées seulement
+const WIKI_EST = /(?<![\p{L}\p{N}'’-])est\s+(?:un|une|le|la)\s+/iu;
+const WIKI_ADJECTIFS = /^(?:premier|première|ancien|ancienne|dernier|dernière|seul|seule|unique)\s+/i;
+const WIKI_ABREVIATIONS = new Set(['av', 'apr', 'env', 'etc', 'jr', 'sr', 'st', 'ste', 'mr', 'dr', 'ca', 'cf', 'vol', 'no', 'hab', 'éd']);
+const nfc = (s) => String(s || '').normalize('NFC').trim();
+
+// Fin de la première phrase : un point après au moins deux caractères (« c. 1850 » ne coupe pas), hors abréviations (« av. J.-C. »).
+const finDePhrase = (t) => {
+  const re = /[\p{L}\p{N})»]{2}([.!?])(?=\s|$)/gu;
+  for (let m; (m = re.exec(t));) {
+    const mot = (t.slice(0, m.index + 2).match(/(\p{L}+)$/u) || [])[1] || '';
+    if (!WIKI_ABREVIATIONS.has(mot.toLowerCase())) return m.index + 2;
+  }
+  return t.length;
+};
+// Ce qui suit le PREMIER « est un / une / le / la » (dans les ~300 premiers caractères), l'adjectif d'ouverture sauté,
+// sur environ 250 caractères au plus et jusqu'à la fin de la phrase. Pas de « est un… » : null, la carte reste telle quelle.
+const morceauWikipedia = (extrait) => {
+  const txt = String(extrait || '').replace(/\s+/g, ' ').trim();
+  const m = WIKI_EST.exec(txt);
+  if (!m || m.index > 300) return null;
+  let reste = txt.slice(m.index + m[0].length);
+  for (let a; (a = WIKI_ADJECTIFS.exec(reste));) reste = reste.slice(a[0].length);
+  let morceau = reste.slice(0, finDePhrase(reste));
+  if (morceau.length > 250) morceau = morceau.slice(0, Math.max(morceau.lastIndexOf(' ', 250), 150));
+  morceau = morceau.replace(/[\s.,;:]+$/, '');
+  return morceau || null;
+};
+
+// Le cache : une entrée par titre NFC, { extrait, homonymie, absent, date }. Gardé indéfiniment, sauf les titres
+// absents ou sans résumé exploitable, retentés après 30 jours.
+const wikiCle = (titre) => 'wp:' + nfc(titre);
+const wikiEntree = (titre) => store.get(wikiCle(titre), null);
+const wikiPhrase = (e) => (e && !e.absent && !e.homonymie ? morceauWikipedia(e.extrait) : null);
+const wikiFrais = (e) => !!e && (e.homonymie || !!wikiPhrase(e) || Date.now() - e.date < WIKI_RETENTE);
+
+// Les cartes envoyées à Wikipédia : sans description et sans règle, ou à traiter (mot ambigu, ou marquées « !À traiter »).
+// Jamais une carte ignorée (homonymie, liste, nom de famille, prénom), ni une carte que les règles rangent déjà.
+const concerneeWiki = (c) => {
+  const { statut } = classer(c);
+  if (statut === 'ignoree' || statut === 'classee') return false;
+  return statut === 'a_traiter' || estMarquee(c) || !c.d.trim();
+};
+
+// Une requête : jusqu'à 20 titres. Lève une erreur si l'appel est bloqué (réseau, CSP, CORS) ou si Wikipédia répond en erreur.
+const appelWikipedia = async (titres) => {
+  const url = WIKI_API + '?action=query&format=json&redirects=1&prop=extracts%7Cpageprops&ppprop=disambiguation&exintro=1&explaintext=1'
+    + '&exchars=500&origin=*&titles=' + encodeURIComponent(titres.join('|'));
+  let r;
+  for (let essai = 1; essai <= 3; essai++) {
+    arret();
+    r = await fetch(url);
+    if (r.ok || (r.status < 500 && r.status !== 429)) break;
+    if (essai < 3) await sleep(3000);
+  }
+  if (!r.ok) throw new Error('Wikipédia a répondu en erreur (' + r.status + ')');
+  const j = await r.json();
+  if (j.error) throw new Error('Wikipédia a refusé la requête (' + (j.error.info || j.error.code) + ')');
+  if (!j.query || typeof j.query.pages !== 'object') throw new Error('Wikipédia a répondu dans un format inattendu');
+  return j.query;
+};
+// Le résultat d'un titre demandé (majuscule ajoutée par Wikipédia, redirection…), ou null s'il a disparu de la réponse :
+// ni extract ni missing (le 21e titre d'une requête disparaît sans erreur).
+const lireTitreWikipedia = (q, titre) => {
+  const vers = (liste, t) => { const x = (liste || []).find((r) => r.from === t); return x ? x.to : t; };
+  const cible = vers(q.redirects, vers(q.normalized, titre));
+  const p = Object.values(q.pages).find((x) => x.title === cible);
+  if (!p) return null;
+  if ('missing' in p || 'invalid' in p) return { extrait: '', homonymie: false, absent: true };
+  if (typeof p.extract !== 'string') return null;
+  return { extrait: p.extract, homonymie: !!(p.pageprops && 'disambiguation' in p.pageprops), absent: false };
+};
+
+// Lit dans Wikipédia les titres que le cache ne connaît pas. Chaque lot est enregistré dès qu'il est lu : un rechargement
+// de la page repart du cache. Renvoie l'erreur qui a arrêté la lecture (appel bloqué), ou null.
+const lireWikipedia = async (cartes) => {
+  const titres = [...new Set(cartes.map((c) => nfc(c.t)).filter((t) => t && !t.includes('|')))];
+  const aLire = titres.filter((t) => !wikiFrais(wikiEntree(t)));
+  const file = [...aLire], essais = new Map();
+  let faits = 0;
+  while (file.length) {
+    arret();
+    ui.statut(`Wikipédia : ${faits} / ${aLire.length} titre(s) lu(s)…`);
+    const lot = file.splice(0, WIKI_LOT);
+    let q;
+    try { q = await appelWikipedia(lot); } catch (e) { if (STOP) throw e; return e; }
+    for (const t of lot) {
+      const res = lireTitreWikipedia(q, t);
+      if (res) { store.set(wikiCle(t), { ...res, date: Date.now() }); faits++; continue; }
+      const n = (essais.get(t) || 0) + 1;
+      essais.set(t, n);
+      if (n < WIKI_TENTATIVES) file.push(t);
+      else { store.set(wikiCle(t), { extrait: '', homonymie: false, absent: true, date: Date.now() }); faits++; }
+    }
+    if (file.length) await sleep(WIKI_PAUSE);
+  }
+  return null;
+};
+
+// Pour Ranger : lit (ou retrouve dans le cache) la phrase de chaque carte concernée. L'état des cartes garde leur vraie
+// description (vide) : la phrase est conservée à part, sous la clé de la carte réelle.
+// Renvoie { phrases: { clé de carte → phrase }, wiki: { erreur, essai, concernees, lues } }.
+const lectureWikipedia = async (cartes, complete) => {
+  const concernees = cartes.filter(concerneeWiki);
+  const essai = !!store.get('wiki_essai', true);
+  const lues = essai ? concernees.slice(0, WIKI_ESSAI) : concernees;
+  let erreur = null;
+  if (lues.length) {
+    ui.journal(`Wikipédia : ${lues.length} carte(s) sur ${concernees.length} concernée(s)${essai ? ' (essai)' : ''}.`);
+    const e = await lireWikipedia(lues);
+    if (e) {
+      erreur = `Wikipédia n'a pas pu être lue (${e.message}) : le navigateur ou le site bloque peut-être cet appel. Ranger continue sans Wikipédia : `
+        + 'les cartes sans description restent comme elles sont. Copie le journal des bugs pour Claude, il adaptera l\'appel.';
+      noterBug(e, 'Wikipédia bloquée ou en erreur : Ranger continue sans Wikipédia');
+      ui.journal('⚠️ ' + erreur);
+    }
+  }
+  const phrases = {};
+  for (const c of lues) { const m = wikiPhrase(wikiEntree(c.t)); if (m) phrases[cle(c)] = m; }
+  // des cartes laissées de côté (essai) ou sans réponse (appel en échec) : Ranger les relira quand ce sera réglé
+  if (erreur) store.set('wiki_reste', { raison: 'erreur', version: VERSION });
+  else if (lues.length < concernees.length) store.set('wiki_reste', { raison: 'essai' });
+  else if (complete) store.set('wiki_reste', null); // une lecture partielle ne dit rien des cartes déjà laissées de côté
+  return { phrases, wiki: { erreur, essai, concernees: concernees.length, lues: lues.length } };
+};
+// Les cartes laissées de côté par l'essai (case décochée depuis) ou par un appel en échec (nouvelle version du script)
+// sont-elles à relire ?
+const wikiAReprendre = () => {
+  const r = store.get('wiki_reste', null);
+  return !!r && (r.raison === 'essai' ? !store.get('wiki_essai', true) : r.version !== VERSION);
+};
+
 // ── Mode Ranger : les nouvelles cartes sans étiquette ──
 // Le script retient la date de la dernière carte rangée et ne relit que les cartes obtenues depuis.
 // La dernière lecture est sauvegardée : après un rechargement de la page, on peut la reprendre.
@@ -1528,11 +1681,12 @@ const EMPREINTE_REGLES = (() => {
 })();
 const retenirDepuis = (date) => { store.set('ranger_depuis', date); store.set('ranger_regles', EMPREINTE_REGLES); };
 const modeRanger = async (tout = false) => {
-  const changees = !tout && store.get('ranger_depuis', null) && store.get('ranger_regles', null) !== EMPREINTE_REGLES;
+  const wikiReprise = !tout && store.get('ranger_depuis', null) && wikiAReprendre();
+  const changees = !tout && store.get('ranger_depuis', null) && (store.get('ranger_regles', null) !== EMPREINTE_REGLES || wikiReprise);
   const depuis = tout || changees ? null : store.get('ranger_depuis', null);
   let cartes, viaApi = true;
   ui.statut(depuis ? `Lecture des cartes obtenues depuis le ${new Date(depuis).toLocaleString()}…`
-    : `${changees ? 'Les règles ont changé : l' : 'L'}ecture de toutes les cartes sans étiquette (≈ 1 min 30, garde l'onglet ouvert)…`);
+    : `${wikiReprise ? 'Wikipédia peut maintenant être lue sur toutes les cartes : l' : changees ? 'Les règles ont changé : l' : 'L'}ecture de toutes les cartes sans étiquette (≈ 1 min 30, garde l'onglet ouvert)…`);
   try {
     cartes = await lireApi({ sort: 'added', untagged: '1' }, { depuis, progression: (n, tot) => ui.statut(`Lecture : ${n}${tot ? ' / ' + tot : ''} carte(s)…`) });
   } catch (e) {
@@ -1548,11 +1702,12 @@ const modeRanger = async (tout = false) => {
   // Les cartes marquées « !À traiter » sont relues à chaque fois : les règles ont pu les rattraper depuis.
   let marquees = [];
   if (viaApi) marquees = await lireMarquees();
-  ui.statut(`Classement de ${cartes.length + marquees.length} carte(s)…`);
-  await sleep(50);
   const toutes = [...cartes, ...marquees];
-  store.set('ranger_lecture', { at: Date.now(), depuis, viaApi, cartes: toutes });
-  afficherRanger(toutes, depuis, viaApi);
+  const { phrases, wiki } = await lectureWikipedia(toutes, !depuis);
+  ui.statut(`Classement de ${toutes.length} carte(s)…`);
+  await sleep(50);
+  store.set('ranger_lecture', { at: Date.now(), depuis, viaApi, cartes: toutes, phrases, wiki });
+  afficherRanger(toutes, depuis, viaApi, { phrases, ...wiki });
 };
 
 // Les cartes qui portent !À traiter (API, filtrée par l'id de l'étiquette, lu dans les options de `stats`).
@@ -1578,20 +1733,31 @@ const lireMarquees = async () => {
 
 // Ce que le mode Ranger fera d'une lecture : le même calcul pour l'aperçu et pour une reprise après rechargement.
 // neuves : cartes sans étiquette ; marquees : cartes !À traiter que les règles rangent maintenant (domaine puis retrait).
-const preparerRanger = (cartes, depuis) => {
-  const plans = new Map(cartes.map((c) => [cle(c), planCarte(c)]));
+// phrases : { clé de carte → phrase Wikipédia } ; le plan d'une carte à phrase est calculé avec la phrase comme description,
+// mais reste rangé sous la clé de la carte réelle (description vide), la seule qu'on retrouve sur le site.
+const planAvecPhrase = (c, phrases) => {
+  const p = planCarte(c);
+  const phrase = phrases[cle(c)];
+  if (!phrase) return p;
+  const w = planCarte({ ...c, d: phrase });
+  // la phrase ne sert que si elle range la carte, ou si elle la rend « à traiter » alors qu'elle n'avait rien
+  return w.statut === 'classee' || (w.statut === 'a_traiter' && p.statut === 'inconnue') ? { ...w, phrase } : p;
+};
+const preparerRanger = (cartes, depuis, phrases = {}) => {
+  const plans = new Map(cartes.map((c) => [cle(c), planAvecPhrase(c, phrases)]));
   const cibles = cartes.filter((c) => plans.get(cle(c)).tags.length);
   const neuves = cibles.filter((c) => !estMarquee(c));
   const marquees = cibles.filter(estMarquee);
   const plusRecente = cartes.filter((c) => !estMarquee(c)).reduce((m, c) => (c.obtenu && c.obtenu > m ? c.obtenu : m), depuis || '');
   // gros stock : d'abord des recherches qui rangent les cartes par groupes, puis page par page
-  const groupes = neuves.length >= SEUIL_RANGEMENT_GROUPE ? motsGroupes(cartes.filter((c) => !estMarquee(c)), plans) : [];
+  // (les cartes classées d'après Wikipédia n'y entrent pas : leur titre ne dit rien de leur domaine, elles sont rangées page par page)
+  const groupes = neuves.length >= SEUIL_RANGEMENT_GROUPE ? motsGroupes(cartes.filter((c) => !estMarquee(c) && !plans.get(cle(c)).phrase), plans) : [];
   return { plans, cibles, neuves, marquees, plusRecente, groupes };
 };
 const oublierFait = () => { store.set('ranger_fait', null); store.set('ranger_fait_m', null); };
 // Applique une lecture enregistrée (store « ranger_lecture »), au clic sur « Appliquer » ou en reprise automatique.
 const appliquerLecture = async (l) => {
-  const { plans, cibles, plusRecente, groupes } = preparerRanger(l.cartes, l.depuis);
+  const { plans, cibles, plusRecente, groupes } = preparerRanger(l.cartes, l.depuis, l.phrases);
   await appliquerRanger(cibles, plans, groupes);
   store.set('lecture2_perimee', true);
   if (l.viaApi && plusRecente) retenirDepuis(plusRecente);
@@ -1599,8 +1765,31 @@ const appliquerLecture = async (l) => {
   oublierFait();
 };
 
-const afficherRanger = (cartes, depuis, viaApi) => {
-  const { plans, cibles, neuves, marquees, plusRecente, groupes } = preparerRanger(cartes, depuis);
+// L'aperçu de Ranger, côté Wikipédia : l'erreur éventuelle, l'essai, les cartes classées d'après leur phrase, puis les mots manquants.
+// wiki : { phrases, erreur, essai, concernees, lues }
+const apercuWikipedia = (cartes, plans, wiki) => {
+  const phrases = wiki.phrases || {};
+  const classees = cartes.filter((c) => plans.get(cle(c)).phrase);
+  const lot = cartes.map((c) => { // la phrase tient lieu de description ; les domaines prévus tiennent lieu d'étiquettes
+    const p = plans.get(cle(c));
+    return { t: c.t, d: phrases[cle(c)] || c.d, r: c.r, tags: p.statut === 'classee' ? p.tags : c.tags };
+  });
+  // le domaine proposé vient de la lecture complète de la collection si elle est à jour, sinon des cartes classées du lot
+  const lecture = store.get('lecture2', null);
+  const reference = lecture && lectureComplete(lecture) && !store.get('lecture2_perimee', false) ? Object.values(lecture.cartes) : [];
+  const { candidats } = suggestions(lot, reference);
+  return (wiki.erreur ? `<p class="hint ko">⚠️ ${esc(wiki.erreur)}</p>` : '')
+    + (wiki.essai && wiki.concernees > wiki.lues ? `<p class="hint">Essai Wikipédia : ${wiki.lues} carte(s) lue(s) sur ${wiki.concernees} concernée(s). Décoche « Essai Wikipédia » dans le panneau pour lire les autres.</p>` : '')
+    + (classees.length ? `<h4>D'après Wikipédia</h4><details><summary>Classées d'après Wikipédia (${classees.length})</summary>${
+      classees.slice(0, 300).map((c) => `<div class="li">${esc(c.t)} — <i>${esc(plans.get(cle(c)).phrase)}</i> → ${esc(plans.get(cle(c)).tags.join(', '))}</div>`).join('')}${classees.length > 300 ? '<div class="li">…</div>' : ''}</details>` : '')
+    + (candidats.length ? `<h4>Mots manquants</h4>
+      <p class="hint">Mots que les règles ne connaissent pas, sur ${SUGG_MIN_CARTES} cartes ou plus de ce lot (les phrases Wikipédia comme descriptions). Copie la liste pour Claude : il écrit la règle, le script ne crée jamais de domaine tout seul.</p>
+      ${lignesMots(candidats)}
+      <textarea readonly rows="6">${esc(texteMots(`Mots manquants WikiMasters v${VERSION}, lot de ${cartes.length} cartes (Ranger)`, candidats))}</textarea>
+      <div class="row"><button class="b p" data-copier>Copier pour Claude</button></div>` : '');
+};
+const afficherRanger = (cartes, depuis, viaApi, wiki = {}) => {
+  const { plans, cibles, neuves, marquees, plusRecente, groupes } = preparerRanger(cartes, depuis, wiki.phrases);
   const groupees = groupes.reduce((s, g) => s + g.n, 0);
   const nbMarquees = cartes.filter(estMarquee).length;
   ui.statut(`${cartes.length - nbMarquees} carte(s) ${depuis ? 'nouvelle(s)' : 'sans étiquette'}, dont ${neuves.length} à ranger.`
@@ -1611,9 +1800,12 @@ const afficherRanger = (cartes, depuis, viaApi) => {
     + (marquees.length ? `<h4>Cartes « ${A_TRAITER} » rangées</h4>
       <div>${marquees.length} carte(s) : leur domaine, puis retrait de ${A_TRAITER} (et seulement elle)</div>
       ${listeCartes('Cartes concernées', marquees)}` : '')
+    + apercuWikipedia(cartes, plans, wiki)
     + resumePlan(cartes, plans) + `<div class="row" style="margin-top:12px">
       ${cibles.length ? '<button class="b p" data-go>Appliquer</button>' : ''}
       ${depuis ? '<button class="b" data-tout>Revoir toutes les cartes sans étiquette</button>' : ''}</div>`;
+  const motsManquants = ui.out.querySelector('textarea');
+  if (motsManquants) brancherCopie(motsManquants.value, 'Liste copiée : colle-la dans la conversation avec Claude.');
   if (!cibles.length) { // rien à poser : ces cartes ne seront plus relues
     if (viaApi && plusRecente) retenirDepuis(plusRecente);
     store.set('ranger_lecture', null);
@@ -1622,7 +1814,7 @@ const afficherRanger = (cartes, depuis, viaApi) => {
   if (go) go.onclick = () => {
     go.remove();
     oublierFait();
-    lancer(() => appliquerLecture({ cartes, depuis, viaApi }), { etape: 'application' });
+    lancer(() => appliquerLecture({ cartes, depuis, viaApi, phrases: wiki.phrases }), { etape: 'application' });
   };
   const tt = ui.out.querySelector('[data-tout]');
   if (tt) tt.onclick = () => lancer(() => modeRanger(true), { etape: 'lecture', tout: true });
@@ -1654,7 +1846,7 @@ const proposerReprise = () => {
   if (!l || !l.cartes || Date.now() - l.at > 6 * 3600e3) return;
   ui.out.innerHTML = `<p class="hint">Une lecture de ${l.cartes.length} carte(s) faite à ${new Date(l.at).toLocaleTimeString()} n'a pas encore été appliquée.</p>
     <div class="row"><button class="b p" data-reprise>Reprendre cette lecture</button></div>`;
-  ui.out.querySelector('[data-reprise]').onclick = () => lancer(async () => { afficherRanger(l.cartes, l.depuis, l.viaApi); });
+  ui.out.querySelector('[data-reprise]').onclick = () => lancer(async () => { afficherRanger(l.cartes, l.depuis, l.viaApi, { phrases: l.phrases, ...l.wiki }); });
 };
 
 // Pose, dans la vue (petite) de chaque domaine « tête », les étiquettes prévues pour ses cartes.
@@ -1799,24 +1991,27 @@ const modeSuggestions = async () => {
   ui.out.querySelector('[data-reutiliser]').onclick = () => afficherSuggestions(lecture);
   ui.out.querySelector('[data-relire]').onclick = () => lancer(async () => afficherSuggestions(await lireCollection()));
 };
+// Les mots proposés, en tableau (Suggestions, et « Mots manquants » de Ranger) et en texte à copier pour Claude.
+const pctSugg = (x) => Math.round(x * 100) + ' %';
+const domaineSugg = (c) => (c.dom ? `${c.dom} (${pctSugg(c.part)})` : (c.nouvelle ? 'nouvelle étiquette ?' : '?') + (c.tete ? ` (${c.tete} ${pctSugg(c.part)})` : ''));
+const exempleSugg = (x) => x.t + (x.d ? ' — ' + x.d : '');
+const lignesMots = (candidats) => `<table>${candidats.map((c) => `<tr><td><details><summary>${esc(c.mot)} → ${esc(domaineSugg(c))}</summary>${
+  c.exemples.map((x) => `<div class="li">${esc(exempleSugg(x))}</div>`).join('')}</details></td><td class="n">${c.n}</td></tr>`).join('')}</table>`;
+const texteMots = (entete, candidats, resume = null) => [entete, ...(resume ? [resume] : []), '',
+  ...candidats.map((c) => `${c.mot} — ${c.n} cartes — ${domaineSugg(c)} — ex. : ${c.exemples.map(exempleSugg).join(' ; ')}`)].join('\n');
 const afficherSuggestions = (lecture) => {
   const { compteur: k, candidats, sansRegle, ambigues } = suggestions(Object.values(lecture.cartes));
-  const pct = (x) => Math.round(x * 100) + ' %';
-  const domaine = (c) => (c.dom ? `${c.dom} (${pct(c.part)})` : (c.nouvelle ? 'nouvelle étiquette ?' : '?') + (c.tete ? ` (${c.tete} ${pct(c.part)})` : ''));
-  const exemple = (x) => x.t + (x.d ? ' — ' + x.d : '');
+  const exemple = exempleSugg;
   const resume = `${k.sansEtiquette} sans étiquette : ${k.inconnues} sans règle · ${k.aTraiter} à traiter · ${k.ignorees} ignorée(s) · ${k.rangeables} que Ranger peut déjà ranger. `
     + `Et ${k.marqueesATraiter} portent « !À traiter ».`;
-  const copie = [`Suggestions WikiMasters v${VERSION}, lecture du ${new Date(lecture.at).toLocaleString()}`, resume, '',
-    ...candidats.map((c) => `${c.mot} — ${c.n} cartes — ${domaine(c)} — ex. : ${c.exemples.map(exemple).join(' ; ')}`)].join('\n');
+  const copie = texteMots(`Suggestions WikiMasters v${VERSION}, lecture du ${new Date(lecture.at).toLocaleString()}`, candidats, resume);
   const cartes = [`Cartes sans règle (${sansRegle.length}) :`, ...sansRegle.map(exemple), '',
     `Cartes avec un mot ambigu seul (${ambigues.length}) :`, ...ambigues.map(exemple)].join('\n');
   ui.statut(`${Object.keys(lecture.cartes).length} cartes lues, ${candidats.length} mot(s) à proposer.`);
   ui.out.innerHTML = `<h4>Cartes sans domaine</h4><div>${esc(resume)}</div>
     <h4>Mots que les règles ne connaissent pas</h4>
     <p class="hint">Domaine proposé : celui de tes cartes déjà étiquetées qui contiennent ce mot (70 % au moins). Copie la liste pour Claude : il ajoutera aux règles les mots que tu choisis.</p>
-    ${candidats.length ? `<table>${candidats.map((c) => `<tr><td><details><summary>${esc(c.mot)} → ${esc(domaine(c))}</summary>${
-      c.exemples.map((x) => `<div class="li">${esc(exemple(x))}</div>`).join('')}</details></td><td class="n">${c.n}</td></tr>`).join('')}</table>`
-    : `<p class="hint">Aucun mot inconnu ne revient sur ${SUGG_MIN_CARTES} cartes ou plus.</p>`}
+    ${candidats.length ? lignesMots(candidats) : `<p class="hint">Aucun mot inconnu ne revient sur ${SUGG_MIN_CARTES} cartes ou plus.</p>`}
     <textarea readonly rows="8">${esc(copie)}</textarea>
     <div class="row"><button class="b p" data-copier>Copier pour Claude</button></div>
     <h4>Toutes les cartes à revoir</h4>
@@ -2053,7 +2248,7 @@ if (window.__WMR_TEST__ || store.get('debug', false)) {
     classer, planCarte, norm, cle, store, cartesDom, lireCarte, pageInfo,
     lireVue, lireApi, parcourirVue, changerPage, choisirFiltre, choisirTri, listerEtiquettes,
     modeSelection, poserEtiquette, appliquerSurPage, appliquerRanger, modeRanger, modeMigration, motsGroupes, rechercher,
-    supprimerEtiquette, rapportSuppression, suggestions, monterUI, ui: () => ui, stop: () => { STOP = true; },
+    supprimerEtiquette, rapportSuppression, suggestions, morceauWikipedia, monterUI, ui: () => ui, stop: () => { STOP = true; },
   };
 }
 
