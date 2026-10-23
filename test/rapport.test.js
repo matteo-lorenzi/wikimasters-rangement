@@ -165,6 +165,44 @@ test('rapport Wikipédia : Ranger sans carte concernée n\'écrase pas le rappor
   site.fermer();
 });
 
+// La mesure est un diagnostic : si elle plante, Ranger continue (aperçu, bouton Appliquer) et le journal des bugs le dit.
+test('rapport Wikipédia : la construction du rapport lève une exception, l\'aperçu arrive quand même avec « Appliquer »', async () => {
+  const site = await siteCauses();
+  site.wmr.store.set('wiki_essai', false);
+  // seul le rapport date ses résultats avec toISOString : il lève, rien d'autre n'est touché
+  const iso = site.window.Date.prototype.toISOString;
+  site.window.Date.prototype.toISOString = () => { throw new Error('date du rapport impossible'); };
+  const p = await apercu(site);
+  assert.ok(p.root.querySelector('[data-go]'), 'le bouton Appliquer est là');
+  assert.match(p.root.querySelector('.out').textContent, /Classées d'après Wikipédia \(3\)/, 'l\'aperçu de Wikipédia est complet');
+  assert.equal(rapport(site), null, 'pas de rapport');
+  assert.equal(p.root.querySelector('[data-copier-wp]'), null);
+  const bugs = site.wmr.store.get('bugs', []);
+  assert.equal(bugs.length, 1);
+  assert.match(bugs[0].contexte + ' ' + bugs[0].message, /rapport Wikipédia.*date du rapport impossible/s);
+  // la mesure suivante repart de zéro (wikiMesure remis à null)
+  site.window.Date.prototype.toISOString = iso;
+  await apercu(site);
+  assert.equal(rapport(site).requetes, 0, 'aucune requête comptée en trop');
+  site.fermer();
+});
+
+test('rapport Wikipédia : l\'affichage du rapport lève une exception, l\'aperçu arrive quand même avec « Appliquer »', async () => {
+  const site = await siteCauses();
+  site.wmr.store.set('wiki_essai', false);
+  // le stockage rend un rapport illisible (« cartes » n'est pas une liste) : son affichage lève
+  const proto = site.window.Storage.prototype, setItem = proto.setItem;
+  proto.setItem = function (k, v) { return setItem.call(this, k, k === 'wmr_wp_rapport' ? '{"cartes":5}' : v); };
+  const p = await apercu(site);
+  assert.ok(p.root.querySelector('[data-go]'), 'le bouton Appliquer est là');
+  assert.match(p.root.querySelector('.out').textContent, /Résultat prévu/, 'le reste de l\'aperçu est là');
+  assert.equal(p.root.querySelector('[data-copier-wp]'), null);
+  const bugs = site.wmr.store.get('bugs', []);
+  assert.equal(bugs.length, 1);
+  assert.match(bugs[0].contexte, /rapport Wikipédia/);
+  site.fermer();
+});
+
 // ── npm run essai (scripts/essai-wikipedia.js) ──
 
 const essai = (args) => {

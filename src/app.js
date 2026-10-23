@@ -1150,9 +1150,14 @@ const lectureWikipedia = async (cartes, complete) => {
   else if (lues.length < concernees.length) store.set('wiki_reste', { raison: 'essai' });
   else if (complete) store.set('wiki_reste', null); // une lecture partielle ne dit rien des cartes déjà laissées de côté
   // mesure (diagnostic seulement) : le rapport est écrit à chaque Ranger où Wikipédia a tourné, rien d'autre n'en dépend
-  if (wikiMesure) store.set('wp_rapport', rapportWikipedia(concernees, lues, wikiMesure, echec, essai, debutMesure));
-  const rapport = !!wikiMesure;
-  wikiMesure = null;
+  let rapport = false;
+  try {
+    if (wikiMesure) { store.set('wp_rapport', rapportWikipedia(concernees, lues, wikiMesure, echec, essai, debutMesure)); rapport = true; }
+  } catch (e) {
+    noterBug(e, 'rapport Wikipédia impossible à construire : Ranger continue sans lui');
+  } finally {
+    wikiMesure = null;
+  }
   return { phrases, wiki: { erreur, essai, concernees: concernees.length, lues: lues.length, rapport } };
 };
 
@@ -1374,7 +1379,17 @@ const apercuWikipedia = (cartes, plans, wiki) => {
       ${lignesMots(candidats)}
       <textarea readonly rows="6">${esc(texteMots(`Mots manquants WikiMasters v${VERSION}, lot de ${cartes.length} cartes (Ranger)`, candidats))}</textarea>
       <div class="row"><button class="b p" data-copier>Copier pour Claude</button></div>` : '')
-    + (wiki.rapport && store.get('wp_rapport', null) ? apercuRapportWikipedia(store.get('wp_rapport', null)) : '');
+    + blocRapportWikipedia(wiki);
+};
+// Le groupe « Mesure Wikipédia » de l'aperçu ; s'il ne s'affiche pas, l'aperçu arrive sans lui (journal des bugs).
+const blocRapportWikipedia = (wiki) => {
+  try {
+    const r = wiki.rapport && store.get('wp_rapport', null);
+    return r ? apercuRapportWikipedia(r) : '';
+  } catch (e) {
+    noterBug(e, 'rapport Wikipédia impossible à afficher : aperçu sans lui');
+    return '';
+  }
 };
 const afficherRanger = (cartes, depuis, viaApi, wiki = {}) => {
   const { plans, cibles, neuves, marquees, plusRecente, groupes } = preparerRanger(cartes, depuis, wiki.phrases);
