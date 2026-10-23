@@ -34,7 +34,7 @@ const collection = () => [
   { t: 'Endroit A', d: "défilé situé dans l'Ain, France" },
   { t: 'Endroit B', d: 'fonction en France' },
   { t: 'Endroit C', d: 'titre honorifique en France' },
-  { t: 'Politique en Guyane' }, { t: 'Politique dans la Seine-Saint-Denis' }, { t: 'Politique au Groenland' },
+  { t: 'Politique au Danemark' }, { t: 'Politique à Malte' }, { t: 'Politique au Groenland' },
   // ignorées volontairement, et rangeables par les règles actuelles
   ...serie(3, (i) => ({ t: `Dupont ${i}`, d: "page d'homonymie de Wikimédia" })),
   ...serie(2, (i) => ({ t: `Footeux ${i}`, d: 'footballeur français' })),
@@ -86,7 +86,7 @@ test('Suggestions : lecture de la collection par l\'API, compteur et texte à co
   const cartes = p.root().querySelector('.out textarea[data-cartes]').value;
   assert.match(cartes, /^Cartes sans règle \(47\)/m);
   assert.match(cartes, /^Fanzine 0 — fanzine$/m);
-  assert.match(cartes, /^Politique en Guyane$/m, 'carte sans description : le titre seul');
+  assert.match(cartes, /^Politique au Danemark$/m, 'carte sans description : le titre seul');
   assert.match(cartes, /^Cartes avec un mot ambigu seul \(7\)/m);
   assert.match(cartes, /^Bouliste suivi 0 — joueur de pétanque$/m);
   assert.doesNotMatch(cartes, /Dupont|Footeux|Novela rangée/, 'ni ignorées, ni rangeables, ni déjà étiquetées');
@@ -139,6 +139,31 @@ test('suggestions : jamais les mots refusés le 2026-10-14 (plusieurs sens, pré
   ].map((c, i) => ({ r: 'Commune', tags: [], d: '', obtenu: new Date(Date.UTC(2026, 0, 1) + i * 60000).toISOString(), ...c }));
   const mots = Array.from(site.wmr.suggestions(cartes).candidats, (c) => c.mot);
   for (const m of ['classe', 'formation', 'distribution', 'thomas', 'année', 'septembre', 'octobre', 'novembre', 'samedi']) {
+    assert.ok(!mots.includes(m), `« ${m} » proposé : ${mots.join(', ')}`);
+  }
+  site.fermer();
+});
+
+test('suggestions : jamais les mots refusés le 2026-10-23 (prénoms, mots trop larges)', async () => {
+  const site = await creerSite({ cartes: [] });
+  // titres de cartes de la forme réelle du 5e tour, trois cartes par mot
+  const cartes = [
+    { t: 'Jacques Dupuis' }, { t: 'Jacques Martin' }, { t: 'Jacques Rey' },
+    { t: 'Albert Camus' }, { t: 'Albert Lebrun' }, { t: 'Albert Roux' },
+    { t: 'Alexandre Petit' }, { t: 'Alexandre Moreau' }, { t: 'Alexandre Noel' },
+    { t: 'Hubert Falco' }, { t: 'Hubert Reeves' }, { t: 'Hubert Faure' },
+    { t: 'John Smith' }, { t: 'John Dewey' }, { t: 'John Lewis' },
+    { t: 'The Irish Press' }, { t: 'The Stranglers' }, { t: 'The Wailers' },
+    { t: 'San Marcos' }, { t: 'San Rafael' }, { t: 'San Gabriel' },
+    { t: 'Nord de Kerlan' }, { t: 'Nord de Brest' }, { t: 'Nord de Lille' },
+    { t: 'XIe siècle av. Kyrion' }, { t: 'XIIe siècle Kyrion' }, { t: 'XIIIe siècle Kyrion' },
+    { t: 'Action de Zerbon' }, { t: 'Action de Merlon' }, { t: 'Action de Tarvin' },
+    { t: 'Ligne Orvane' }, { t: 'Ligne Dolmir' }, { t: 'Ligne Trebax' },
+    { t: 'Georges Ier' }, { t: 'Louis Ier' }, { t: 'Pierre Ier' },
+    { t: 'Campagne de Kolven' }, { t: 'Campagne de Rastan' }, { t: 'Campagne de Mirtel' },
+  ].map((c, i) => ({ r: 'Commune', tags: [], d: '', obtenu: new Date(Date.UTC(2026, 0, 1) + i * 60000).toISOString(), ...c }));
+  const mots = Array.from(site.wmr.suggestions(cartes).candidats, (c) => c.mot);
+  for (const m of ['jacques', 'albert', 'alexandre', 'hubert', 'john', 'the', 'san', 'nord', 'siècle', 'action', 'ligne', 'ier', 'campagne']) {
     assert.ok(!mots.includes(m), `« ${m} » proposé : ${mots.join(', ')}`);
   }
   site.fermer();

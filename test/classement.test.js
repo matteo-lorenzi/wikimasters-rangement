@@ -176,6 +176,54 @@ const CAS = [
   ['Duck TV', '', ['Médias'], 'classee'],
   ['Eugeniusz Geno Malkowski', 'artiste-peintre polonais', ['Arts'], 'classee'],
   ['Eagle-Lion Films', '', ['Cinéma & TV'], 'classee'],
+  // 5e tour de Suggestions (2026-10-23) : cartes sans règle lues par l'API
+  // 1. saisons sportives : « saison 19* » et « saison 20* » (le titre en secours quand la description n'a pas de domaine)
+  ["Saison 2018-2019 de l'AS Monaco FC", '', ['Sport'], 'classee'],
+  ["Saison 2024-2025 de l'AJ Auxerre", "saison de l'AJ Auxerre", ['Sport'], 'classee'],
+  ['Saison 1965-1966 des Celtics de Boston', '', ['Sport'], 'classee'],
+  ['Saison 2009 des Orioles de Baltimore', '', ['Sport'], 'classee'],
+  ['Saison 2017-2018 de la LAH', '', ['Sport'], 'classee'],
+  ['Saison 2022 du Storm de Seattle', 'saison du Storm de Seattle', ['Sport'], 'classee'],
+  ['Saison 2015 des Astros de Houston', '', ['Sport'], 'classee'],
+  // … mais « saison » seul reste ambigu, et une saison de série garde son domaine (description d'abord)
+  ['Saison 3 de Dark', 'saison de la série télévisée allemande', ['Cinéma & TV'], 'classee'],
+  ['Saison 20 des Simpson', 'vingtième saison de la série', ['Cinéma & TV'], 'classee'],
+  ['Saison des pluies', 'saison', ['!À traiter'], 'a_traiter'],
+  // 2. « politique dans » et « politique en » (« politique » seul reste refusé)
+  ['Politique dans la Seine-Saint-Denis', '', ['Politique & Droit'], 'classee'],
+  ['Politique en Guyane', '', ['Politique & Droit'], 'classee'],
+  ['Politique dans la Seine-Maritime', '', ['Politique & Droit'], 'classee'],
+  ['Politique environnementale', '', [], 'inconnue'],
+  ['Politique au Groenland', '', [], 'inconnue'],
+  ['Politique', '', [], 'inconnue'],
+  // 3. motif de titre « Famille <nom> » → Histoire
+  ['Famille Whitney', '', ['Histoire'], 'classee'],
+  ['Famille Allard', '', ['Histoire'], 'classee'],
+  ['Famille Boudet (Caussade)', '', ['Histoire'], 'classee'],
+  ['Famille Le Gouz de Saint-Seine', '', ['Histoire'], 'classee'],
+  ['Famille de Framecourt', 'famille féodal française', ['Histoire'], 'classee'],
+  // garde-fous : la famille d'espèces reste en Nature, « famille » au milieu d'un titre n'est pas touché,
+  // une page à ignorer l'emporte, la description garde la main
+  ['Famille de plantes', '', ['Nature'], 'classee'],
+  ['Famille de coléoptères', '', ['Nature'], 'classee'],
+  ['Famille (biologie)', '', ['Sciences'], 'classee'],
+  ['Famille', '', ['!À traiter'], 'a_traiter'],
+  ['La famille Addams', '', ['!À traiter'], 'a_traiter'],
+  ['Famille Dupont (homonymie)', '', [], 'ignoree'],
+  ['Famille (nom de famille)', '', [], 'ignoree'],
+  ['Famille Martin', 'nom de famille', [], 'ignoree'],
+  ['Famille Dupont', "page d'homonymie de Wikimédia", [], 'ignoree'],
+  ['Famille Pathé', 'famille de musiciens', ['Musique'], 'classee'],
+  // 4. motif de titre « … (groupe) » → Musique
+  ['Kix (groupe)', 'groupe américain', ['Musique'], 'classee'],
+  ['Stratus (groupe)', '', ['Musique'], 'classee'],
+  ['Ravager (groupe)', '', ['Musique'], 'classee'],
+  ['UVE (groupe)', '', ['Musique'], 'classee'],
+  // « groupe » seul reste ambigu à juste titre, et seule la fin du titre compte
+  ['Bôa', 'groupe britannique', ['!À traiter'], 'a_traiter'],
+  ['Cuivre (groupe 11)', '', ['!À traiter'], 'a_traiter'],
+  ['Groupe symétrique (groupe)', 'groupe en mathématiques', ['Sciences'], 'classee'],
+  ['Groupe (homonymie)', '', [], 'ignoree'],
   // « télé » a 4 lettres : pris tel quel, il ne trouve pas « télégraphe »
   ["Ligne du télégraphe Chappe d'Avranches à Cherbourg", '', [], 'inconnue'],
   // mots risqués refusés par la personne : la carte reste sans règle
@@ -269,6 +317,27 @@ test('page d\'homonymie → ignorée, sans étiquette', () => {
 test('page de liste et prénom → ignorées', () => {
   assert.equal(classe('Liste des planètes mineures non numérotées découvertes en 2007', 'page de liste de Wikimedia').statut, 'ignoree');
   assert.equal(classe('Akira (prénom)', 'prénom épicène').statut, 'ignoree');
+});
+
+// ── l'empreinte des règles ──
+
+test("EMPREINTE_REGLES : toute constante de regles.js qui change le classement y figure", () => {
+  const fs = require('fs');
+  const path = require('path');
+  const { SRC } = require('./charger');
+  const regles = fs.readFileSync(path.join(SRC, 'regles.js'), 'utf8');
+  const app = fs.readFileSync(path.join(SRC, 'app.js'), 'utf8');
+  const empreinte = (app.match(/JSON\.stringify\(\[([^\]]*)\]\)/) || [])[1] || '';
+  const dans = empreinte.split(',').map((s) => s.trim());
+  // PAS_SUGGERER ne sert qu'au bouton Suggestions : il ne change pas ce que Ranger pose.
+  // INDEX est construit à partir des autres constantes, qui y figurent déjà.
+  const SANS_EFFET_SUR_RANGER = ['PAS_SUGGERER', 'INDEX'];
+  const constantes = [...regles.matchAll(/^const ([A-Z_]+) =/gm)].map((m) => m[1]);
+  assert.ok(constantes.includes('MOTIFS_DE_TITRE'), 'MOTIFS_DE_TITRE introuvable dans regles.js');
+  for (const c of constantes) {
+    if (SANS_EFFET_SUR_RANGER.includes(c)) continue;
+    assert.ok(dans.includes(c), `${c} (regles.js) n'est pas dans EMPREINTE_REGLES : Ranger ne saurait pas que les règles ont changé`);
+  }
 });
 
 // ── cartes sans description : lues par leur titre, la parenthèse d'abord ──

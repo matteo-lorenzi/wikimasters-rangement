@@ -13,7 +13,10 @@ Des cas **réels** : description de carte → étiquettes attendues (51 cartes d
 - collection ★Village Polonais ;
 - carte sans description, lue par son titre (parenthèse d'abord : « Cherry (film, 2021) ») ;
 - mot ambigu seul → `!À traiter` ; page d'homonymie, liste, prénom → ignorées, même avec un mot ambigu (« liste d'un projet Wikimedia ») ;
-- titre en secours : description sans domaine → le titre range la carte (« Cour d'appel de Besançon — service de l'État français »), mais jamais une page à ignorer ni une carte dont la description a déjà un domaine.
+- titre en secours : description sans domaine → le titre range la carte (« Cour d'appel de Besançon — service de l'État français »), mais jamais une page à ignorer ni une carte dont la description a déjà un domaine ;
+- 5e tour (2026-10-23) : saisons sportives (`saison 19*`, `saison 20*` ; « Saison 3 de Dark » reste Cinéma & TV) ; `politique dans` / `politique en` (« Politique environnementale », « Politique » seul : sans règle) ; **motifs de titre** `MOTIFS_DE_TITRE` : « Famille <nom> » → Histoire (garde-fous : « Famille de plantes » et « Famille de coléoptères » restent en Nature grâce à `sauf`, « Famille » seul, « La famille Addams » et « Famille (biologie) » non touchés, page à ignorer ou description avec domaine l'emportent) ; « … (groupe) » → Musique (« Cuivre (groupe 11) » et « Bôa — groupe britannique » restent ambigus).
+
+Un test lit aussi les sources : chaque constante de `regles.js` qui change le classement doit figurer dans la liste de `EMPREINTE_REGLES` (`app.js`), sinon Ranger ne saurait pas que les règles ont changé. Seules `PAS_SUGGERER` (Suggestions seulement) et `INDEX` (dérivée) en sont exemptées.
 
 Le script se charge dans un contexte `vm` séparé : recopier ses tableaux (`[...x]`) avant `deepEqual`, sinon la comparaison échoue sur le prototype.
 
@@ -35,7 +38,7 @@ Couvre : panneau ouvrir/fermer ; lecture (pagination tardive, pages fantômes, c
 
 ## `test/suggestions.test.js` — le bouton « Suggestions »
 
-Le calcul (`suggestions`) sur une petite collection inventée : compteur des cartes sans domaine (`!À traiter` à part), mots inconnus des règles à partir de 3 cartes, sans mots vides, pays, nationalités ni mots refusés (`PAS_SUGGERER`) ni expressions déjà couvertes par un mot ; domaine proposé à 70 % des cartes étiquetées ; « nouvelle étiquette ? » à 30 cartes. Puis le panneau : lecture par l'API seulement (aucun clic sur la page), texte à copier pour Claude, toutes les cartes à revoir (sans règle, mot ambigu seul) à copier aussi, lecture gardée qui devient périmée après un Ranger (« Relire (recommandé) »).
+Le calcul (`suggestions`) sur une petite collection inventée : compteur des cartes sans domaine (`!À traiter` à part), mots inconnus des règles à partir de 3 cartes, sans mots vides, pays, nationalités ni mots refusés (`PAS_SUGGERER` ; un test par date de refus : 2026-10-14 et 2026-10-23) ni expressions déjà couvertes par un mot ; domaine proposé à 70 % des cartes étiquetées ; « nouvelle étiquette ? » à 30 cartes. Puis le panneau : lecture par l'API seulement (aucun clic sur la page), texte à copier pour Claude, toutes les cartes à revoir (sans règle, mot ambigu seul) à copier aussi, lecture gardée qui devient périmée après un Ranger (« Relire (recommandé) »).
 
 ## `scripts/regressions.py` — les bugs déjà livrés
 

@@ -1000,7 +1000,7 @@ const resumePlan = (cartes, plans) => {
 // Si les règles ont changé depuis cette date (nouvelle version, regles.js modifié), toutes les cartes
 // sans étiquette sont relues : les anciennes que les nouvelles règles savent ranger ne restent pas de côté.
 const EMPREINTE_REGLES = (() => {
-  const s = JSON.stringify([DOMAINES, AMBIGUS, IGNORER, COLLECTIONS, SEULEMENT_EN_PREMIER, MAX_DOMAINES]) + classer + scan + kwRegex;
+  const s = JSON.stringify([DOMAINES, AMBIGUS, IGNORER, COLLECTIONS, SEULEMENT_EN_PREMIER, MOTIFS_DE_TITRE, MAX_DOMAINES, A_TRAITER, FEMININS]) + classer + scan + kwRegex;
   let h = 2166136261;
   for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619) >>> 0;
   return h.toString(36);
