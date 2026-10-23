@@ -76,6 +76,16 @@ Mots proposés (numéros tels que donnés à la personne ; ⚠ = risqué) :
 
 Fait : une carte réelle par groupe dans `test/classement.test.js` (rouge sans les mots : 17 échecs), les mots dans `regles.js` (commentaire « Suggestions du 2026-10-14 (4e tour) »), v1.9.4. Les ~410 cartes restantes : noms propres et espèces latines → Wikipédia (question A).
 
+### Tour 5 (2026-10-23) : règles écrites sur `claude/regles-tour5`, pas encore livrées
+
+Réponses de la personne : quatre idées acceptées, treize mots refusés (voir « Refusé par la personne »). Chaque règle a sa carte réelle dans `test/classement.test.js` (rouge d'abord), marquée « Suggestions du 2026-10-23 (5e tour) » dans `regles.js`. Les 19 cartes citées passent de « sans règle » ou `!À traiter` à rangées, toutes bien classées :
+1. Saisons sportives : `saison 19*` et `saison 20*` → Sport (7 cartes : AS Monaco, AJ Auxerre, Celtics, Orioles, LAH, Storm, Astros). Limite connue : une carte « Saison 20 de <série> » sans description de série irait en Sport ; avec « saison de la série » en description, Cinéma & TV garde la main (testé).
+2. `politique dans` et `politique en` → Politique & Droit (3 cartes). `politique` seul reste refusé ; « Politique environnementale » n'est pas piégée par « politique en » (la règle exige la fin du mot) ; testé.
+3. **Motif de titre** « Famille <nom> » → Histoire (5 cartes), avec garde-fou `sauf: ['Nature']` : « Famille de plantes », « Famille de coléoptères » restent en Nature.
+4. **Motif de titre** « … (groupe) » → Musique (4 cartes). « groupe » seul reste ambigu (question G : les groupes à nationalité, « Bôa — groupe britannique », restent `!À traiter`).
+
+Moteur : nouvelle constante `MOTIFS_DE_TITRE` dans `regles.js` (une ligne par motif : `commence` ou `finit`, `domaine`, `sauf` facultatif), lue dans `classer` avec le titre seulement. Un motif compte comme un mot sûr (il range la carte quand la description n'a aucun domaine), ne s'applique jamais à une page à ignorer, passe après la description. `EMPREINTE_REGLES` (`app.js`) contient maintenant `MOTIFS_DE_TITRE`, `A_TRAITER` et `FEMININS` (ces deux-là manquaient) ; un test vérifie que toute constante de `regles.js` y figure. À la livraison : version, build, Ranger (« Les règles ont changé »), nouveau compteur Suggestions.
+
 ### Suite, dans l'ordre
 
 1. **La personne installe la v1.9.5** et lance Ranger (il annoncera « Les règles ont changé »), puis Suggestions pour le nouveau compteur.
@@ -116,6 +126,7 @@ Chacune avec le contexte et la recommandation à proposer. Ne pas trancher à la
 
 - Écrire directement dans la base (Supabase) avec le jeton de session (règle 1). Une exploration des cookies a déjà été bloquée par le classificateur de sécurité.
 - Mots refusés : `politique` (seul ; « doctrine politique » accepté) ; mots risqués **date, conflit, industrie, commerce, justice, manifestation, affection, barrage** (leurs cartes restent sans règle dans les tests) ; 4e tour : **essai, bibliothèque**, **les dates seules** (jours, mois, `année` : il faut un événement, un personnage, un bâtiment historique…), **classe, distribution, formation, thomas**.
+- 5e tour (2026-10-23), dans `PAS_SUGGERER` : **jacques, albert, alexandre, hubert, john** (prénoms), **the, san, nord, siècle, action, ligne, ier, campagne** (trop larges). Jamais reproposés ; un test les vérifie.
 - Proposer des pays ou des nationalités dans Suggestions (`PAS_SUGGERER`).
 - Une étiquette `!Homonymie` pour les cartes ignorées.
 - « défilé » en Géographie : « Défilé de l'Écluse » part en Transports (titre en secours, « écluse »), erreur acceptée.
