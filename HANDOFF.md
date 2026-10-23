@@ -1,6 +1,6 @@
 # Passation — userscript WikiMasters
 
-Mis à jour le 2026-10-15 : **v1.9.6** sur la branche `claude/polish-village-labels-duplicates-d2858c` (Village Polonais élargi, bouton Doublons), en attente du oui de la personne pour `main`. Avant : v1.9.5 sur `main`. Les instructions durables sont dans `CLAUDE.md` ; ce fichier garde l'état, les décisions, la suite et les questions en suspens.
+Mis à jour le 2026-10-23 : **v1.9.6 sur `main`**, validée par la personne (Village Polonais élargi, bouton Doublons) : installée, cartes triées avec, **aucun bug dans le journal**. Les instructions durables sont dans `CLAUDE.md` ; ce fichier garde l'état, les décisions, la suite et les questions en suspens.
 
 ## Avant tout, en début de session : ce que la personne fait
 
@@ -25,7 +25,7 @@ Si Claude doit regarder le vrai site (observer un bouton, lire une carte) : Chro
 
 ## État
 
-- **v1.9.6** (2026-10-15, branche ci-dessus), 216 tests ; v1.9.5 sur `main` (2026-10-14), 16 bugs surveillés par `scripts/regressions.py`. `main` = `claude/handoff-reprise-travail-dd9b3d` (rien d'autre en attente). La personne ne l'a pas encore installée ni rangée avec.
+- **v1.9.6 sur `main`** (2026-10-15), 216 tests, 16 bugs surveillés par `scripts/regressions.py`. Rien d'autre en attente. La personne l'a installée et a rangé ses cartes avec (2026-10-23), sans bug au journal. Tests non relancés le 2026-10-23 : Node.js et Python absents de la machine de travail, à installer avant de coder.
 - Le panneau du script a cinq boutons :
   - **Ranger les nouvelles cartes** : lit les cartes sans étiquette (seulement les nouvelles, ou **toutes si les règles ont changé** depuis le dernier rangement, v1.9.3), montre l'aperçu, pose les domaines après « Appliquer ». Recherches groupées à partir de 200 cartes (`docs/piste-1.md`). Rechargement et reprise automatiques sur raté du site.
   - **Suggestions** (v1.9.0–1.9.1, lecture seule) : compteur des cartes sans domaine, mots inconnus des règles (dès 3 cartes, domaine proposé d'après les cartes déjà étiquetées), « Copier pour Claude » et « Copier les cartes sans règle ». C'est l'outil du chantier en cours (voir plus bas).
