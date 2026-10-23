@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WikiMasters — Rangement des cartes
 // @namespace    wikimasters-rangement
-// @version      1.9.10
+// @version      1.9.11
 // @description  Étiquette tes cartes WikiMasters par domaine (aperçu avant application, jamais de défausse).
 // @match        https://www.wiki-masters.com/*
 // @match        https://wiki-masters.com/*
@@ -142,6 +142,8 @@ const DOMAINES = {
     'droits de l\'homme', 'identité de genre', 'garde républicaine', 'commission', 'accord de',
     // Suggestions du 2026-10-23 (5e tour) : « politique » seul reste refusé
     'politique dans', 'politique en',
+    // Mots manquants de Ranger (2026-10-23) : « organisme » seul est piégé (organismes génétiquement modifiés)
+    'organisme public', 'organisme gouvernemental',
   ],
   'Économie': [
     'homme d\'affaires', 'femme d\'affaires', 'entrepreneur', 'entrepreneuse', 'chef d\'entreprise',
@@ -200,6 +202,8 @@ const DOMAINES = {
     'allergie', 'épidémiologie', 'autisme', 'urine', 'oculaire', 'médical', 'classe de complexité', 'linux',
     'software', 'protocol', 'compression de données', 'polym*', 'laser', 'semi-conducteur', 'électron',
     'diffraction', 'fermentation', 'diviseur',
+    // Mots manquants de Ranger (2026-10-23) : ⚠ une base de données électorale irait aussi en Sciences
+    'base de données',
   ],
   'Espace': [
     'astéroïde', 'galaxie', 'constellation', 'nébuleuse', 'étoile', 'planète', 'exoplanète', 'planète mineure',
@@ -341,6 +345,8 @@ const AMBIGUS = [
 // Reconnues mais volontairement sans étiquette (la recherche suffit).
 const IGNORER = [
   'page d\'homonymie', 'page de liste', 'projet wikimedia', 'nom de famille', 'prénom', 'patronyme', 'homonymie',
+  // « 291e jour de l'année 1965 » : une date seule ne range pas (2026-10-23)
+  'jour de l\'année',
 ];
 
 // Mots que le bouton « Suggestions » ne propose jamais : les nationalités et les pays (la barre de recherche
@@ -352,6 +358,9 @@ const PAS_SUGGERER = [
   'jacques', 'albert', 'alexandre', 'hubert', 'john', 'the', 'san', 'nord', 'siècle', 'action', 'ligne', 'ier', 'campagne',
   // refusé (2026-10-23) : particule d'un nom arabe (Mohamed Ben Kanoun, Muhammad ben Ahmad)
   'ben',
+  // refusés (2026-10-23), « Mots manquants » de Ranger : mots courants sans domaine, prénom, lieux
+  'base', 'données', 'espace', 'production', 'public', 'personnes', 'étranger', 'écrit', 'fondée', 'œuvre', 'utilisé',
+  'destiné', 'josé', 'paris', 'america', 'amérique du nord',
   // refusés (2026-10-14) : plusieurs sens (classe de navires / de trains / sociale ; formation géologique /
   // d'élèves ; distribution Linux / de probabilité / entreprise), « thomas » est un prénom
   'classe', 'distribution', 'formation', 'thomas',
@@ -1200,7 +1209,8 @@ const SUGG_MAX = 50;
 const SUGG_MAJORITE = 0.7;
 const SUGG_NOUVELLE = 30;
 const MOTS_VIDES = new Set(('a au aux avec ce ces cet cette dans de des du elle elles en entre est et il ils la le les leur leurs '
-  + 'ou par pas pour qu que qui sa sans se ses son sur un une ancien ancienne anciens anciennes ne nee mort morte situe situee dont lors').split(' '));
+  + 'ou par pas pour qu que qui sa sans se ses son sur un une ancien ancienne anciens anciennes ne nee mort morte situe situee dont lors '
+  + 'nom but fonction jour laquelle non sous vers').split(' '));
 const PAS_SUGGERER_RE = PAS_SUGGERER.map(kwRegex);
 // Les mots d'une carte (sa description, sinon son titre) : clé sans accents → forme affichée.
 const ngrammes = (c) => {
@@ -1240,8 +1250,11 @@ const suggestions = (cartes, reference = []) => {
   const parMot = new Map();
   for (const c of cibles) {
     for (const [k, mot] of ngrammes(c)) {
-      if (!parMot.has(k)) parMot.set(k, { mot, cartes: [] });
-      parMot.get(k).cartes.push(c);
+      if (!parMot.has(k)) parMot.set(k, { mot, cartes: [], cles: new Set() });
+      const x = parMot.get(k);
+      if (x.cles.has(cle(c))) continue; // un exemplaire en double ne compte pas pour une deuxième carte
+      x.cles.add(cle(c));
+      x.cartes.push(c);
     }
   }
   const retenus = new Map([...parMot].filter(([k, x]) => x.cartes.length >= SUGG_MIN_CARTES && !dejaConnu(k)));

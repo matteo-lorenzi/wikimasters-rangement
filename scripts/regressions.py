@@ -122,6 +122,10 @@ MUTATIONS = [
      "else if (lues.length < concernees.length) store.set('wiki_reste', { raison: 'essai' });",
      "else if (lues.length < concernees.length) store.set('wiki_reste', null);",
      "Wikipédia : les cartes laissées de côté par l'essai"),
+    ('Suggestions : un exemplaire en double compte pour deux cartes', 'app.js',
+     "if (x.cles.has(cle(c))) continue; // un exemplaire en double ne compte pas pour une deuxième carte",
+     "if (false) continue; // un exemplaire en double ne compte pas pour une deuxième carte",
+     "suggestions : un exemplaire en double"),
 ]
 
 

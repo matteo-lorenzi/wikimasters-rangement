@@ -235,6 +235,15 @@ const CAS = [
   ['Lanceur Ariane 5', 'lanceur spatial européen', ['Espace'], 'classee'],
   ['Moyglare Stud Stakes', 'course hippique de groupe I qui se court fin août, début septembre, à The Curragh, Comté de Kildare, en Irlande', ['Sport'], 'classee'],
   ['Hippodrome de Dieppe', 'hippodrome situé dans la Seine-Maritime, en France', ['Sport'], 'classee'],
+  // Mots manquants de Ranger (2026-10-23), phrases Wikipédia de cartes réelles
+  ['The Taxonomicon', 'base de données taxinomiques en ligne', ['Sciences'], 'classee'],
+  ['EUginius', 'base de données des organismes génétiquement modifiés (OGM) accessible sur Internet', ['Sciences'], 'classee'],
+  ['Bureau de normalisation du Québec', "organisme public québécois fondé en 1961 qui a pour but d'élaborer des normes au Québec", ['Politique & Droit'], 'classee'],
+  ['Comité pour la commémoration des origines : de la Gaule à la France', 'organisme gouvernemental français ayant existé en 1996-1997, dans le but de parrainer et coordonner les manifestations publiques', ['Politique & Droit'], 'classee'],
+  ['Amibe', 'organisme unicellulaire', [], 'inconnue'], // « organisme » seul reste sans règle
+  // un jour de l'année est une date : carte ignorée
+  ['18 octobre 1965', "291e jour de l'année 1965", [], 'ignoree'],
+  ['20 novembre 1954', "324e jour de l'année 1954", [], 'ignoree'],
   // « télé » a 4 lettres : pris tel quel, il ne trouve pas « télégraphe »
   ["Ligne du télégraphe Chappe d'Avranches à Cherbourg", '', [], 'inconnue'],
   // mots risqués refusés par la personne : la carte reste sans règle

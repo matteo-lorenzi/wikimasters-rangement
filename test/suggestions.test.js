@@ -124,6 +124,41 @@ test('Suggestions : après un Ranger, la lecture gardée est périmée et la rel
   site.fermer();
 });
 
+// Mots manquants de la personne (Ranger v1.9.10, 2026-10-23) : mots courants jamais proposés, exemplaires comptés une fois
+const carteSugg = (c, i) => ({ r: 'Commune', tags: [], d: '', obtenu: new Date(Date.UTC(2026, 0, 1) + i * 60000).toISOString(), ...c });
+test('suggestions : les mots courants (nom, but, fonction, jour, vers…) ne sont jamais proposés', async () => {
+  const site = await creerSite({ cartes: [] });
+  const cartes = [
+    { t: 'Reparti i Operacioneve Speciale', d: 'unité des forces spéciales albanaise fondée en février 77 sous le nom de code 77' },
+    { t: 'Čech', d: 'figure mythique qui a donné son nom aux Tchèques' },
+    { t: 'Mary Butters', d: 'sorcière irlandaise connue sous nom de la sorcière de Carnmoney' },
+    { t: 'Corporation', d: 'réunion durable de personnes poursuivant un but commun' },
+    { t: 'Bureau de normalisation du Québec', d: 'organisme public québécois fondé en 1961 qui a pour but d\'élaborer des normes' },
+    { t: 'Taille cible corrigée', d: 'taille théorique en fonction de la taille de son père' },
+    { t: 'Pré-majorité', d: 'statut intermédiaire qui a pour fonction de s\'adapter aux adolescents' },
+    { t: 'Fonction de Mayer-f', d: 'fonction qui apparait souvent dans les développements en séries' },
+    { t: 'Programme double', d: 'deux matchs disputés le même jour par les mêmes équipes' },
+    { t: 'Avant-scène', d: 'partie d\'une scène qui s\'étend au-delà du cadre de scène vers l\'auditorium' },
+    { t: 'Paraíso de San José' }, { t: 'BRP Enrique Jurado', d: 'patrouilleur de classe Jose Andrada' }, { t: 'Hurricane Electric', d: 'fournisseur à San Jose' },
+    { t: 'Cité Leroy (Paris)', d: 'cité de Paris, en France' }, { t: 'Jour de colère (manifestation)', d: 'manifestation en 2014 à Paris' }, { t: 'Rue inventée', d: 'rue de Paris' },
+  ].map(carteSugg);
+  const mots = Array.from(site.wmr.suggestions(cartes).candidats, (c) => c.mot);
+  for (const m of ['nom', 'but', 'fonction', 'jour', 'vers', 'sous', 'josé', 'paris']) assert.ok(!mots.includes(m), `« ${m} » proposé : ${mots.join(', ')}`);
+  site.fermer();
+});
+
+test('suggestions : un exemplaire en double ne compte qu\'une fois (3 cartes distinctes au moins)', async () => {
+  const site = await creerSite({ cartes: [] });
+  const deux = [
+    { t: 'Le Pâtre', d: 'drame lyrique zorglub' }, { t: 'Le Pâtre', d: 'drame lyrique zorglub' }, // le même exemplaire, deux fois
+    { t: 'Autre pièce', d: 'drame lyrique zorglub' },
+  ].map(carteSugg);
+  assert.ok(!Array.from(site.wmr.suggestions(deux).candidats, (c) => c.mot).includes('zorglub'), '2 cartes distinctes : pas proposé');
+  const trois = [...deux, { t: 'Troisième pièce', d: 'drame lyrique zorglub' }].map(carteSugg);
+  assert.ok(Array.from(site.wmr.suggestions(trois).candidats, (c) => c.mot).includes('zorglub'), '3 cartes distinctes : proposé');
+  site.fermer();
+});
+
 test('suggestions : « ben » (particule d\'un nom arabe) jamais proposé, refusé le 2026-10-23', async () => {
   const site = await creerSite({ cartes: [] });
   const cartes = [{ t: 'Fulful ben Sa\'id' }, { t: 'Mohamed Ben Kanoun' }, { t: 'Nasir ad-Din al-Qasri Muhammad ben Ahmad' }]

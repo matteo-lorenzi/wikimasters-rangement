@@ -673,7 +673,8 @@ const SUGG_MAX = 50;
 const SUGG_MAJORITE = 0.7;
 const SUGG_NOUVELLE = 30;
 const MOTS_VIDES = new Set(('a au aux avec ce ces cet cette dans de des du elle elles en entre est et il ils la le les leur leurs '
-  + 'ou par pas pour qu que qui sa sans se ses son sur un une ancien ancienne anciens anciennes ne nee mort morte situe situee dont lors').split(' '));
+  + 'ou par pas pour qu que qui sa sans se ses son sur un une ancien ancienne anciens anciennes ne nee mort morte situe situee dont lors '
+  + 'nom but fonction jour laquelle non sous vers').split(' '));
 const PAS_SUGGERER_RE = PAS_SUGGERER.map(kwRegex);
 // Les mots d'une carte (sa description, sinon son titre) : clé sans accents → forme affichée.
 const ngrammes = (c) => {
@@ -713,8 +714,11 @@ const suggestions = (cartes, reference = []) => {
   const parMot = new Map();
   for (const c of cibles) {
     for (const [k, mot] of ngrammes(c)) {
-      if (!parMot.has(k)) parMot.set(k, { mot, cartes: [] });
-      parMot.get(k).cartes.push(c);
+      if (!parMot.has(k)) parMot.set(k, { mot, cartes: [], cles: new Set() });
+      const x = parMot.get(k);
+      if (x.cles.has(cle(c))) continue; // un exemplaire en double ne compte pas pour une deuxième carte
+      x.cles.add(cle(c));
+      x.cartes.push(c);
     }
   }
   const retenus = new Map([...parMot].filter(([k, x]) => x.cartes.length >= SUGG_MIN_CARTES && !dejaConnu(k)));

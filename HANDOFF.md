@@ -1,6 +1,6 @@
 # Passation — userscript WikiMasters
 
-Mis à jour le 2026-10-23 : **v1.9.10** sur la branche `claude/regles-wiki-1` (3 règles corrigées après le 1er essai Wikipédia : `lanceur` retiré, `hippique` et `hippodrome` en Sport, `ben` jamais proposé), en attente du oui de la personne pour `main`. **v1.9.9 sur `main`** : Ranger lit Wikipédia (essai de 40 cartes) ; 1er essai fait par la personne le 2026-10-23 : 23 cartes sur 40 classées, 20 justes, 3 imprécises (corrigées en v1.9.10). v1.9.8 (Compléter, tour 5) et v1.9.7 sur `main`. Les instructions durables sont dans `CLAUDE.md` ; ce fichier garde l'état, les décisions, la suite et les questions en suspens.
+Mis à jour le 2026-10-23 : **v1.9.11** sur la branche `claude/mots-vides-doublons` (mots manquants de Ranger : mots courants jamais proposés, exemplaires comptés une fois, règles `base de données`, `organisme public/gouvernemental`, `jour de l’année` ignoré), en attente du oui de la personne pour `main`. **v1.9.10 sur `main`** (3 règles corrigées après le 1er essai Wikipédia : `lanceur` retiré, `hippique` et `hippodrome` en Sport, `ben` jamais proposé). **v1.9.9 sur `main`** : Ranger lit Wikipédia (essai de 40 cartes) ; 1er essai fait par la personne le 2026-10-23 : 23 cartes sur 40 classées, 20 justes, 3 imprécises (corrigées en v1.9.10). v1.9.8 (Compléter, tour 5) et v1.9.7 sur `main`. Les instructions durables sont dans `CLAUDE.md` ; ce fichier garde l'état, les décisions, la suite et les questions en suspens.
 
 ## Avant tout, en début de session : ce que la personne fait
 
@@ -19,13 +19,13 @@ Si Claude doit regarder le vrai site (observer un bouton, lire une carte) : Chro
 ## Reprendre une session (côté Claude)
 
 1. Lire `CLAUDE.md`, puis ce fichier en entier (surtout « Questions en suspens »).
-2. Dépôt absent → `git clone https://github.com/matteo-lorenzi/wikimasters-rangement`, puis `npm install`. `npm test` doit donner **296 tests verts** ; `PYTHONIOENCODING=utf-8 python scripts/regressions.py` **25/25 mutations détectées**.
+2. Dépôt absent → `git clone https://github.com/matteo-lorenzi/wikimasters-rangement`, puis `npm install`. `npm test` doit donner **305 tests verts** ; `PYTHONIOENCODING=utf-8 python scripts/regressions.py` **26/26 mutations détectées**.
 3. Travailler sur une nouvelle branche partie de `main` ; `main` n'avance qu'après le oui de la personne (`CLAUDE.md`).
 4. Si la personne n'a pas encore fait « Avant tout » (ci-dessus), le lui donner avant de coder ou de trancher quoi que ce soit.
 
 ## État
 
-- **v1.9.10 sur la branche `claude/regles-wiki-1`** (296 tests, 25 mutations) ; **v1.9.9 sur `main`** (voir la section Wikipédia), seul l’essai de 40 cartes a été fait sur le vrai site. **v1.9.8 est sur `main`** (2026-10-23) : elle réunit « Compléter les cartes rangées » et les règles du tour 5, **ni l'un ni l'autre essayés sur le vrai site**. v1.9.7 : la personne l’a installée et a rangé avec (36 cartes sans `!À traiter`). Node.js 26 et Python 3.13 installés sur la machine de travail le 2026-10-23.
+- **v1.9.11 sur la branche `claude/mots-vides-doublons`** (305 tests, 26 mutations) ; **v1.9.10 et v1.9.9 sur `main`** (voir la section Wikipédia), seul l’essai de 40 cartes a été fait sur le vrai site. **v1.9.8 est sur `main`** (2026-10-23) : elle réunit « Compléter les cartes rangées » et les règles du tour 5, **ni l'un ni l'autre essayés sur le vrai site**. v1.9.7 : la personne l’a installée et a rangé avec (36 cartes sans `!À traiter`). Node.js 26 et Python 3.13 installés sur la machine de travail le 2026-10-23.
 - Le panneau du script a six boutons :
   - **Ranger les nouvelles cartes** : lit les cartes sans étiquette (seulement les nouvelles, ou **toutes si les règles ont changé** depuis le dernier rangement, v1.9.3), montre l'aperçu, pose les domaines après « Appliquer ». Recherches groupées à partir de 200 cartes (`docs/piste-1.md`). Rechargement et reprise automatiques sur raté du site.
   - **Suggestions** (v1.9.0–1.9.1, lecture seule) : compteur des cartes sans domaine, mots inconnus des règles (dès 3 cartes, domaine proposé d'après les cartes déjà étiquetées), « Copier pour Claude » et « Copier les cartes sans règle ». C'est l'outil du chantier en cours (voir plus bas).
