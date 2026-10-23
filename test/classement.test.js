@@ -229,6 +229,12 @@ const CAS = [
   ['Mozilla Firefox', 'navigateur web libre', ['Sciences'], 'classee'],
   ['Vendée Globe', 'navigateur sportif, course autour du monde', ['Sport'], 'classee'],
   ['Magellan', 'navigateur et explorateur portugais', ['Histoire'], 'classee'],
+  // 1er essai Wikipédia (2026-10-23), cartes réelles de l'aperçu de la personne
+  // « lanceur de missiles » n'est pas l'espace ; « course hippique » et « hippodrome » sont du Sport, « comté » ne l'emporte pas
+  ['K-186 Omsk', 'sous-marin nucléaire lanceur de missiles de croisière du Projet 949A « Anteï » (code OTAN : classe Oscar-II), appartenant à la Flotte du Pacifique de la Marine soviétique puis de la Marine russe', ['Transports'], 'classee'],
+  ['Lanceur Ariane 5', 'lanceur spatial européen', ['Espace'], 'classee'],
+  ['Moyglare Stud Stakes', 'course hippique de groupe I qui se court fin août, début septembre, à The Curragh, Comté de Kildare, en Irlande', ['Sport'], 'classee'],
+  ['Hippodrome de Dieppe', 'hippodrome situé dans la Seine-Maritime, en France', ['Sport'], 'classee'],
   // « télé » a 4 lettres : pris tel quel, il ne trouve pas « télégraphe »
   ["Ligne du télégraphe Chappe d'Avranches à Cherbourg", '', [], 'inconnue'],
   // mots risqués refusés par la personne : la carte reste sans règle

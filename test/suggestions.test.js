@@ -124,6 +124,15 @@ test('Suggestions : après un Ranger, la lecture gardée est périmée et la rel
   site.fermer();
 });
 
+test('suggestions : « ben » (particule d\'un nom arabe) jamais proposé, refusé le 2026-10-23', async () => {
+  const site = await creerSite({ cartes: [] });
+  const cartes = [{ t: 'Fulful ben Sa\'id' }, { t: 'Mohamed Ben Kanoun' }, { t: 'Nasir ad-Din al-Qasri Muhammad ben Ahmad' }]
+    .map((c, i) => ({ r: 'Commune', tags: [], d: '', obtenu: new Date(Date.UTC(2026, 0, 1) + i * 60000).toISOString(), ...c }));
+  const mots = Array.from(site.wmr.suggestions(cartes).candidats, (c) => c.mot);
+  assert.ok(!mots.includes('ben'), `« ben » proposé : ${mots.join(', ')}`);
+  site.fermer();
+});
+
 test('suggestions : jamais les mots refusés le 2026-10-14 (plusieurs sens, prénom, dates)', async () => {
   const site = await creerSite({ cartes: [] });
   // descriptions et titres de cartes réelles de la personne (lecture API du 2026-10-14)

@@ -102,6 +102,8 @@ const DOMAINES = {
     // Suggestions du 2026-10-23 (5e tour) : « saison 2018-2019 de… », « saison 2009 des… »
     // (« saison 3 de la série » n'est pas touchée : il faut 19… ou 20…)
     'saison 19*', 'saison 20*',
+    // Premier essai Wikipédia (2026-10-23) : « course hippique… Comté de Kildare » partait en Géographie
+    'hippique', 'hippodrome',
   ],
   'Politique & Droit': [
     'homme politique', 'femme politique', 'personnalité politique', 'politicien', 'politicienne', 'ministre',
@@ -191,7 +193,7 @@ const DOMAINES = {
     'pulsar', 'trou noir', 'supernova', 'mission spatiale', 'sonde spatiale', 'satellite artificiel',
     'astronaute', 'cosmonaute', 'astronome', 'objet céleste', 'objet transneptunien', 'système stellaire',
     'naine blanche', 'naine brune', 'géante rouge', 'météorite', 'astronomie', 'spatial', 'spatiale',
-    'lanceur', 'astronomique', 'fusée',
+    'astronomique', 'fusée',
     // Suggestions du 2026-10-13
     'corona', 'satellite',
     // Suggestions du 2026-10-14 (4e tour)
@@ -334,6 +336,8 @@ const PAS_SUGGERER = [
   'politique',
   // refusés (2026-10-23) : prénoms (jacques, albert, alexandre, hubert, john), mots trop larges
   'jacques', 'albert', 'alexandre', 'hubert', 'john', 'the', 'san', 'nord', 'siècle', 'action', 'ligne', 'ier', 'campagne',
+  // refusé (2026-10-23) : particule d'un nom arabe (Mohamed Ben Kanoun, Muhammad ben Ahmad)
+  'ben',
   // refusés (2026-10-14) : plusieurs sens (classe de navires / de trains / sociale ; formation géologique /
   // d'élèves ; distribution Linux / de probabilité / entreprise), « thomas » est un prénom
   'classe', 'distribution', 'formation', 'thomas',
