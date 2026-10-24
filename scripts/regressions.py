@@ -245,6 +245,23 @@ MUTATIONS = [
      "    'vice-amiral', 'contre-amiral',\n",
      "",
      "phrase Wikipédia : Friedrich Lützow"),
+    # Phase 3 Wikipédia, R (lot 3, 2026-10-24) : rattrapage des pertes de P3
+    ('R : « en général de brigade » neutralisé comme « en général » (grade perdu)', 'regles.js',
+     r"""(sauf ? '(?!\\s+(?:' + sauf + ')(?![a-z0-9]))' : '')""",
+     "''",
+     "Louis Marchand (reconstitué)"),
+    ('R : NEUTRES_SAUF_SUIVI_DE absente de l\'empreinte, les cartes déjà vues ne sont pas relues', 'app.js',
+     "FEMININS, REGLAGES, NEUTRES_SAUF_SUIVI_DE])",
+     "FEMININS, REGLAGES])",
+     "EMPREINTE_REGLES : toute constante"),
+    ('R : « magnat de la presse » perdu (Médias)', 'regles.js',
+     "'magnat de la presse', 'baron de la presse', 'presse sportive',",
+     "'baron de la presse', 'presse sportive',",
+     "Keith Murdoch (reconstitué)"),
+    ('R : « presse sportive » perdue du Sport', 'regles.js',
+     "    'presse sportive',\n  ],\n  'Politique & Droit': [",
+     "  ],\n  'Politique & Droit': [",
+     "L'Équipe (reconstitué)"),
 ]
 
 

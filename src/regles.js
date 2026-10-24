@@ -11,6 +11,10 @@
 //  • Le moteur lit la description ; si elle ne donne aucun domaine, il lit aussi le titre.
 //  • Un titre peut aussi ranger une carte par sa FORME : voir MOTIFS_DE_TITRE plus bas
 //    (« Famille Whitney » → Histoire, « Kix (groupe) » → Musique). Une ligne par motif.
+//  • PHRASES_NEUTRES : des expressions que le moteur ne lit pas (« en général » n'est pas un général de l'armée) ;
+//    ajoute-y une expression entre apostrophes, elle est effacée avant la lecture. LIEUX_GENERIQUES : des mots de lieu
+//    (« ville », « comté »…) qui, loin dans une phrase Wikipédia, ne rangent pas la carte (« …né dans le 8e arrondissement
+//    de Paris » n'est pas de la Géographie) ; chaque mot doit déjà exister dans la liste Géographie de DOMAINES.
 //  • Les NOMBRES de la lecture dans Wikipédia (taille des lots, pauses, longueur de la phrase gardée…) sont
 //    tous dans REGLAGES, plus bas : une valeur par ligne, avec son rôle. Ne change que ce que tu comprends ;
 //    « lot » et « extrait » sont des limites de Wikipédia. Un réglage modifié fait relire toutes les cartes
@@ -116,6 +120,8 @@ const DOMAINES = {
     'hippique', 'hippodrome',
     // Phase 3 Wikipédia, 2026-10-24 : « pilote autrichien de vitesse moto » (Michael Ranseder), sinon « pilote » + « moto » = Transports
     'vitesse moto',
+    // Phase 3 Wikipédia, 2026-10-24 (R) : « titre de la presse sportive » est aussi du Sport (comme avant P3)
+    'presse sportive',
   ],
   'Politique & Droit': [
     'homme politique', 'femme politique', 'personnalité politique', 'politicien', 'politicienne', 'ministre',
@@ -181,6 +187,8 @@ const DOMAINES = {
     'presse nationale', 'presse locale', 'presse en ligne', 'presse gratuite', 'presse d\'information', 'presse hebdomadaire',
     'presse papier', 'attaché de presse', 'attachée de presse', 'conférence de presse', 'liberté de la presse', 'groupe de presse',
     'titre de presse', 'patron de presse', 'photographe de presse', 'dessinateur de presse', 'revue de presse',
+    // Phase 3 Wikipédia, 2026-10-24 (R, lot 3) : « magnat de la presse australien », « titre de la presse sportive »
+    'magnat de la presse', 'baron de la presse', 'presse sportive', 'presse satirique', 'presse féminine',
   ],
   'Sciences': [
     'scientifique', 'chercheur', 'chercheuse', 'physicien', 'physicienne', 'chimiste', 'biologiste',
@@ -425,6 +433,9 @@ const PAS_SUGGERER = [
 const PHRASES_NEUTRES = [
   'en général', 'plus général', 'sens général', 'password hashing competition',
 ];
+// …sauf quand l'expression est suivie de l'un de ces bouts : « promu en général de brigade » est bien un grade de l'armée
+// (R, lot 3, 2026-10-24).
+const NEUTRES_SAUF_SUIVI_DE = ['de brigade', 'de division', 'd\'armée', 'de corps'];
 
 // Mots de lieu trop généraux pour être le sujet d'une phrase Wikipédia quand ils arrivent tard dans la phrase
 // (« …dans le comté de Cavan, en Irlande », « …né dans le 8e arrondissement de Paris »). Seulement pour les phrases
@@ -533,8 +544,9 @@ const INDEX = buildIndex();
 const scan = (text, onlyAtStart = false) => {
   let work = norm(text);
   // les expressions de PHRASES_NEUTRES sont effacées (même longueur : les positions ne changent pas)
+  const sauf = NEUTRES_SAUF_SUIVI_DE.map((s) => norm(s).replace(/ /g, '\\s+')).join('|');
   for (const p of PHRASES_NEUTRES) {
-    const re = new RegExp('(?<![a-z0-9])' + norm(p).replace(/ /g, '\\s+') + '(?![a-z0-9])', 'g');
+    const re = new RegExp('(?<![a-z0-9])' + norm(p).replace(/ /g, '\\s+') + '(?![a-z0-9])' + (sauf ? '(?!\\s+(?:' + sauf + ')(?![a-z0-9]))' : ''), 'g');
     work = work.replace(re, (m) => ' '.repeat(m.length));
   }
   const hits = [];

@@ -294,6 +294,24 @@ const CAS = [
   ['Denticité', "nombre d'atomes d'un ligand (ou coordinat) pouvant se lier à un atome central, en général un métal, dans un complexe", [], 'inconnue'],
   ['Oriundo', "nom italien qui désigne, dans son sens le plus général, un immigré d'origine italienne et vivant hors d'Italie, ainsi que ses descendants", [], 'inconnue'],
   ['Pierre Dupont', "général français de la Révolution et de l'Empire", ['Histoire'], 'classee'],
+  // … mais « général de brigade » reste un grade (R, lot 3) : « en général » n'est neutralisé que s'il n'est pas suivi de ce grade
+  ['Louis Marchand (reconstitué)', 'promu en général de brigade en 1808', ['Histoire'], 'classee'],
+  ['Jean Girard (reconstitué)', "promu en général d'armée en 1914", ['Histoire'], 'classee'],
+  ['Hypéronyme (reconstitué)', 'terme qui désigne, dans son sens général, une catégorie de choses', [], 'inconnue'],
+  // R, lot 3 : descriptions classiques que le lot 2 avait fait perdre (la presse, le métier de la presse, un grade de marine)
+  ['Keith Murdoch (reconstitué)', 'magnat de la presse australien', ['Médias'], 'classee'],
+  ['Alfred Harmsworth (reconstitué)', 'baron de la presse britannique', ['Médias'], 'classee'],
+  ['L\'Équipe (reconstitué)', 'titre de la presse sportive', ['Sport', 'Médias'], 'classee'],
+  ['Charlie Hebdo (reconstitué)', 'titre de la presse satirique française', ['Médias'], 'classee'],
+  ['Elle (reconstitué)', 'titre de la presse féminine', ['Médias'], 'classee'],
+  ['Pierre Villeneuve (reconstitué)', 'contre-amiral français', ['Histoire'], 'classee'],
+  ['Friedrich Lützow (description)', 'vice-amiral et écrivain militaire allemand', ['Histoire', 'Littérature'], 'classee'],
+  // R, lot 3 : les autres mots de P3 en description de carte (la phrase Wikipédia est testée plus bas)
+  ['Léon Volterra (description)', 'homme de spectacle français', ['Arts'], 'classee'],
+  ['Corruption de mineur (description)', 'infraction pénale reconnue dans différents pays', ['Politique & Droit'], 'classee'],
+  ['Okroug municipal (description)', 'division municipale de Russie', ['Géographie'], 'classee'],
+  ['Côte de Jor (description)', 'site naturel français situé en Périgord noir', ['Géographie'], 'classee'],
+  ["Tharp's Log (description)", 'tronc de séquoia géant', ['Nature'], 'classee'],
   // « composition » seul n'est pas de la Musique (composition picturale, « en composition »)
   ['Spolvero', "terme italien (dérivé de polvere, « poudre ») qui désigne une technique de transfert d'un dessin préparatoire sur le support de la composition picturale", [], 'inconnue'],
   ['Gentilés du Maroc', "nom donné aux habitants d'un lieu, un pays, un continent, une région, une province, etc. Maroc (le) : Marocain, Marocains, Marocaine, Marocaines ; adjectif : marocain, marocains, marocaine, marocaines et maroco- en composition ; glottonyme : marocain", ['Géographie'], 'classee'],
@@ -528,6 +546,18 @@ test("REGLAGES.wikipedia : lieuGeneriqueMots est bien lu par le moteur (« ville
   assert.deepEqual(avec(5), []);
   assert.deepEqual(avec(99), ['Géographie']);
   assert.deepEqual(avec(5, true), ['Géographie'], 'sans la liste LIEUX_GENERIQUES, « ville » range la carte');
+});
+
+test("LIEUX_GENERIQUES : chaque mot existe dans la liste Géographie de DOMAINES (sinon une faute de frappe le rend inutile)", () => {
+  const fs = require('fs');
+  const path = require('path');
+  const vm = require('vm');
+  const { SRC } = require('./charger');
+  const regles = fs.readFileSync(path.join(SRC, 'regles.js'), 'utf8');
+  const { lieux, geo } = vm.runInContext(regles + '\n;({ lieux: [...LIEUX_GENERIQUES], geo: [...DOMAINES["Géographie"]] });', vm.createContext({}));
+  assert.ok(lieux.length >= 20, `LIEUX_GENERIQUES ne compte que ${lieux.length} mots`);
+  const connus = new Set(geo.map(R.norm));
+  for (const m of lieux) assert.ok(connus.has(R.norm(m)), `« ${m} » (LIEUX_GENERIQUES) n'est pas dans DOMAINES['Géographie'] : faute de frappe ?`);
 });
 
 // ── cartes sans description : lues par leur titre, la parenthèse d'abord ──
