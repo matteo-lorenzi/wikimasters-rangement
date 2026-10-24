@@ -10,3 +10,4 @@ Une ligne par tâche, ajoutée quand la tâche est finie. Objectif : précision 
 | Tâche | Date | Couverture avant -> après | Précision référence avant -> après | Fichiers |
 |---|---|---|---|---|
 | M0 empreinte des règles inclut l'extraction Wikipédia | 2026-10-24 | 63,2 % -> 63,2 % (rien ne devait bouger) | 87 % -> 87 % (20/23, référence de 26 cartes) | src/app.js, test/classement.test.js |
+| M1 fichier de réglages unique (`REGLAGES` dans regles.js) | 2026-10-24 | 63,2 % -> 63,2 % (comportement inchangé) | 87 % -> 87 % | src/regles.js, src/app.js, test/classement.test.js |
