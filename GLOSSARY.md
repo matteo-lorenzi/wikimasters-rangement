@@ -19,3 +19,5 @@ Les mots que la personne et Claude emploient pour parler des cartes.
 **Précision (Wikipédia)** : la part des cartes classées d'après Wikipédia dont les domaines sont justes, d'après une vérité (`test/reference-wikipedia.json`). Elle ne se calcule qu'avec cette vérité, donc par `npm run essai`, pas dans le navigateur. Essai du 2026-10-23 : 20 justes sur 23 classées (~87 %).
 
 **Phrase Wikipédia** : le morceau de la première phrase d'un article qui suit « est un / une / le / la » (« sorcière irlandaise… »), à défaut « était / fut / sont / a été / forment / constituent / désigne » suivi d'un article, ou « est / sont l'une des ». Le moteur la lit comme une description pour ranger une carte qui n'en a pas.
+
+**Mot faible** : un mot trop général (jeu, histoire, concept, domaine…) qui ne décide un domaine, dans une phrase Wikipédia, que si aucun mot sûr d'un autre domaine n'est présent ; il ne s'applique jamais aux descriptions de cartes. La liste est `MOTS_FAIBLES` dans `src/regles.js`.

@@ -445,7 +445,7 @@ test('essai : la référence sous le minimum de précision, l\'essai sort en cod
 
 test('essai : sur la référence (test/reference-wikipedia.json), sans réseau, taux cohérents et cas sans classement jamais devinés', () => {
   const ref = JSON.parse(fs.readFileSync(path.join(RACINE, 'test', 'reference-wikipedia.json'), 'utf8'));
-  assert.equal(ref.cartes.length, 211, '23 cartes de l\'essai du 2026-10-23 + 3 cas sans classement + 60 cartes du rapport du 2026-10-24 + 11 cartes de la phase 3 (P3) + 7 cartes de la phase 3 (P2) + 60 cartes de la phase 3 (C1) + 20 cartes de la phase 3 (C2) + 6 cartes de la phase 3 (C3) + 12 cartes de la phase 3 (D2)');
+  assert.equal(ref.cartes.length, 211, '23 cartes de l\'essai du 2026-10-23 + 3 cas sans classement + 60 cartes du rapport du 2026-10-24 + 11 cartes de la phase 3 (P3) + 7 cartes de la phase 3 (P2) + 60 cartes de la phase 3 (C1) + 20 cartes de la phase 3 (C2) + 6 cartes de la phase 3 (C3) + 12 cartes de la phase 3 (D2) + 9 cartes des mots décidés le 2026-10-24');
   assert.equal(ref.cartes.filter((c) => c.phrase).length, 208);
   const r = essai([path.join('test', 'reference-wikipedia.json')]);
   assert.equal(r.status, 0, r.stderr);

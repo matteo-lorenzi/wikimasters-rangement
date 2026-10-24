@@ -6,7 +6,7 @@ Mis à jour le 2026-10-24 : **v1.9.14** sur la branche `claude/v1914` (lot 4 : m
 
 À donner tel quel quand la personne demande par où commencer (« Nouvelle session pour wikimasters rangement, que dois-je faire avant de commencer à travailler les questions en suspens ? »). Ces étapes donnent à Claude l'état réel de la collection : sans elles, un tour de Suggestions ou une décision sur les questions en suspens se ferait sur des chiffres périmés.
 
-1. **Installer la dernière version** : le fichier `dist/wikimasters-rangement.user.js` de `main` sur GitHub (`matteo-lorenzi/wikimasters-rangement`), dans Tampermonkey. Vérifier que le numéro de version affiché par Tampermonkey est celui de « État » ci-dessous (aujourd'hui **1.9.6**).
+1. **Installer la dernière version** : le fichier `dist/wikimasters-rangement.user.js` de `main` sur GitHub (`matteo-lorenzi/wikimasters-rangement`), dans Tampermonkey. Vérifier que le numéro de version affiché par Tampermonkey est celui de « État » ci-dessous (la v1.9.14 une fois publiée sur `main`).
 2. **Ouvrir la page Collection** de wiki-masters.com dans **Chrome** (pas Opera GX), onglet au premier plan, et ouvrir le panneau « 🏷 Rangement ».
 3. **Ranger** : « Ranger les nouvelles cartes ». Si les règles ont changé depuis le dernier rangement, il l'annonce et relit toutes les cartes sans étiquette (≈ 1 min 30). Relire l'aperçu, puis « Appliquer » et laisser aller au bout.
 4. **Journal des bugs** : si le bouton affiche un nombre (« Journal des bugs (2) »), le copier pour Claude.
@@ -19,13 +19,13 @@ Si Claude doit regarder le vrai site (observer un bouton, lire une carte) : Chro
 ## Reprendre une session (côté Claude)
 
 1. Lire `CLAUDE.md`, puis ce fichier en entier (surtout « Questions en suspens »).
-2. Dépôt absent → `git clone https://github.com/matteo-lorenzi/wikimasters-rangement`, puis `npm install`. `npm test` doit donner **530 tests verts** (v1.9.14 ; 440 sur la v1.9.13, 321 sur la v1.9.12) ; `PYTHONIOENCODING=utf-8 python scripts/regressions.py` **99/99 mutations détectées** (83 sur le lot 3, 31 sur la v1.9.12 seule).
+2. Dépôt absent → `git clone https://github.com/matteo-lorenzi/wikimasters-rangement`, puis `npm install`. `npm test` doit donner **535 tests verts** (v1.9.14 ; 440 sur la v1.9.13, 321 sur la v1.9.12) ; `PYTHONIOENCODING=utf-8 python scripts/regressions.py` **100/100 mutations détectées** (83 sur le lot 3, 31 sur la v1.9.12 seule).
 3. Travailler sur une nouvelle branche partie de `main` ; `main` n'avance qu'après le oui de la personne (`CLAUDE.md`).
 4. Si la personne n'a pas encore fait « Avant tout » (ci-dessus), le lui donner avant de coder ou de trancher quoi que ce soit.
 
 ## État
 
-- **v1.9.14 sur la branche `claude/v1914`** (530 tests, 99 mutations) ; **v1.9.13, v1.9.12, v1.9.11, v1.9.10 et v1.9.9 sur `main`** (voir la section Wikipédia), seul l’essai de 40 cartes a été fait sur le vrai site. **v1.9.8 est sur `main`** (2026-10-23) : elle réunit « Compléter les cartes rangées » et les règles du tour 5, **ni l'un ni l'autre essayés sur le vrai site**. v1.9.7 : la personne l’a installée et a rangé avec (36 cartes sans `!À traiter`). Node.js 26 et Python 3.13 installés sur la machine de travail le 2026-10-23.
+- **v1.9.14 sur la branche `claude/v1914`** (535 tests, 100 mutations) ; **v1.9.13, v1.9.12, v1.9.11, v1.9.10 et v1.9.9 sur `main`** (voir la section Wikipédia), seul l’essai de 40 cartes a été fait sur le vrai site. **v1.9.8 est sur `main`** (2026-10-23) : elle réunit « Compléter les cartes rangées » et les règles du tour 5, **ni l'un ni l'autre essayés sur le vrai site**. v1.9.7 : la personne l’a installée et a rangé avec (36 cartes sans `!À traiter`). Node.js 26 et Python 3.13 installés sur la machine de travail le 2026-10-23.
 - Le panneau du script a six boutons :
   - **Ranger les nouvelles cartes** : lit les cartes sans étiquette (seulement les nouvelles, ou **toutes si les règles ont changé** depuis le dernier rangement, v1.9.3), montre l'aperçu, pose les domaines après « Appliquer ». Recherches groupées à partir de 200 cartes (`docs/piste-1.md`). Rechargement et reprise automatiques sur raté du site.
   - **Suggestions** (v1.9.0–1.9.1, lecture seule) : compteur des cartes sans domaine, mots inconnus des règles (dès 3 cartes, domaine proposé d'après les cartes déjà étiquetées), « Copier pour Claude » et « Copier les cartes sans règle ». C'est l'outil du chantier en cours (voir plus bas).

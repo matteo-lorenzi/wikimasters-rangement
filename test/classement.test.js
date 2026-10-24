@@ -255,6 +255,14 @@ const CAS = [
   ['Le Pâtre', 'drame lyrique, en cinq actes et en vers, du félibre Théodore Aubanel, écrit en 1866', ['Littérature'], 'classee'],
   ['Roger V Bacon', 'puissant seigneur de Normandie', ['Histoire'], 'classee'],
   ['Frère Pierre', 'frère dominicain français', ['Religion & Mythes'], 'classee'],
+  // « seigneur de! » prouvé à part (« puissant seigneur » ne suffit pas à le couvrir) ; description reconstituée
+  ['Hugues de Lusignan', 'seigneur de Lusignan au XIe siècle', ['Histoire'], 'classee'],
+  // LIMITES CONNUES des mots décidés le 2026-10-24, relevées par la revue de la v1.9.14 : elles sont figées ici,
+  // la personne doit trancher avant qu'on les corrige (voir HANDOFF.md, « Mots décidés par la personne »)
+  ['Rodolphe', 'chanteur, figure mythique du rock', ['Musique', 'Religion & Mythes'], 'classee'],
+  ['Pelléas et Mélisande', 'drame lyrique de Claude Debussy', ['Littérature'], 'classee'], // un opéra : Musique manque
+  ['Hazel la sorcière', '', ['Religion & Mythes'], 'classee'], // titre seul ; avec « personnage de dessin animé » c'est Fiction & Jeux
+  ['Matador (film)', '', ['Cinéma & TV', 'Arts'], 'classee'],
   // pièges : « seigneur de » ne prend pas « Le Seigneur des anneaux » ; « dominicain » seul est une nationalité, pas une règle
   ['Le Seigneur des anneaux', 'roman de fantasy de J. R. R. Tolkien', ['Littérature'], 'classee'],
   ['Seigneur de la guerre', 'film américain de 2005', ['Cinéma & TV'], 'classee'],

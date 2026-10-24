@@ -394,6 +394,9 @@ MUTATIONS = [
     ('C3 : « cténophore », « conodonte », « genre de scorpion » absents (Nature)', 'regles.js',
      "    'cténophore', 'conodonte', 'genre de scorpion', 'famille de scorpion', 'espèce de scorpion',\n", "",
      "phrase Wikipédia : Bathyctena"),
+    ('Mots décidés : « seigneur de! » absent (Histoire)', 'regles.js',
+     "    'escadron', 'puissant seigneur', 'seigneur de!',\n", "    'escadron', 'puissant seigneur',\n",
+     "Hugues de Lusignan"),
 ]
 
 
