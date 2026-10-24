@@ -12,7 +12,9 @@
 //  • Un titre peut aussi ranger une carte par sa FORME : voir MOTIFS_DE_TITRE plus bas
 //    (« Famille Whitney » → Histoire, « Kix (groupe) » → Musique). Une ligne par motif.
 //  • PHRASES_NEUTRES : des expressions que le moteur ne lit pas (« en général » n'est pas un général de l'armée) ;
-//    ajoute-y une expression entre apostrophes, elle est effacée avant la lecture. LIEUX_GENERIQUES : des mots de lieu
+//    ajoute-y une expression entre apostrophes, elle est effacée avant la lecture (le pluriel s'écrit à part : « fonds documentaire »
+//    et « fonds documentaires »). NEUTRES_SAUF_SUIVI_DE : des bouts qui annulent cet effacement quand ils suivent l'expression
+//    (« en général » est neutre, mais « en général de brigade » reste un grade). LIEUX_GENERIQUES : des mots de lieu
 //    (« ville », « comté »…) qui, loin dans une phrase Wikipédia, ne rangent pas la carte (« …né dans le 8e arrondissement
 //    de Paris » n'est pas de la Géographie) ; chaque mot doit déjà exister dans la liste Géographie de DOMAINES.
 //  • Les NOMBRES de la lecture dans Wikipédia (taille des lots, pauses, longueur de la phrase gardée…) sont
@@ -164,6 +166,8 @@ const DOMAINES = {
     'organisme public', 'organisme gouvernemental',
     // P2 : « infraction pénale reconnue dans différents pays » (Corruption de mineur) n'est pas de la Géographie
     'infraction pénale',
+    // Phase 3 Wikipédia, 2026-10-24 (D1) : un « patrouilleur de la police » est un policier, pas un navire (« patrouilleur » seul reste aux Transports)
+    'patrouilleur de la police', 'patrouilleur de police',
   ],
   'Économie': [
     'homme d\'affaires', 'femme d\'affaires', 'entrepreneur', 'entrepreneuse', 'chef d\'entreprise',
@@ -184,6 +188,8 @@ const DOMAINES = {
     // Suggestions du 2026-10-14 (4e tour)
     'commerce de détail', 'charbon', 'centrale solaire', 'secteur de l\'énergie', 'bank', 'agroalimentaire',
     'agriculture', 'tourisme',
+    // Phase 3 Wikipédia, 2026-10-24 (D1) : une « franchise professionnelle de restauration rapide » est une enseigne, pas une équipe de sport
+    'franchise professionnelle de restauration',
   ],
   'Médias': [
     'journaliste', 'humoriste', 'animateur', 'animatrice', 'présentateur', 'présentatrice', 'chroniqueur',
@@ -277,6 +283,8 @@ const DOMAINES = {
     'archée',
     // Phase 3 Wikipédia, 2026-10-24 (C3) : taxons (« genre de scorpions ») ; « scorpion » seul reste libre : c'est aussi un groupe, un signe, un personnage
     'cténophore', 'conodonte', 'genre de scorpion', 'famille de scorpion', 'espèce de scorpion',
+    // Phase 3 Wikipédia, 2026-10-24 (D1) : un « oiseau grimpeur » est un oiseau, pas un sportif (« grimpeur » seul reste du Sport)
+    'oiseau grimpeur', 'oiseaux grimpeurs',
   ],
   'Histoire': [
     'bataille', 'guerre', 'siège', 'sac de', 'révolution', 'dynastie', 'empire', 'royaume', 'roi', 'reine',
@@ -464,6 +472,10 @@ const PHRASES_NEUTRES = [
   'en général', 'plus général', 'sens général', 'password hashing competition',
   // C1 : le verbe « désigner » n'est pas « designer » (le moteur ignore les accents) ; « montagnes russes » n'est pas de la Géographie
   'pour désigner', 'à désigner', 'de désigner', 'montagnes russes',
+  // D1 (lot 4) : « Europe à géométrie variable » n'est pas des mathématiques
+  'géométrie variable',
+  // … et « fonds / recherche documentaire » n'est pas un film
+  'fonds documentaire', 'fonds documentaires', 'recherche documentaire', 'recherches documentaires', 'ressources documentaires',
 ];
 // …sauf quand l'expression est suivie de l'un de ces bouts : « promu en général de brigade » est bien un grade de l'armée
 // (R, lot 3, 2026-10-24).

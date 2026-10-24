@@ -322,6 +322,69 @@ const CAS = [
   ['Tempête tropicale Earl (2004)', "5e phénomène cyclonique de la saison 2004 dans l'Atlantique nord", ['Nature'], 'classee'],
   ['Tempête tropicale Bonnie', 'tempête tropicale de la saison 2010 dans l’océan Atlantique', ['Nature'], 'classee'],
   ['Championnat 2018-2019', 'saison 2018-2019 du championnat de France de football', ['Sport'], 'classee'],
+  // Phase 3 Wikipédia, 2026-10-24 (D1, lot 4) : les mots ajoutés par C1, C2 et C3 lus comme DESCRIPTIONS de cartes (la collection entière,
+  // pas seulement les phrases Wikipédia) : le sens voulu, puis le piège. Les titres finissent par « (description) » : aucun mot de domaine.
+  // graphe / géométrie
+  ['Graphe orienté (description)', 'graphe orienté', ['Sciences'], 'classee'],
+  ['Ansel (description)', 'photographe américain', ['Arts'], 'classee'], // « graphe » ne se trouve pas dans « photographe »
+  ['Géométrie différentielle (description)', 'géométrie différentielle', ['Sciences'], 'classee'],
+  ['Union différenciée (description)', 'Europe à géométrie variable', [], 'inconnue'], // une image politique, pas des mathématiques
+  // documentaire
+  ['Planète bleue (description)', 'documentaire animalier', ['Cinéma & TV'], 'classee'],
+  ['Archives (description)', 'fonds documentaire de la bibliothèque', [], 'inconnue'], // pas un film
+  ['Archives (description)', 'recherche documentaire en archives', [], 'inconnue'],
+  // grimpeur
+  ['Łukasz (description)', 'grimpeur polonais', ['Sport'], 'classee'],
+  ['Grimpereau (description)', 'oiseau grimpeur des forêts tropicales', ['Nature'], 'classee'], // un oiseau, pas un sportif
+  // patrouilleur / berline
+  ['BRP (description)', 'patrouilleur côtier de la marine philippine', ['Transports'], 'classee'],
+  ['Police municipale (description)', 'patrouilleur de la police municipale', ['Politique & Droit'], 'classee'], // un policier, pas un navire
+  ['Ford (description)', 'berline de luxe', ['Transports'], 'classee'],
+  // archée (la limite connue est plus bas : « archée selon Paracelse »)
+  ['Heimdall (description)', 'archée du groupe des Euryarchaeota', ['Nature'], 'classee'],
+  // sports d'hiver et d'équitation
+  ['Lugeur (description)', 'lugeur italien', ['Sport'], 'classee'],
+  ['Bobeur (description)', 'bobeur américain', ['Sport'], 'classee'],
+  ['Concours complet (description)', 'cavalier de concours complet', ['Sport'], 'classee'],
+  ['Nordique (description)', 'spécialiste allemand du combiné nordique', ['Sport'], 'classee'],
+  ['Miss (description)', 'concours de beauté', ['Médias'], 'classee'], // « concours » seul ne range pas en Sport
+  ['Téléphone (description)', 'combiné de téléphone fixe', [], 'inconnue'], // « combiné » seul non plus
+  // métiers
+  ['Lexicographe (description)', 'lexicographe français', ['Littérature'], 'classee'],
+  ['Paysagiste (description)', 'paysagiste français', ['Arts'], 'classee'],
+  ['Stucateur (description)', 'stucateur italien', ['Arts'], 'classee'],
+  ['Antipape (description)', 'antipape de 1159 à 1164', ['Religion & Mythes'], 'classee'],
+  // collection éditoriale, fournisseur d'accès, ballade populaire
+  ['Collection (description)', 'collection éditoriale de poche', ['Littérature'], 'classee'],
+  ['Timbres (description)', 'collection de timbres', [], 'inconnue'],
+  ['Opérateur (description)', "fournisseur d'accès à Internet", ['Sciences'], 'classee'],
+  ['Fournisseur (description)', 'fournisseur de matériel', [], 'inconnue'],
+  ['Ballade (description)', 'ballade populaire anglaise', ['Musique'], 'classee'],
+  ['Chopin (description)', 'ballade romantique', [], 'inconnue'], // « ballade » seul est aussi un poème
+  // émir et franchise professionnelle
+  ['Bagdad (description)', 'émir de Bagdad', ['Histoire'], 'classee'],
+  ['Hockey (description)', 'franchise professionnelle de hockey sur glace', ['Sport'], 'classee'],
+  ['Restauration (description)', 'franchise professionnelle de restauration rapide', ['Économie'], 'classee'], // une enseigne, pas une équipe
+  // genres musicaux et taxons de C3
+  ['Punk (description)', 'groupe de punk rock', ['Musique'], 'classee'],
+  ['Heavy (description)', 'groupe de heavy metal', ['Musique'], 'classee'],
+  ['Metalcore (description)', 'groupe de metalcore', ['Musique'], 'classee'],
+  ['Disco (description)', "groupe d'italo disco", ['Musique'], 'classee'],
+  ['Hardcore (description)', 'groupe de digital hardcore', ['Musique'], 'classee'],
+  ['Métal (description)', 'métal de transition', [], 'inconnue'], // « metal » seul n'est pas un genre musical
+  ['Cténophore (description)', 'cténophore des abysses', ['Nature'], 'classee'],
+  ['Conodonte (description)', 'conodonte du Trias', ['Nature'], 'classee'],
+  ['Scorpions (description)', 'genre de scorpions', ['Nature'], 'classee'],
+  ['Scorpion (description)', 'scorpion', [], 'inconnue'], // « scorpion » seul reste libre
+  // C1 : tribu de papillons, grandes mines, paroisses civiles
+  ['Omopterini (description)', 'tribu de papillons de nuit', ['Nature'], 'classee'],
+  ['Apaches (description)', 'tribu amérindienne', ['Histoire'], 'classee'],
+  ['Ambatovy (description)', 'grandes mines de nickel', ['Économie'], 'classee'],
+  ['Cork (description)', 'paroisses civiles du comté de Cork', ['Géographie'], 'classee'],
+  // C2 : artère systémique, lemniscate
+  ['Artère (description)', 'artère systémique paire de la tête', ['Sciences'], 'classee'],
+  ['Montréal (description)', 'artère principale de Montréal', [], 'inconnue'], // « artère » seul est aussi une rue
+  ['Lemniscate (description)', 'lemniscate du plan euclidien', ['Sciences'], 'classee'],
 ];
 
 for (const [t, d, attendu, statut] of CAS) {
@@ -331,6 +394,13 @@ for (const [t, d, attendu, statut] of CAS) {
     assert.equal(r.statut, statut);
   });
 }
+
+// Limites CONNUES (D1, lot 4) : le résultat actuel est discutable ou faux, sans correction propre. Ce test les fige pour que
+// toute amélioration (ou toute aggravation) se voie ; quand l'une est corrigée, change son attendu ici.
+test('limites connues : « émir » d\'un État actuel va en Histoire, « archée » au sens de Paracelse en Nature', () => {
+  assert.deepEqual(classe('Tamim (description)', 'émir du Qatar').etiquettes, ['Histoire']); // plutôt Politique & Droit : « émir » est écrit pour les émirs historiques
+  assert.deepEqual(classe('Paracelse (description)', 'archée selon Paracelse, principe vital').etiquettes, ['Nature']); // un terme d'alchimie, pas un micro-organisme
+});
 
 // ── phrases Wikipédia : le second domaine doit venir du début de la phrase (Phase 3 Wikipédia, P1, 2026-10-24) ──
 // classer(carte, true) lit la description comme une phrase Wikipédia (c'est ce que font planAvecPhrase et la mesure) ;

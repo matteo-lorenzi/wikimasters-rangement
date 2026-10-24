@@ -331,6 +331,22 @@ MUTATIONS = [
      "    'patrouilleur', 'berline',\n", "",
      "phrase Wikipédia : BRP Enrique Jurado"),
     # Phase 3 Wikipédia, C3 (lot 3, 2026-10-24) : « groupe » ambigu tranché par le genre musical ou le taxon
+    # Phase 3 Wikipédia, D1 (lot 4, 2026-10-24) : pièges de DESCRIPTION créés par des mots de C1, C2 et C3
+    ('D1 : « géométrie variable » non neutralisée (Europe lue comme des mathématiques)', 'regles.js',
+     "  'géométrie variable',\n", "",
+     "Union différenciée (description)"),
+    ('D1 : « fonds / recherche documentaire » non neutralisés (lus comme un film)', 'regles.js',
+     "  'fonds documentaire', 'fonds documentaires', 'recherche documentaire', 'recherches documentaires', 'ressources documentaires',\n", "",
+     "Archives (description)"),
+    ('D1 : « oiseau grimpeur » absent (lu comme un sportif)', 'regles.js',
+     "    'oiseau grimpeur', 'oiseaux grimpeurs',\n", "",
+     "Grimpereau (description)"),
+    ('D1 : « patrouilleur de la police » absent (lu comme un navire)', 'regles.js',
+     "    'patrouilleur de la police', 'patrouilleur de police',\n", "",
+     "Police municipale (description)"),
+    ('D1 : « franchise professionnelle de restauration » absent (lu comme une équipe de sport)', 'regles.js',
+     "    'franchise professionnelle de restauration',\n", "",
+     "Restauration (description)"),
     # Phase 3 Wikipédia, C4 (lot 3, 2026-10-24) : pages de dates hors du dénominateur de la couverture (changement de mesure)
     ('C4 : une page de dates n\'est plus « page-ignoree » dans le rapport du navigateur (échec compté)', 'app.js',
      "  if (pageDeDate(c.t, e.extrait)) return { cause: 'page-ignoree', domaines: [] };\n", "",
