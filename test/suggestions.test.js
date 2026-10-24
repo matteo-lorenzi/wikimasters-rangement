@@ -147,6 +147,22 @@ test('suggestions : les mots courants (nom, but, fonction, jour, vers…) ne son
   site.fermer();
 });
 
+test('suggestions : « opération » et « technique » jamais proposés, refusés le 2026-10-23 (plusieurs sens)', async () => {
+  const site = await creerSite({ cartes: [] });
+  const cartes = [
+    { t: 'Opération Kreml' }, { t: 'Intervention cubaine en Angola', d: 'Operation carlota' },
+    { t: 'Uvulo-palato-pharyngoplastie', d: 'opération sous anesthésie générale' },
+    { t: 'Expérience des Petits Danois', d: 'opération administrative danoise de 1951' },
+    { t: 'Culture en terrasses', d: 'technique agricole consistant à cultiver sur des terrains aménagés' },
+    { t: 'Zoom numérique', d: 'technique photographique' },
+    { t: 'Extraction électromembranaire', d: 'technique d\'extraction liquide-liquide miniaturisée' },
+    { t: 'Sertissage', d: 'technique de joaillerie' },
+  ].map(carteSugg);
+  const mots = Array.from(site.wmr.suggestions(cartes).candidats, (c) => c.mot);
+  for (const m of ['opération', 'technique']) assert.ok(!mots.includes(m), `« ${m} » proposé : ${mots.join(', ')}`);
+  site.fermer();
+});
+
 test('suggestions : un exemplaire en double ne compte qu\'une fois (3 cartes distinctes au moins)', async () => {
   const site = await creerSite({ cartes: [] });
   const deux = [

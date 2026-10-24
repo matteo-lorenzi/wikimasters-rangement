@@ -347,6 +347,8 @@ const PAS_SUGGERER = [
   // refusés (2026-10-23), « Mots manquants » de Ranger : mots courants sans domaine, prénom, lieux
   'base', 'données', 'espace', 'production', 'public', 'personnes', 'étranger', 'écrit', 'fondée', 'œuvre', 'utilisé',
   'destiné', 'josé', 'paris', 'america', 'amérique du nord',
+  // refusés (2026-10-23) : plusieurs sens (opération militaire, chirurgicale, administrative ; technique agricole, photographique, chimique)
+  'opération', 'technique',
   // refusés (2026-10-14) : plusieurs sens (classe de navires / de trains / sociale ; formation géologique /
   // d'élèves ; distribution Linux / de probabilité / entreprise), « thomas » est un prénom
   'classe', 'distribution', 'formation', 'thomas',
