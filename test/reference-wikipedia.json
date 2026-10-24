@@ -1,6 +1,6 @@
 {
  "description": "Vérité pour npm run essai (scripts/essai-wikipedia.js) : cartes réelles, phrase Wikipédia lue par Ranger, domaines attendus. Juste = au moins un domaine de « attendu » proposé, et aucun domaine hors de « attendu » et « acceptables ». « attendu » vide : rien ne doit être proposé.",
- "source": "86 cartes : 23 cartes classées de l'essai fait par la personne le 2026-10-23 (v1.9.9), 3 cas sans classement attendu, et 60 cartes classées tirées au hasard (graine 24, tirage de scripts jetables) du rapport réel de la personne du 2026-10-24 (699 cartes, v1.9.12). Un domaine tolérable mais pas idéal est dans « acceptables ».",
+ "source": "97 cartes : 23 cartes classées de l'essai fait par la personne le 2026-10-23 (v1.9.9), 3 cas sans classement attendu, et 60 cartes classées tirées au hasard (graine 24, tirage de scripts jetables) du rapport réel de la personne du 2026-10-24 (699 cartes, v1.9.12). Un domaine tolérable mais pas idéal est dans « acceptables ».",
  "statut": "« attendu » et « acceptables » = jugement de Claude, à valider par la personne (surtout les 60 cartes du 2026-10-24).",
  "cartes": [
   {"titre":"K-186 Omsk","phrase":"sous-marin nucléaire lanceur de missiles de croisière du Projet 949A « Anteï » (code OTAN : classe Oscar-II), appartenant à la Flotte du Pacifique de la Marine soviétique puis de la Marine russe","attendu":["Transports"]},
@@ -88,6 +88,17 @@
   {"titre":"La Bergère","phrase":"groupe de chanson et de musique traditionnelles français, originaire de la région parisienne fondé en 2001 par Sylvie Berger (chant), Emmanuel Pariselle (accordéon diatonique, concertina, chant) et Julien Biget (guitare, bouzouki, chant)","attendu":["Musique"]},
   {"titre":"Hantu kapit","phrase":"espèce d'araignées aranéomorphes de la famille des Pholcidae","attendu":["Nature"]},
   {"titre":"Zli Potok","phrase":"localité du Kosovo située dans la commune/municipalité de Dragash/Dragaš et dans le district de Prizren/Prizren","attendu":["Géographie"]},
-  {"titre":"Roxane, la vie sexuelle de ma pote","phrase":"série télévisée française, créée par Julie Bargeton et diffusée entre 2012 et 2013 sur la chaîne Chérie 25","attendu":["Cinéma & TV"]}
+  {"titre":"Roxane, la vie sexuelle de ma pote","phrase":"série télévisée française, créée par Julie Bargeton et diffusée entre 2012 et 2013 sur la chaîne Chérie 25","attendu":["Cinéma & TV"]},
+  {"titre":"Perlerfiup Kangerlua","phrase":"fjord de la municipalité d'Avannaata dans le nord-ouest du Groenland","attendu":["Géographie"]},
+  {"titre":"Penilpidia","phrase":"genre de concombres de mer des abysses, de la famille des Elpidiidae","attendu":["Nature"]},
+  {"titre":"Actinernus","phrase":"genre d'anémones de mer de la famille des Actinernidae","attendu":["Nature"]},
+  {"titre":"Brouillard sur Whitehall","phrase":"album de bande dessinée de la série Une Aventure de Cliff Burton, écrit Rodolphe et dessiné par Frederik Garcia","attendu":["Littérature"]},
+  {"titre":"Gag de Poche","phrase":"collection de réédition d'albums de bande dessinée de poche lancée par les éditions Dupuis, et dirigée par Maurice Rosy, dans les années 1960","attendu":["Littérature"]},
+  {"titre":"Denticité","phrase":"nombre d'atomes d'un ligand (ou coordinat) pouvant se lier à un atome central, en général un métal, dans un complexe","attendu":["Sciences"]},
+  {"titre":"Oriundo","phrase":"nom italien qui désigne, dans son sens le plus général, un immigré d'origine italienne et vivant hors d'Italie, ainsi que ses descendants","attendu":[]},
+  {"titre":"Spolvero","phrase":"terme italien (dérivé de polvere, « poudre ») qui désigne une technique de transfert d'un dessin préparatoire sur le support de la composition picturale","attendu":["Arts"]},
+  {"titre":"Gentilés du Maroc","phrase":"nom donné aux habitants d'un lieu, un pays, un continent, une région, une province, etc. Maroc (le) : Marocain, Marocains, Marocaine, Marocaines ; adjectif : marocain, marocains, marocaine, marocaines et maroco- en composition ; glottonyme : marocain","attendu":["Géographie"],"acceptables":["Sciences"]},
+  {"titre":"Argon2","phrase":"fonction de dérivation de clé, gagnante de la Password Hashing Competition en juillet 2015","attendu":["Sciences"]},
+  {"titre":"Tempête tropicale Earl (2004)","phrase":"5e phénomène cyclonique de la saison 2004 dans l'Atlantique nord","attendu":["Nature"]}
  ]
 }

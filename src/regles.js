@@ -43,7 +43,7 @@ const DOMAINES = {
     'opéra', 'orchestre', 'symphonie', 'concerto', 'sonate', 'genre musical', 'label', 'maison de disques',
     'producteur de musique', 'productrice de musique', 'producteur de disques', 'ténor', 'soprano', 'baryton',
     'jazzman', 'chorale', 'festival de musique', 'comédie musicale', 'musique', 'interprète de musique',
-    'auteure-compositrice-interprète', 'autrice-compositrice-interprète', 'auteure-compositrice', 'girls band', 'boys band', 'chant', 'composition', 'piano', 'manager musical', 'discographie', 'concert', 'tournée',
+    'auteure-compositrice-interprète', 'autrice-compositrice-interprète', 'auteure-compositrice', 'girls band', 'boys band', 'chant', 'composition musicale', 'compositions musicales', 'piano', 'manager musical', 'discographie', 'concert', 'tournée',
     // Suggestions du 2026-10-13
     'musical', 'instrumental', 'jazz', 'trio à cordes',
     // Suggestions du 2026-10-13 (3e tour)
@@ -59,6 +59,8 @@ const DOMAINES = {
     'auteure', 'expression latine', 'proverbe', 'locution', 'rhétorique', 'philologue',
     // Suggestions du 2026-10-13
     'light novel',
+    // Phase 3 Wikipédia, 2026-10-24 : « album » seul est de la Musique, pas « album de bande dessinée »
+    'album de bande dessinée', 'albums de bande dessinée',
   ],
   'Arts': [
     'peintre', 'sculpt*', 'artiste', 'illustrateur', 'illustratrice', 'dessinateur', 'dessinatrice',
@@ -74,6 +76,8 @@ const DOMAINES = {
     'designeuse',
     // Suggestions du 2026-10-14 (4e tour) : le trait d'union cache « artiste » et « peintre »
     'artiste-peintre',
+    // Phase 3 Wikipédia, 2026-10-24 : « historien » seul reste en Sciences (Documenta 7)
+    'historien de l\'art', 'historienne de l\'art',
   ],
   'Sport': [
     'footballeur', 'footballeuse', 'football', 'joueur de football', 'cycliste', 'coureur cycliste',
@@ -108,6 +112,8 @@ const DOMAINES = {
     'saison 19*', 'saison 20*',
     // Premier essai Wikipédia (2026-10-23) : « course hippique… Comté de Kildare » partait en Géographie
     'hippique', 'hippodrome',
+    // Phase 3 Wikipédia, 2026-10-24 : « pilote autrichien de vitesse moto » (Michael Ranseder), sinon « pilote » + « moto » = Transports
+    'vitesse moto',
   ],
   'Politique & Droit': [
     'homme politique', 'femme politique', 'personnalité politique', 'politicien', 'politicienne', 'ministre',
@@ -158,7 +164,7 @@ const DOMAINES = {
     'chroniqueuse', 'éditorialiste', 'reporter', 'youtubeur', 'youtubeuse', 'vidéaste', 'influenceur',
     'influenceuse', 'podcasteur', 'streameur', 'streameuse', 'émission de télévision', 'émission de radio',
     'émission', 'chaîne de télévision', 'station de radio', 'radio', 'journal', 'quotidien',
-    'hebdomadaire', 'magazine', 'revue', 'périodique', 'presse', 'agence de presse', 'site web', 'site internet',
+    'hebdomadaire', 'magazine', 'revue', 'périodique', 'agence de presse', 'site web', 'site internet',
     'réseau social', 'blogueur', 'blogueuse', 'personnalité de la télévision', 'télé-réalité', 'jeu télévisé',
     'humour', 'one-man-show', 'stand-up', 'imitateur', 'imitatrice',
     'miss', 'émetteur', 'audiovisuel',
@@ -166,6 +172,11 @@ const DOMAINES = {
     'média', 'concours de beauté',
     // Suggestions du 2026-10-14 (4e tour)
     'télé', 'tv',
+    // Phase 3 Wikipédia, 2026-10-24 : « presse » seul est retiré (« gaufré par presse », Cuir de Venise) ; restent les emplois du journalisme
+    'presse écrite', 'presse quotidienne', 'presse magazine', 'presse people', 'presse spécialisée', 'presse régionale',
+    'presse nationale', 'presse locale', 'presse en ligne', 'presse gratuite', 'presse d\'information', 'presse hebdomadaire',
+    'presse papier', 'attaché de presse', 'attachée de presse', 'conférence de presse', 'liberté de la presse', 'groupe de presse',
+    'titre de presse', 'patron de presse', 'photographe de presse', 'dessinateur de presse', 'revue de presse',
   ],
   'Sciences': [
     'scientifique', 'chercheur', 'chercheuse', 'physicien', 'physicienne', 'chimiste', 'biologiste',
@@ -194,6 +205,8 @@ const DOMAINES = {
     'diffraction', 'fermentation', 'diviseur',
     // Mots manquants de Ranger (2026-10-23) : ⚠ une base de données électorale irait aussi en Sciences
     'base de données',
+    // Phase 3 Wikipédia, 2026-10-24 : « société » seul donne l'Économie (Ethnoprimatologie)
+    'sociétés humaines', 'société humaine',
   ],
   'Espace': [
     'astéroïde', 'galaxie', 'constellation', 'nébuleuse', 'étoile', 'planète', 'exoplanète', 'planète mineure',
@@ -224,6 +237,10 @@ const DOMAINES = {
     'fossil*', 'super-famille', 'nématode', 'opilion', 'psoque', 'eucaryote', 'espace vert',
     // Suggestions du 2026-10-14 (4e tour)
     'quercus', 'dypsis', 'réserve nationale', 'faune', 'sous-classe',
+    // Phase 3 Wikipédia, 2026-10-24 : « mer » seul est de la Géographie (Penilpidia, Actinernus)
+    'concombre de mer', 'concombres de mer', 'anémone de mer', 'anémones de mer',
+    // … et les cyclones : « saison 2004 » ne les range pas en Sport (Tempête tropicale Earl)
+    'tempête tropicale', 'phénomène cyclonique', 'tempête tropicale de la saison 20*', 'phénomène cyclonique de la saison 20*',
   ],
   'Histoire': [
     'bataille', 'guerre', 'siège', 'sac de', 'révolution', 'dynastie', 'empire', 'royaume', 'roi', 'reine',
@@ -281,6 +298,8 @@ const DOMAINES = {
     'sous-préfecture',
     // Suggestions du 2026-10-14 (4e tour)
     'río', 'étang', 'récif', 'caverne', 'township', 'socken', 'amt', 'porte de paris', 'section de',
+    // Phase 3 Wikipédia, 2026-10-24 : « paroisse » seule reste religieuse (ici : Irlande, Groenland)
+    'townland', 'paroisse civile', 'fjord',
   ],
   'Patrimoine': [
     'château', 'château fort', 'monument', 'monument historique', 'musée', 'cathédrale', 'chapelle', 'abbaye',
@@ -392,6 +411,13 @@ const PAS_SUGGERER = [
   'uruguayen', 'vénézuélien', 'vietnamien', 'wallon',
 ];
 
+// Expressions que le moteur ne lit pas du tout (elles contiennent un mot de DOMAINES employé dans un autre sens).
+// « en général » n'est pas un général de l'armée ; « Password Hashing Competition » est un nom propre, pas du Sport.
+// Phase 3 Wikipédia, 2026-10-24.
+const PHRASES_NEUTRES = [
+  'en général', 'plus général', 'sens général', 'password hashing competition',
+];
+
 // Collections personnelles : la carte reçoit l'étiquette si TOUS les groupes
 // ont au moins un mot présent.
 const COLLECTIONS = [
@@ -435,7 +461,7 @@ const REGLAGES = {
     longueurPhrase: 250,      // longueur au plus du morceau de phrase gardé
     repli: 150,               // coupe au dernier espace avant 250, sans descendre sous ce nombre de caractères
     secondDomaineMots: 3,     // pas encore utilisé (réservé à une tâche suivante)
-    precisionMinimale: 0.83,  // précision exigée de la référence par `npm run essai` et les tests ; relevée à chaque amélioration, cible 0.95 (docs/suivi-wikipedia.md)
+    precisionMinimale: 0.89,  // précision exigée de la référence par `npm run essai` et les tests ; relevée à chaque amélioration, cible 0.95 (docs/suivi-wikipedia.md)
   },
 };
 
@@ -487,6 +513,11 @@ const INDEX = buildIndex();
 // Analyse un texte : renvoie les correspondances avec leur position.
 const scan = (text, onlyAtStart = false) => {
   let work = norm(text);
+  // les expressions de PHRASES_NEUTRES sont effacées (même longueur : les positions ne changent pas)
+  for (const p of PHRASES_NEUTRES) {
+    const re = new RegExp('(?<![a-z0-9])' + norm(p).replace(/ /g, '\\s+') + '(?![a-z0-9])', 'g');
+    work = work.replace(re, (m) => ' '.repeat(m.length));
+  }
   const hits = [];
   for (const e of INDEX) {
     e.re.lastIndex = 0;

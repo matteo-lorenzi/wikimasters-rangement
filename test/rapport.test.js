@@ -348,31 +348,26 @@ const precisionMinimale = () => {
   return require('vm').runInContext(fs.readFileSync(path.join(SRC, 'regles.js'), 'utf8') + '\n;REGLAGES.wikipedia.precisionMinimale;', require('vm').createContext({}));
 };
 
-test('essai : référence figée (moteur v1.9.12), 69 justes sur 83 classées sur 86 cartes', () => {
+test('essai : référence figée (moteur après P3), 80 justes sur 89 classées sur 97 cartes', () => {
   const r = essai([path.join('test', 'reference-wikipedia.json')]);
   const x = r.resultat;
   const QUOI_FAIRE = 'moteur ou règles changés : relance npm run essai, mets à jour couverture, précision et les fausses ici et dans le nom du test, relève precisionMinimale (src/regles.js) si la précision monte, puis docs/tests.md et docs/suivi-wikipedia.md';
-  assert.deepEqual({ ...x.couverture }, { classees: 83, lues: 86, taux: 0.965 }, QUOI_FAIRE);
-  assert.deepEqual({ ...x.precision }, { verifiees: 83, justes: 69, taux: 0.831 }, QUOI_FAIRE);
+  assert.deepEqual({ ...x.couverture }, { classees: 89, lues: 97, taux: 0.918 }, QUOI_FAIRE);
+  assert.deepEqual({ ...x.precision }, { verifiees: 89, justes: 80, taux: 0.899 }, QUOI_FAIRE);
   // chacune a un domaine attendu PLUS un domaine en trop, ou un domaine hors attendu et acceptables
   assert.deepEqual(x.fausses.map((f) => [f.titre, f.domaines, f.motsResponsables]), [
     ['Corso di Buono', ['Arts', 'Sciences'], ['école']],
     ['Addington Palace', ['Patrimoine', 'Histoire'], ['historique']],
     ['Pilot chart', ['Patrimoine', 'Transports'], ['domaine']],
-    ['Cuir de Venise', ['Médias'], ['presse']],
-    ['Documenta 7', ['Sciences', 'Arts'], ['historien']],
     ['Ali ben Hammud al-Nasir', ['Religion & Mythes'], ['calife']],
     ['Explora', ['Littérature', 'Histoire'], ['explorateur']],
     ['Léon Volterra', ['Géographie'], ['arrondissement', 'ville']],
     ['Fares Maakaroun', ['Religion & Mythes', 'Patrimoine'], ['église']],
-    ['Michael Ranseder', ['Transports'], ['moto']],
     ['Albéric Crescitelli', ['Religion & Mythes', 'Patrimoine'], ['église']],
-    ['Ethnoprimatologie', ['Économie', 'Nature'], ['société']],
-    ['Ballynamaddoo', ['Religion & Mythes'], ['paroisse']],
     ['Monkiss', ['Arts', 'Transports'], ['bus']],
   ], QUOI_FAIRE);
-  assert.match(r.stdout, /Couverture : 83 \/ 86 \(97 %\)/, QUOI_FAIRE);
-  assert.match(r.stdout, /Précision : 69 \/ 83 \(83 %\)/, QUOI_FAIRE);
+  assert.match(r.stdout, /Couverture : 89 \/ 97 \(92 %\)/, QUOI_FAIRE);
+  assert.match(r.stdout, /Précision : 80 \/ 89 \(90 %\)/, QUOI_FAIRE);
 });
 
 test('essai : garde-fou de précision, la référence ne passe pas sous REGLAGES.wikipedia.precisionMinimale', () => {
@@ -389,7 +384,7 @@ test('essai : garde-fou de précision, la référence ne passe pas sous REGLAGES
 test('essai : la référence sous le minimum de précision, l\'essai sort en code 1 avec un message qui dit quoi faire', () => {
   const r = essai([path.join('test', 'reference-wikipedia.json'), '--minimum', '0.99']);
   assert.equal(r.status, 1);
-  assert.match(r.stderr, /Précision 83 % sous le minimum de 99 %/);
+  assert.match(r.stderr, /Précision 90 % sous le minimum de 99 %/);
   assert.match(r.stderr, /REGLAGES\.wikipedia\.precisionMinimale/);
   // un rapport réel (autre fichier que la vérité) ne déclenche pas le garde-fou
   const exemple = essai([path.join('resultats', 'exemple.json'), '--minimum', '0.99']);
@@ -398,19 +393,19 @@ test('essai : la référence sous le minimum de précision, l\'essai sort en cod
 
 test('essai : sur la référence (test/reference-wikipedia.json), sans réseau, taux cohérents et cas sans classement jamais devinés', () => {
   const ref = JSON.parse(fs.readFileSync(path.join(RACINE, 'test', 'reference-wikipedia.json'), 'utf8'));
-  assert.equal(ref.cartes.length, 86, '23 cartes de l\'essai du 2026-10-23 + 3 cas sans classement + 60 cartes du rapport du 2026-10-24');
-  assert.equal(ref.cartes.filter((c) => c.phrase).length, 83);
+  assert.equal(ref.cartes.length, 97, '23 cartes de l\'essai du 2026-10-23 + 3 cas sans classement + 60 cartes du rapport du 2026-10-24 + 11 cartes de la phase 3 (P3)');
+  assert.equal(ref.cartes.filter((c) => c.phrase).length, 94);
   const r = essai([path.join('test', 'reference-wikipedia.json')]);
   assert.equal(r.status, 0, r.stderr);
   const x = r.resultat;
-  assert.equal(x.cartes.length, 86);
-  assert.equal(Object.values(x.parCause).reduce((a, b) => a + b, 0), 86);
-  assert.equal(x.couverture.lues, 86);
+  assert.equal(x.cartes.length, 97);
+  assert.equal(Object.values(x.parCause).reduce((a, b) => a + b, 0), 97);
+  assert.equal(x.couverture.lues, 97);
   assert.equal(x.couverture.classees, x.parCause.classee);
   assert.ok(x.precision && x.precision.verifiees === x.couverture.classees, 'chaque carte classée de la référence est vérifiée');
   assert.equal(x.precision.justes + x.fausses.length, x.precision.verifiees);
   for (const t of ['Hanabie.']) assert.equal(x.cartes.find((c) => c.titre === t).cause, 'extrait-vide-ou-stub');
   assert.ok(x.cartes.some((c) => c.cause === 'homonymie') && x.cartes.some((c) => c.cause === 'titre-absent'));
-  assert.match(r.stdout, /Couverture : \d+ \/ 86/);
+  assert.match(r.stdout, /Couverture : \d+ \/ 97/);
   assert.match(r.stdout, /Précision : \d+ \/ \d+/);
 });

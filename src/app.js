@@ -1290,7 +1290,7 @@ const planAvecPhrase = (c, phrases) => {
 // L'empreinte couvre aussi tout le code qui décide du classement d'après Wikipédia (extraction du morceau, cartes concernées,
 // plan avec phrase) : l'améliorer fait relire les cartes déjà vues. Test : « EMPREINTE_REGLES : tout le code… Wikipédia ».
 const EMPREINTE_REGLES = (() => {
-  const s = JSON.stringify([DOMAINES, AMBIGUS, IGNORER, COLLECTIONS, SEULEMENT_EN_PREMIER, MOTIFS_DE_TITRE, MAX_DOMAINES, A_TRAITER, FEMININS, REGLAGES]) + classer + scan + kwRegex
+  const s = JSON.stringify([DOMAINES, AMBIGUS, IGNORER, PHRASES_NEUTRES, COLLECTIONS, SEULEMENT_EN_PREMIER, MOTIFS_DE_TITRE, MAX_DOMAINES, A_TRAITER, FEMININS, REGLAGES]) + classer + scan + kwRegex
     + morceauWikipedia + finDePhrase + planAvecPhrase + concerneeWiki + WIKI_EST + WIKI_ADJECTIFS + [...WIKI_ABREVIATIONS].join();
   let h = 2166136261;
   for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619) >>> 0;

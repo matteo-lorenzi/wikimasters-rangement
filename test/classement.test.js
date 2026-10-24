@@ -267,6 +267,43 @@ const CAS = [
   ['Footballeur (homonymie)', "page d'homonymie de Wikimédia", [], 'ignoree'],
   // une page de liste reste ignorée, même avec le mot ambigu « liste »
   ['Liste de peintures de Claude Monet à Bordighera (1884)', "liste d'un projet Wikimedia", [], 'ignoree'],
+  // Phase 3 Wikipédia (2026-10-24), P3 : phrases de cartes réelles du rapport du 2026-10-24
+  // « paroisse civile », « townland » et « fjord » sont de la Géographie, pas de la Religion (« paroisse » seule reste religieuse)
+  ['Ballynamaddoo', "townland de la paroisse civile de Templeport, dans le comté de Cavan, en Irlande", ['Géographie'], 'classee'],
+  ['Perlerfiup Kangerlua', "fjord de la municipalité d'Avannaata dans le nord-ouest du Groenland", ['Géographie'], 'classee'],
+  ['Église de Saint-Jean', 'paroisse du diocèse de Lyon', ['Religion & Mythes'], 'classee'],
+  // « pilote de vitesse moto » avec une nationalité au milieu : Sport ; « pilote d'avion » reste du Transport
+  ['Michael Ranseder', 'pilote autrichien de vitesse moto', ['Sport'], 'classee'],
+  ['Chuck Yeager', "pilote d'avion américain", ['Transports'], 'classee'],
+  // « historien de l'art » est un métier de l'Art ; « historien » seul reste en Sciences
+  ['Documenta 7', "manifestation culturelle qui s'est déroulée du 19 juin au 28 septembre 1982 à Cassel, en Allemagne sous la direction de l'historien de l'art Manfred Schneckenburger", ['Arts'], 'classee'],
+  ['Marc Bloch', 'historien français', ['Sciences'], 'classee'],
+  // « concombre de mer » et « anémone de mer » sont des animaux, pas la mer
+  ['Penilpidia', 'genre de concombres de mer des abysses, de la famille des Elpidiidae', ['Nature'], 'classee'],
+  ['Actinernus', "genre d'anémones de mer de la famille des Actinernidae", ['Nature'], 'classee'],
+  // « album de bande dessinée » n'est pas de la Musique
+  ['Brouillard sur Whitehall', 'album de bande dessinée de la série Une Aventure de Cliff Burton, écrit Rodolphe et dessiné par Frederik Garcia', ['Littérature'], 'classee'],
+  ['Gag de Poche', "collection de réédition d'albums de bande dessinée de poche lancée par les éditions Dupuis, et dirigée par Maurice Rosy, dans les années 1960", ['Littérature'], 'classee'],
+  // « presse » seul est un piège (« gaufré par presse »), les emplois du journalisme restent des Médias
+  ['Cuir de Venise', "cuir peint ou ciselé, auquel a été ajoutée une feuille d’argent, mais il n’est pas gaufré par presse", [], 'inconnue'],
+  ['Agence France-Presse', 'agence de presse française', ['Médias'], 'classee'],
+  ['Le Quotidien', 'titre de la presse écrite régionale', ['Médias'], 'classee'],
+  // « sociétés humaines » : Sciences, pas l'Économie de « société »
+  ['Ethnoprimatologie', "discipline académique vouée à l'examen systématique des interactions entre les sociétés humaines et les primates non humains", ['Sciences', 'Nature'], 'classee'],
+  // « en général » et « le plus général » ne sont pas un général de l'armée
+  ['Denticité', "nombre d'atomes d'un ligand (ou coordinat) pouvant se lier à un atome central, en général un métal, dans un complexe", [], 'inconnue'],
+  ['Oriundo', "nom italien qui désigne, dans son sens le plus général, un immigré d'origine italienne et vivant hors d'Italie, ainsi que ses descendants", [], 'inconnue'],
+  ['Pierre Dupont', "général français de la Révolution et de l'Empire", ['Histoire'], 'classee'],
+  // « composition » seul n'est pas de la Musique (composition picturale, « en composition »)
+  ['Spolvero', "terme italien (dérivé de polvere, « poudre ») qui désigne une technique de transfert d'un dessin préparatoire sur le support de la composition picturale", [], 'inconnue'],
+  ['Gentilés du Maroc', "nom donné aux habitants d'un lieu, un pays, un continent, une région, une province, etc. Maroc (le) : Marocain, Marocains, Marocaine, Marocaines ; adjectif : marocain, marocains, marocaine, marocaines et maroco- en composition ; glottonyme : marocain", ['Géographie'], 'classee'],
+  ['Sonate en la', 'composition musicale de Franz Schubert', ['Musique'], 'classee'],
+  // « Password Hashing Competition » est un nom propre, pas du Sport
+  ['Argon2', 'fonction de dérivation de clé, gagnante de la Password Hashing Competition en juillet 2015', [], 'inconnue'],
+  // « tempête tropicale » et « phénomène cyclonique » sont de la Nature ; « saison 2004 » ne les range pas en Sport
+  ['Tempête tropicale Earl (2004)', "5e phénomène cyclonique de la saison 2004 dans l'Atlantique nord", ['Nature'], 'classee'],
+  ['Tempête tropicale Bonnie', 'tempête tropicale de la saison 2010 dans l’océan Atlantique', ['Nature'], 'classee'],
+  ['Championnat 2018-2019', 'saison 2018-2019 du championnat de France de football', ['Sport'], 'classee'],
 ];
 
 for (const [t, d, attendu, statut] of CAS) {
