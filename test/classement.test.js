@@ -360,6 +360,19 @@ test("EMPREINTE_REGLES : toute constante de regles.js qui change le classement y
   }
 });
 
+test("EMPREINTE_REGLES : tout le code qui décide du classement d'après Wikipédia y figure", () => {
+  const fs = require('fs');
+  const path = require('path');
+  const { SRC } = require('./charger');
+  const app = fs.readFileSync(path.join(SRC, 'app.js'), 'utf8');
+  const bloc = (app.match(/const EMPREINTE_REGLES = \(\(\) => \{([\s\S]*?)\n\}\)\(\);/) || [])[1] || '';
+  assert.ok(bloc, 'bloc EMPREINTE_REGLES introuvable dans app.js');
+  // Sinon améliorer l'extraction ou le filtrage de Wikipédia ne ferait pas relire les cartes déjà vues par Ranger.
+  for (const nom of ['morceauWikipedia', 'finDePhrase', 'planAvecPhrase', 'concerneeWiki', 'WIKI_EST', 'WIKI_ADJECTIFS', 'WIKI_ABREVIATIONS']) {
+    assert.match(bloc, new RegExp(`\\b${nom}\\b`), `${nom} (app.js) n'est pas dans EMPREINTE_REGLES : un changement de l'extraction Wikipédia ne ferait pas relire les cartes`);
+  }
+});
+
 // ── cartes sans description : lues par leur titre, la parenthèse d'abord ──
 
 test('sans description : « Cherry (film, 2021) » lu par sa parenthèse', () => {

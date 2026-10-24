@@ -1270,13 +1270,26 @@ const wikiAReprendre = () => {
   return !!r && (r.raison === 'essai' ? !store.get('wiki_essai', true) : r.version !== VERSION);
 };
 
+// Le plan d'une carte avec sa phrase Wikipédia (voir preparerRanger plus bas). Défini ici, avant EMPREINTE_REGLES qui le lit.
+const planAvecPhrase = (c, phrases) => {
+  const p = planCarte(c);
+  const phrase = phrases[cle(c)];
+  if (!phrase) return p;
+  const w = planCarte({ ...c, d: phrase });
+  // la phrase ne sert que si elle range la carte, ou si elle la rend « à traiter » alors qu'elle n'avait rien
+  return w.statut === 'classee' || (w.statut === 'a_traiter' && p.statut === 'inconnue') ? { ...w, phrase } : p;
+};
+
 // ── Mode Ranger : les nouvelles cartes sans étiquette ──
 // Le script retient la date de la dernière carte rangée et ne relit que les cartes obtenues depuis.
 // La dernière lecture est sauvegardée : après un rechargement de la page, on peut la reprendre.
 // Si les règles ont changé depuis cette date (nouvelle version, regles.js modifié), toutes les cartes
 // sans étiquette sont relues : les anciennes que les nouvelles règles savent ranger ne restent pas de côté.
+// L'empreinte couvre aussi tout le code qui décide du classement d'après Wikipédia (extraction du morceau, cartes concernées,
+// plan avec phrase) : l'améliorer fait relire les cartes déjà vues. Test : « EMPREINTE_REGLES : tout le code… Wikipédia ».
 const EMPREINTE_REGLES = (() => {
-  const s = JSON.stringify([DOMAINES, AMBIGUS, IGNORER, COLLECTIONS, SEULEMENT_EN_PREMIER, MOTIFS_DE_TITRE, MAX_DOMAINES, A_TRAITER, FEMININS]) + classer + scan + kwRegex;
+  const s = JSON.stringify([DOMAINES, AMBIGUS, IGNORER, COLLECTIONS, SEULEMENT_EN_PREMIER, MOTIFS_DE_TITRE, MAX_DOMAINES, A_TRAITER, FEMININS]) + classer + scan + kwRegex
+    + morceauWikipedia + finDePhrase + planAvecPhrase + concerneeWiki + WIKI_EST + WIKI_ADJECTIFS + [...WIKI_ABREVIATIONS].join();
   let h = 2166136261;
   for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619) >>> 0;
   return h.toString(36);
@@ -1337,14 +1350,6 @@ const lireMarquees = async () => {
 // neuves : cartes sans étiquette ; marquees : cartes !À traiter que les règles rangent maintenant (domaine puis retrait).
 // phrases : { clé de carte → phrase Wikipédia } ; le plan d'une carte à phrase est calculé avec la phrase comme description,
 // mais reste rangé sous la clé de la carte réelle (description vide), la seule qu'on retrouve sur le site.
-const planAvecPhrase = (c, phrases) => {
-  const p = planCarte(c);
-  const phrase = phrases[cle(c)];
-  if (!phrase) return p;
-  const w = planCarte({ ...c, d: phrase });
-  // la phrase ne sert que si elle range la carte, ou si elle la rend « à traiter » alors qu'elle n'avait rien
-  return w.statut === 'classee' || (w.statut === 'a_traiter' && p.statut === 'inconnue') ? { ...w, phrase } : p;
-};
 const preparerRanger = (cartes, depuis, phrases = {}) => {
   const plans = new Map(cartes.map((c) => [cle(c), planAvecPhrase(c, phrases)]));
   const cibles = cartes.filter((c) => plans.get(cle(c)).tags.length);

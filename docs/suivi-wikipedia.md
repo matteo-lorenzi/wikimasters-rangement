@@ -1,0 +1,12 @@
+# Suivi de la phase 3 : couverture et précision de Wikipédia
+
+Une ligne par tâche, ajoutée quand la tâche est finie. Objectif : précision >= 95 %, couverture 72-75 %.
+
+- **Couverture** : cartes classées d'après Wikipédia / cartes lues, sur le rapport réel de la personne (`resultats/rapport-wikipedia-2026-10-24.txt`, 699 cartes, ignoré par git). Départ : 442 / 699 = 63,2 %.
+- **Précision référence** : cartes justes / cartes classées de `test/reference-wikipedia.json`, par `npm run essai`. Départ : 20 / 23 = 87 % sur les 26 cartes d'origine, puis voir M2 pour la référence élargie à 86 cartes.
+- **Seuil** : `REGLAGES.wikipedia.precisionMinimale` (`src/regles.js`). `npm run essai` sort en code 1 et un test échoue si la précision de la référence passe dessous. Il est fixé à la précision actuelle arrondie vers le bas, et **relevé à chaque tâche** qui améliore la précision, jusqu'à 0,95.
+- **Fichiers** : fichiers de code et de test touchés (les mutations de `scripts/regressions.py` et les docs ne comptent pas).
+
+| Tâche | Date | Couverture avant -> après | Précision référence avant -> après | Fichiers |
+|---|---|---|---|---|
+| M0 empreinte des règles inclut l'extraction Wikipédia | 2026-10-24 | 63,2 % -> 63,2 % (rien ne devait bouger) | 87 % -> 87 % (20/23, référence de 26 cartes) | src/app.js, test/classement.test.js |
