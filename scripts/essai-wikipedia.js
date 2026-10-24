@@ -59,7 +59,9 @@ const cartes = rapport.cartes.map((c) => {
   const x = { titre: c.titre, rarete: c.rarete ?? null, etape: c.etape || 'reference' };
   // sans phrase mais avec un extrait : l'extraction actuelle (morceauWikipedia) est rejouée sur l'extrait
   const phrase = c.phrase || (c.extrait ? W.morceauWikipedia(c.extrait) : null);
-  if (phrase) Object.assign(x, { phrase }, monde(W.classerPhrase({ t: c.titre, d: '' }, phrase)));
+  // une page de dates (C4) sort du dénominateur de la couverture : ni phrase classée, ni échec
+  if (W.pageDeDate(c.titre, c.phrase || c.extrait || '')) Object.assign(x, { cause: 'page-ignoree', domaines: [] });
+  else if (phrase) Object.assign(x, { phrase }, monde(W.classerPhrase({ t: c.titre, d: '' }, phrase)));
   else Object.assign(x, { cause: c.cause, domaines: [] }, c.extrait ? { extrait: c.extrait } : {});
   if (!W.CAUSES_WIKIPEDIA.includes(x.cause)) { console.error(`${c.titre} : cause inconnue « ${x.cause} ».`); process.exit(1); }
   if (c.redirection) x.redirection = c.redirection;
@@ -106,7 +108,8 @@ const cv = bilan.couverture, pr = bilan.precision;
 const l = [];
 l.push(`Essai Wikipédia — ${source}${rapport.version ? ` (rapport v${rapport.version}${rapport.date ? ' du ' + rapport.date : ''})` : ''}`);
 l.push(`Moteur actuel (v${resultat.versionRegles}) rejoué sur ${cartes.length} carte(s), sans réseau.`);
-l.push(`Couverture : ${cv.classees} / ${cv.lues} (${pc(cv.taux)}) des cartes lues classées d'après Wikipédia.`);
+l.push(`Couverture : ${cv.classees} / ${cv.lues} (${pc(cv.taux)}) des cartes lues classées d'après Wikipédia (hors ${bilan.pagesIgnorees} page(s) de dates).`);
+if (bilan.pagesIgnorees) l.push(`Couverture brute : ${cv.classees} / ${cv.lues + bilan.pagesIgnorees} (${pc(cv.classees / (cv.lues + bilan.pagesIgnorees))}), pages de dates comprises.`);
 l.push(pr ? `Précision : ${pr.justes} / ${pr.verifiees} (${pc(pr.taux)}) des cartes classées sont justes (vérité : ${fichierVerite}).`
   : `Précision : pas mesurée (aucune carte classée n'a d'étiquettes attendues dans ${fichierVerite}).`);
 l.push('Par cause :');

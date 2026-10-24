@@ -1184,7 +1184,17 @@ const mesurer = (f) => {
   }
 };
 const CAUSES_WIKIPEDIA = ['classee', 'titre-absent', 'homonymie', 'extrait-vide-ou-stub', 'pas-de-est-un',
-  'phrase-sans-regle', 'phrase-ambigue', 'non-lue-essai', 'appel-bloque', 'redirection'];
+  'phrase-sans-regle', 'phrase-ambigue', 'non-lue-essai', 'appel-bloque', 'redirection', 'page-ignoree'];
+// Une page de dates (« 1869 en France », « 18 octobre 1965 ») : sa définition dit l'année ou le jour, jamais un sujet. Elle n'est pas un
+// échec de la lecture : la mesure la sort du dénominateur de la couverture (C4). Changement de MESURE, pas de classement.
+const MOIS_DATE = 'janvier|février|mars|avril|mai|juin|juillet|août|septembre|octobre|novembre|décembre';
+const pageDeDate = (titre, texte) => {
+  const t = nfc(titre), x = nfc(texte).replace(/\s+/g, ' ');
+  return new RegExp('^(?:\\d{1,2}(?:er)? )?(?:' + MOIS_DATE + ') \\d{3,4}(?: (?:en|au|aux) .+)?$', 'iu').test(t) // « 18 octobre 1965 », « Septembre 2008 en France »
+    || /^\d{3,4} (?:en|au|aux|dans) \S/u.test(t) // « 1869 en France »
+    || /^(?:cette page|cet article) (?:concerne|présente|traite|reprend|recense) .{0,80}?(?:l['’]année \d|événements?|évènements?|faits? marquants?)/iu.test(x)
+    || /\b\d+(?:er|e|ème) jour de l['’]année\b/iu.test(x); // « 291e jour de l'année 1965 »
+};
 const court = (s, n = 250) => (s.length > n ? s.slice(0, n - 1) + '…' : s);
 const noterLuWikipedia = (q, t) => {
   const vers = (liste, x) => { const r = (liste || []).find((y) => y.from === x); return r ? r.to : x; };
@@ -1208,6 +1218,7 @@ const classerPhrase = (c, phrase) => {
 const causeWikipedia = (c, e) => {
   if (!e || e.absent) return { cause: 'titre-absent', domaines: [] };
   if (e.homonymie) return { cause: 'homonymie', domaines: [] };
+  if (pageDeDate(c.t, e.extrait)) return { cause: 'page-ignoree', domaines: [] };
   const phrase = morceauWikipedia(e.extrait);
   if (!phrase) return { cause: estEbauche(c.t, e.extrait) ? 'extrait-vide-ou-stub' : 'pas-de-est-un', domaines: [], extrait: court(nfc(e.extrait).replace(/\s+/g, ' '), WIKI.extrait) }; // tout l'extrait (500), pour rejouer l'extraction hors navigateur
   return { phrase: court(phrase), ...classerPhrase(c, phrase) };
@@ -1224,12 +1235,13 @@ const taux = (a, b) => (b ? Math.round((a / b) * 1000) / 1000 : null);
 const bilanWikipedia = (cartes, verite = null) => {
   const parCause = Object.fromEntries(CAUSES_WIKIPEDIA.map((k) => [k, 0]));
   for (const c of cartes) parCause[c.cause] = (parCause[c.cause] || 0) + 1;
-  const lues = cartes.filter((c) => c.cause !== 'non-lue-essai').length;
+  const pagesIgnorees = parCause['page-ignoree']; // C4 : hors du dénominateur, comme les non-lues
+  const lues = cartes.filter((c) => c.cause !== 'non-lue-essai' && c.cause !== 'page-ignoree').length;
   const couverture = { classees: parCause.classee, lues, taux: taux(parCause.classee, lues) };
-  if (!verite) return { parCause, couverture, precision: null };
+  if (!verite) return { parCause, couverture, pagesIgnorees, precision: null };
   const verifiees = cartes.filter((c) => c.cause === 'classee' && verite[nfc(c.titre)]);
   const justes = verifiees.filter((c) => jugerWikipedia(c.domaines, verite[nfc(c.titre)]) === 'juste').length;
-  return { parCause, couverture, precision: verifiees.length ? { verifiees: verifiees.length, justes, taux: taux(justes, verifiees.length) } : null };
+  return { parCause, couverture, pagesIgnorees, precision: verifiees.length ? { verifiees: verifiees.length, justes, taux: taux(justes, verifiees.length) } : null };
 };
 const rapportWikipedia = (concernees, lues, m, echec, essai, debut) => {
   const lus = new Set(lues.map(cle)), vus = new Set(), cartes = [];
@@ -1876,7 +1888,7 @@ if (window.__WMR_TEST__ || store.get('debug', false)) {
     classer, planCarte, norm, cle, store, cartesDom, lireCarte, pageInfo,
     lireVue, lireApi, parcourirVue, changerPage, choisirFiltre, choisirTri, listerEtiquettes,
     modeSelection, poserEtiquette, appliquerSurPage, appliquerRanger, modeRanger, modeMigration, motsGroupes, rechercher,
-    supprimerEtiquette, rapportSuppression, suggestions, morceauWikipedia, monterUI, ui: () => ui, stop: () => { STOP = true; },
+    supprimerEtiquette, rapportSuppression, suggestions, morceauWikipedia, pageDeDate, monterUI, ui: () => ui, stop: () => { STOP = true; },
     // mesure Wikipédia, aussi pour scripts/essai-wikipedia.js
     CAUSES_WIKIPEDIA, causeWikipedia, classerPhrase, jugerWikipedia, bilanWikipedia, jsonRapport, VERSION,
   };

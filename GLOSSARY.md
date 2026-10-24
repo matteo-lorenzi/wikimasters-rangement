@@ -14,8 +14,8 @@ Les mots que la personne et Claude emploient pour parler des cartes.
 
 **Lot** : un groupe de cartes traité en une fois, le temps d'un « Ranger ».
 
-**Couverture (Wikipédia)** : la part des cartes lues dans Wikipédia que leur phrase range dans un domaine. Cartes classées d'après Wikipédia / cartes concernées lues (celles laissées de côté par l'essai ne comptent pas ; un appel bloqué compte comme un échec). Les « 68 % » mesurés par la personne (434 sur ~640) sont une couverture. Elle ne dit pas si les domaines sont justes.
+**Couverture (Wikipédia)** : la part des cartes lues dans Wikipédia que leur phrase range dans un domaine. Cartes classées d'après Wikipédia / cartes concernées lues (celles laissées de côté par l'essai ne comptent pas, ni les pages de dates comme « 1869 en France » ou « 18 octobre 1965 », cause `page-ignoree` : retirées du dénominateur, ce qui est un changement de MESURE et non un gain de classement ; un appel bloqué compte comme un échec). La **couverture brute** garde les pages de dates au dénominateur. Les « 68 % » mesurés par la personne (434 sur ~640) sont une couverture. Elle ne dit pas si les domaines sont justes.
 
 **Précision (Wikipédia)** : la part des cartes classées d'après Wikipédia dont les domaines sont justes, d'après une vérité (`test/reference-wikipedia.json`). Elle ne se calcule qu'avec cette vérité, donc par `npm run essai`, pas dans le navigateur. Essai du 2026-10-23 : 20 justes sur 23 classées (~87 %).
 
-**Phrase Wikipédia** : le morceau de la première phrase d'un article qui suit « est un / une / le / la » (« sorcière irlandaise… »). Le moteur la lit comme une description pour ranger une carte qui n'en a pas.
+**Phrase Wikipédia** : le morceau de la première phrase d'un article qui suit « est un / une / le / la » (« sorcière irlandaise… »), à défaut « était / fut / sont / a été / forment / constituent / désigne » suivi d'un article, ou « est / sont l'une des ». Le moteur la lit comme une description pour ranger une carte qui n'en a pas.

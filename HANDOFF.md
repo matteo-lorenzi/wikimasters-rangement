@@ -19,7 +19,7 @@ Si Claude doit regarder le vrai site (observer un bouton, lire une carte) : Chro
 ## Reprendre une session (côté Claude)
 
 1. Lire `CLAUDE.md`, puis ce fichier en entier (surtout « Questions en suspens »).
-2. Dépôt absent → `git clone https://github.com/matteo-lorenzi/wikimasters-rangement`, puis `npm install`. `npm test` doit donner **321 tests verts** ; `PYTHONIOENCODING=utf-8 python scripts/regressions.py` **31/31 mutations détectées**.
+2. Dépôt absent → `git clone https://github.com/matteo-lorenzi/wikimasters-rangement`, puis `npm install`. `npm test` doit donner **440 tests verts** (branche `claude/wiki-p3-couverture` ; 321 sur la v1.9.12 seule) ; `PYTHONIOENCODING=utf-8 python scripts/regressions.py` **83/83 mutations détectées** (31 sur la v1.9.12 seule).
 3. Travailler sur une nouvelle branche partie de `main` ; `main` n'avance qu'après le oui de la personne (`CLAUDE.md`).
 4. Si la personne n'a pas encore fait « Avant tout » (ci-dessus), le lui donner avant de coder ou de trancher quoi que ce soit.
 
@@ -106,7 +106,7 @@ Moteur : nouvelle constante `MOTIFS_DE_TITRE` dans `regles.js` (une ligne par mo
 
 ## Wikipédia dans Ranger (question A, décidée avec la personne) — branche `claude/wikipedia-ranger`
 
-**État** : livré en v1.9.9 sur `main` ; la mesure (rapport JSON, `npm run essai`) est en v1.9.12 (321 tests, 31 mutations), **jamais essayé sur le vrai site**. Doc : `docs/wikimasters.md` (« API de Wikipédia »), `docs/tests.md`, `GLOSSARY.md`.
+**État** : livré en v1.9.9 sur `main` ; la mesure (rapport JSON, `npm run essai`) est en v1.9.12 (321 tests, 31 mutations ; 440 tests et 83 mutations sur `claude/wiki-p3-couverture`), **jamais essayé sur le vrai site**. Doc : `docs/wikimasters.md` (« API de Wikipédia »), `docs/tests.md`, `GLOSSARY.md`.
 
 **Ce que fait Ranger en plus** : pour les cartes lues qui n'ont pas de description utile (statut `inconnue` sans description, ou `a_traiter` / marquées `!À traiter` ; jamais les `ignoree`), il lit la première phrase de leur article fr.wikipedia.org (lecture seule, `fetch` simple avec `origin=*`, lots de 20 titres en série, ~1 requête par seconde), garde ce qui suit le premier « est un / une / le / la » et le donne au moteur comme description (`planAvecPhrase`). La carte garde sa vraie description (vide) à l'écran et sous sa clé `titre|description|rareté`. Aperçu : groupe « Classées d'après Wikipédia » (titre — phrase → domaine), bloc « Mots manquants » (calcul de Suggestions sur le lot, domaine proposé d'après la lecture complète si elle est à jour, sinon les cartes classées du lot ; « Copier pour Claude »). « Appliquer » reste obligatoire. Le script ne crée jamais de domaine : la personne décide, Claude écrit la règle.
 
@@ -149,6 +149,16 @@ Précision de la référence : 83,1 % -> **95,7 %** (89 / 93 sur 104 cartes), `p
 - Chiffres : 381 tests, 55 mutations. `EMPREINTE_REGLES` contient `PHRASES_NEUTRES`, `LIEUX_GENERIQUES`, `scanPhrase`, `motsAvant` et `REGLAGES` (les cartes déjà vues seront relues au prochain Ranger).
 - Reste faux dans la référence : Pilot chart (« domaine » en Patrimoine), Ali ben Hammud al-Nasir (« calife » en Religion), Téti (« fonctionnaire » avant « roi »), Ethnoprimatologie (Sciences au lieu de Nature). Cartes du rapport à regarder : Première Nation Oromocto (classée Géographie par « province » au 6e mot).
 - Suite : un nouveau rapport avec la version qui garde l'extrait sur 500 caractères (pour mesurer l'extraction : 142 cartes « pas de est un », 72 sans règle) ; faire valider la référence (104 cartes, jugées par Claude) par la personne.
+
+### Phase 3 Wikipédia (lot 3) — branche `claude/wiki-p3-couverture` (depuis `claude/wiki-p3-precision`, version et `dist` non touchées)
+
+Couverture sur le rapport de 699 cartes : 61,7 % -> **73,8 % brute** (516 / 699), **75,3 % hors pages de dates** (516 / 685). Précision de la référence : 95,7 % -> **98,3 %** (174 / 177 sur 190 cartes), `precisionMinimale` reste à 0,95 (plafond). 440 tests, 83 mutations. Détail ligne par ligne : `docs/suivi-wikipedia.md`.
+- **R** : « magnat/baron de la presse », « presse sportive/satirique/féminine » (Médias), « en général de brigade/division/corps/d'armée » n'est plus neutralisé (`NEUTRES_SAUF_SUIVI_DE`, dans l'empreinte) ; cas de description pour les mots de P3 ; test des mots de `LIEUX_GENERIQUES` ; mode d'emploi de `PHRASES_NEUTRES` et `LIEUX_GENERIQUES` en tête de `regles.js`. Limite connue : Opsites reste Sciences + Histoire (« historien byzantin »).
+- **C1** : `WIKI_EST_ELARGI` (app.js, dans l'empreinte) après `WIKI_EST` : était / étaient / fut / furent / sont / a été / ont été / forment / constituent / désigne + article obligatoire, ou « est / sont l'une des ». Mesuré avec les extraits de 500 caractères relus dans l'API (hors dépôt) : 61,7 % -> 70,0 %, 58 cartes en plus, 0 fausse après 7 corrections de mots. Référence +60 cartes.
+- **C2** : vocabulaire sans risque (lugeur, bobeur, grimpeur, paysagiste, stucateur, antipape, documentaire, géométrie, graphe, patrouilleur, berline, archée…) : 70,0 % -> 72,8 %. `artère` seul **non ajouté** (c'est aussi une rue) : seulement `artère systémique`. **À décider par la personne** : torero/matador, obédience/loge maçonnique, comédie, seigneur, dominicain, escadron, sorcière, drame lyrique, figure mythique (cartes et propositions dans le rapport du lot).
+- **C3** : punk rock, metalcore, italo disco, digital hardcore, heavy metal (jamais `metal` seul), cténophore, conodonte, genre/famille/espèce de scorpion (`scorpion` seul reste libre) : 72,8 % -> 73,8 %.
+- **C4** : cause `page-ignoree` (`pageDeDate`, app.js) : 14 pages de dates sortent du dénominateur de la couverture. C'est un changement de MESURE, aucune carte n'est mieux classée. `npm run essai` imprime la couverture hors pages de dates et la « Couverture brute ».
+- Python ne peut pas écrire dans `src/` sous cet environnement (PermissionError) : utiliser l'outil d'édition ou un script Node.
 
 ## Questions en suspens
 

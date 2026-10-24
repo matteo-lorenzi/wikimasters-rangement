@@ -331,6 +331,13 @@ MUTATIONS = [
      "    'patrouilleur', 'berline',\n", "",
      "phrase Wikipédia : BRP Enrique Jurado"),
     # Phase 3 Wikipédia, C3 (lot 3, 2026-10-24) : « groupe » ambigu tranché par le genre musical ou le taxon
+    # Phase 3 Wikipédia, C4 (lot 3, 2026-10-24) : pages de dates hors du dénominateur de la couverture (changement de mesure)
+    ('C4 : une page de dates n\'est plus « page-ignoree » dans le rapport du navigateur (échec compté)', 'app.js',
+     "  if (pageDeDate(c.t, e.extrait)) return { cause: 'page-ignoree', domaines: [] };\n", "",
+     "rapport Wikipédia : une page de dates"),
+    ('C4 : les pages de dates restent dans le dénominateur de la couverture', 'app.js',
+     "c.cause !== 'non-lue-essai' && c.cause !== 'page-ignoree').length;", "c.cause !== 'non-lue-essai').length;",
+     "rapport Wikipédia : une page de dates"),
     ('C3 : « punk rock », « metalcore », « italo disco », « digital hardcore », « heavy metal » absents (Musique)', 'regles.js',
      "    'punk rock', 'metalcore', 'italo disco', 'digital hardcore', 'heavy metal',\n", "",
      "phrase Wikipédia : Terrorgruppe"),

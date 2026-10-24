@@ -331,6 +331,46 @@ test('essai : l\'extraction élargie classe une carte « sont un… » / « éta
   assert.equal(c['Guido sans article'].cause, 'pas-de-est-un', 'sans article, pas de phrase');
 });
 
+test('essai : les pages de dates (C4) sont « page-ignoree » : hors du dénominateur de la couverture, dans le tableau, pas des échecs', () => {
+  const extraits = {
+    '1869 en France': "Cette page concerne l'année 1869 du calendrier grégorien.",
+    '1835 au Canada': 'Cet article traite des événements survenus en 1835 au Canada.',
+    '1893 en aéronautique': "Cet article présente les faits marquants de l'année 1893 dans le domaine de l'aéronautique.",
+    'Septembre 2008 en France': 'Janvier - Février - Mars - Avril - Mai - Juin - Juillet - Août - Septembre - Octobre - Novembre - Décembre 2008 2006 - 2007 - 2008 dans les DOM-TOM français',
+  };
+  const cartes = Object.entries(extraits).map(([titre, extrait]) => ({ titre, etape: 'cache', cause: 'pas-de-est-un', domaines: [], extrait }));
+  cartes.push({ titre: '18 octobre 1965', etape: 'cache', cause: 'phrase-sans-regle', domaines: [], phrase: "291e jour de l'année 1965", mots: ["jour de l'année"] });
+  cartes.push({ titre: '20 novembre 1954', etape: 'cache', cause: 'phrase-sans-regle', domaines: [], phrase: "324e jour de l'année 1954" });
+  cartes.push({ titre: 'Svendborg Rabbits', etape: 'cache', cause: 'pas-de-est-un', domaines: [], extrait: 'Les Svendborg Rabbits sont un club danois de basket-ball basé à Svendborg.' });
+  cartes.push({ titre: 'Mot Inconnu', etape: 'cache', cause: 'pas-de-est-un', domaines: [], extrait: 'Le nom propre Mot Inconnu prend différentes significations selon le contexte.' });
+  const r = essaiSurRapport(cartes);
+  assert.equal(r.status, 0, r.stderr);
+  const x = r.resultat, c = Object.fromEntries(x.cartes.map((k) => [k.titre, k]));
+  for (const t of [...Object.keys(extraits), '18 octobre 1965', '20 novembre 1954']) assert.equal(c[t].cause, 'page-ignoree', t);
+  assert.equal(c['Mot Inconnu'].cause, 'pas-de-est-un', 'une vraie carte sans phrase reste un échec');
+  assert.equal(x.parCause['page-ignoree'], 6);
+  // 1 classée sur 2 cartes lues (les 6 pages de dates ne comptent pas) ; brute : 1 sur 8
+  assert.deepEqual({ ...x.couverture }, { classees: 1, lues: 2, taux: 0.5 });
+  assert.equal(x.pagesIgnorees, 6);
+  assert.match(r.stdout, /Couverture : 1 \/ 2 \(50 %\)/);
+  assert.match(r.stdout, /Couverture brute : 1 \/ 8 \(13 %\)/);
+  assert.match(r.stdout, /page-ignoree\s+6/);
+});
+
+test('rapport Wikipédia : une page de dates est « page-ignoree » dans le navigateur aussi, et sort du dénominateur de la couverture', async () => {
+  const site = await creerSite({ cartes: [] });
+  const W = site.wmr;
+  const e = (extrait) => ({ extrait, date: Date.now() });
+  assert.equal(W.causeWikipedia({ t: '1869 en France' }, e("Cette page concerne l'année 1869 du calendrier grégorien.")).cause, 'page-ignoree');
+  assert.equal(W.causeWikipedia({ t: '18 octobre 1965' }, e("Le 18 octobre est le 291e jour de l'année 1965.")).cause, 'page-ignoree');
+  assert.equal(W.causeWikipedia({ t: 'Mot Inconnu' }, e('Le nom propre Mot Inconnu prend différentes significations.')).cause, 'pas-de-est-un');
+  const b = W.bilanWikipedia([{ titre: 'A', cause: 'classee', domaines: ['Sport'] }, { titre: 'B', cause: 'pas-de-est-un', domaines: [] },
+    { titre: '1869 en France', cause: 'page-ignoree', domaines: [] }, { titre: 'C', cause: 'non-lue-essai', domaines: [] }]);
+  assert.deepEqual({ ...b.couverture }, { classees: 1, lues: 2, taux: 0.5 });
+  assert.equal(b.pagesIgnorees, 1);
+  site.fermer();
+});
+
 test('essai : avertit quand les extraits du rapport sont coupés à 250 caractères (ancien rapport)', () => {
   const coupe = ('Mot '.repeat(70)).slice(0, 249) + '…'; // 250 caractères, finit par « … » : l'ancien format
   const r = essaiSurRapport([
