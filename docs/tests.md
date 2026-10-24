@@ -18,7 +18,7 @@ Des cas **réels** : description de carte → étiquettes attendues (51 cartes d
 
 Navigateur (2026-10-23) : « navigateur » est ambigu (marin, explorateur ou navigateur web) ; « navigateur suisse » (Pierre Fehlmann) reste `!À traiter`, « navigateur web » en Sciences, « navigateur sportif » en Sport, « navigateur et explorateur » en Histoire.
 
-Un test lit aussi les sources : chaque constante de `regles.js` qui change le classement doit figurer dans la liste de `EMPREINTE_REGLES` (`app.js`), sinon Ranger ne saurait pas que les règles ont changé. Seules `PAS_SUGGERER` (Suggestions seulement) et `INDEX` (dérivée) en sont exemptées.
+Un test lit aussi les sources : chaque constante de `regles.js` qui change le classement doit figurer dans la liste de `EMPREINTE_REGLES` (`app.js`), sinon Ranger ne saurait pas que les règles ont changé. Seules `PAS_SUGGERER` (Suggestions seulement) et `INDEX` (dérivée) en sont exemptées. `REGLAGES` (les nombres de la lecture Wikipédia, `regles.js`) y figure donc : changer un réglage fait relire toutes les cartes sans étiquette, voulu. Un second test exige que l'empreinte contienne aussi le code qui décide du classement d'après Wikipédia (`morceauWikipedia`, `finDePhrase`, `planAvecPhrase`, `concerneeWiki`, `WIKI_EST`, `WIKI_ADJECTIFS`, `WIKI_ABREVIATIONS`), et un troisième que `app.js` lit chaque réglage dans `REGLAGES.wikipedia` (`WIKI.lot`, `WIKI.pauseMs`…) au lieu d'un nombre écrit en dur, avec les valeurs d'origine.
 
 Le script se charge dans un contexte `vm` séparé : recopier ses tableaux (`[...x]`) avant `deepEqual`, sinon la comparaison échoue sur le prototype.
 

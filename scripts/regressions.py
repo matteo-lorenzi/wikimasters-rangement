@@ -103,7 +103,7 @@ MUTATIONS = [
      "const aLire = titres;",
      "Wikipédia : cache, un deuxième Ranger"),
     ('Wikipédia : lots de 50 titres (20 extraits seulement par requête)', 'app.js',
-     "const WIKI_LOT = 20;",
+     "const WIKI_LOT = WIKI.lot;",
      "const WIKI_LOT = 50;",
      "Wikipédia : 45 titres lus par lots de 20"),
     ('Wikipédia : page d\'homonymie lue comme un résumé', 'app.js',

@@ -11,6 +11,10 @@
 //  • Le moteur lit la description ; si elle ne donne aucun domaine, il lit aussi le titre.
 //  • Un titre peut aussi ranger une carte par sa FORME : voir MOTIFS_DE_TITRE plus bas
 //    (« Famille Whitney » → Histoire, « Kix (groupe) » → Musique). Une ligne par motif.
+//  • Les NOMBRES de la lecture dans Wikipédia (taille des lots, pauses, longueur de la phrase gardée…) sont
+//    tous dans REGLAGES, plus bas : une valeur par ligne, avec son rôle. Ne change que ce que tu comprends ;
+//    « lot » et « extrait » sont des limites de Wikipédia. Un réglage modifié fait relire toutes les cartes
+//    sans étiquette au prochain Ranger.
 // ═══════════════════════════════════════════════════════════════════
 
 const DOMAINES = {
@@ -413,6 +417,27 @@ const MOTIFS_DE_TITRE = [
 
 const MAX_DOMAINES = 5;
 const A_TRAITER = '!À traiter';
+
+// Réglages de la lecture dans Wikipédia (Ranger). Ce sont des nombres : change-les ici, nulle part ailleurs.
+// Modifier UN réglage fait relire toutes les cartes sans étiquette au prochain Ranger (voulu : les cartes déjà vues
+// sont reclassées avec le nouveau réglage).
+const REGLAGES = {
+  wikipedia: {
+    lot: 20,                  // titres demandés par requête : limite de Wikipédia (20 extraits renvoyés au plus), ne pas changer
+    extrait: 500,             // caractères d'introduction demandés par article : limite de Wikipédia, ne pas changer
+    pauseMs: 1000,            // pause entre deux requêtes (environ une par seconde)
+    tentativesTitre: 3,       // un titre qui disparaît de la réponse est redemandé, 3 fois au plus
+    essaisAppel: 3,           // une requête en erreur 429 ou 5xx est refaite, 3 fois au plus
+    delaiEssaisMs: 3000,      // attente entre deux essais d'une requête en erreur
+    retenteJours: 30,         // un titre absent ou sans résumé exploitable est retenté après ce nombre de jours
+    essai: 40,                // « Essai Wikipédia » : les 40 premières cartes concernées seulement
+    fenetreVerbe: 300,        // « est un / une / le / la » est cherché dans les 300 premiers caractères de l'extrait
+    longueurPhrase: 250,      // longueur au plus du morceau de phrase gardé
+    repli: 150,               // coupe au dernier espace avant 250, sans descendre sous ce nombre de caractères
+    secondDomaineMots: 3,     // pas encore utilisé (réservé à une tâche suivante)
+    precisionMinimale: 0.95,  // précision exigée de la référence par `npm run essai` et les tests (voir docs/suivi-wikipedia.md)
+  },
+};
 
 // ═══════════════════════════════════════════════════════════════════
 //  MOTEUR DE CLASSEMENT — pas besoin d'y toucher

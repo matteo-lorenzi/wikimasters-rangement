@@ -373,6 +373,26 @@ test("EMPREINTE_REGLES : tout le code qui décide du classement d'après Wikipé
   }
 });
 
+test("REGLAGES.wikipedia : valeurs d'origine, et app.js lit chaque réglage au lieu d'un nombre écrit en dur", () => {
+  const fs = require('fs');
+  const path = require('path');
+  const vm = require('vm');
+  const { SRC } = require('./charger');
+  const regles = fs.readFileSync(path.join(SRC, 'regles.js'), 'utf8');
+  const app = fs.readFileSync(path.join(SRC, 'app.js'), 'utf8');
+  const R = JSON.parse(JSON.stringify(vm.runInContext(regles + '\n;REGLAGES.wikipedia;', vm.createContext({}))));
+  assert.deepEqual(R, {
+    lot: 20, extrait: 500, pauseMs: 1000, tentativesTitre: 3, essaisAppel: 3, delaiEssaisMs: 3000, retenteJours: 30, essai: 40,
+    fenetreVerbe: 300, longueurPhrase: 250, repli: 150, secondDomaineMots: 3, precisionMinimale: R.precisionMinimale,
+  });
+  assert.ok(R.precisionMinimale > 0 && R.precisionMinimale <= 0.95, 'precisionMinimale entre 0 et 0,95');
+  // precisionMinimale sert à l'essai (scripts/essai-wikipedia.js), secondDomaineMots à une tâche suivante
+  for (const cle of Object.keys(R).filter((k) => !['precisionMinimale', 'secondDomaineMots'].includes(k))) {
+    assert.match(app, new RegExp(`\\bWIKI\\.${cle}\\b`), `app.js ne lit pas REGLAGES.wikipedia.${cle}`);
+  }
+  assert.match(app, /const WIKI = REGLAGES\.wikipedia;/);
+});
+
 // ── cartes sans description : lues par leur titre, la parenthèse d'abord ──
 
 test('sans description : « Cherry (film, 2021) » lu par sa parenthèse', () => {

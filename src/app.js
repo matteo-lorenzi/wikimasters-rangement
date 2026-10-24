@@ -1013,11 +1013,12 @@ const resumePlan = (cartes, plans) => {
 // ═══════════════════════════════════════════════════════════════════
 
 const WIKI_API = 'https://fr.wikipedia.org/w/api.php';
-const WIKI_LOT = 20; // Wikipédia accepte 50 titres mais ne renvoie que 20 extraits par requête
-const WIKI_PAUSE = 1000; // environ une requête par seconde, en série
-const WIKI_TENTATIVES = 3; // un titre qui disparaît de la réponse est redemandé, 3 fois au plus
-const WIKI_RETENTE = 30 * 24 * 3600e3; // un titre absent ou sans résumé exploitable est retenté après 30 jours
-const WIKI_ESSAI = 40; // « Essai Wikipédia » : les 40 premières cartes concernées seulement
+const WIKI = REGLAGES.wikipedia; // les nombres se règlent dans regles.js (REGLAGES), pas ici
+const WIKI_LOT = WIKI.lot; // Wikipédia accepte 50 titres mais ne renvoie que 20 extraits par requête
+const WIKI_PAUSE = WIKI.pauseMs; // environ une requête par seconde, en série
+const WIKI_TENTATIVES = WIKI.tentativesTitre; // un titre qui disparaît de la réponse est redemandé, 3 fois au plus
+const WIKI_RETENTE = WIKI.retenteJours * 24 * 3600e3; // un titre absent ou sans résumé exploitable est retenté après 30 jours
+const WIKI_ESSAI = WIKI.essai; // « Essai Wikipédia » : les 40 premières cartes concernées seulement
 const WIKI_EST = /(?<![\p{L}\p{N}'’-])est\s+(?:un|une|le|la)\s+/iu;
 const WIKI_ADJECTIFS = /^(?:premier|première|ancien|ancienne|dernier|dernière|seul|seule|unique)\s+/i;
 const WIKI_ABREVIATIONS = new Set(['av', 'apr', 'env', 'etc', 'jr', 'sr', 'st', 'ste', 'mr', 'dr', 'ca', 'cf', 'vol', 'no', 'hab', 'éd']);
@@ -1034,14 +1035,15 @@ const finDePhrase = (t) => {
 };
 // Ce qui suit le PREMIER « est un / une / le / la » (dans les ~300 premiers caractères), l'adjectif d'ouverture sauté,
 // sur environ 250 caractères au plus et jusqu'à la fin de la phrase. Pas de « est un… » : null, la carte reste telle quelle.
+// (300, 250 et 150 : REGLAGES.wikipedia.fenetreVerbe, longueurPhrase et repli.)
 const morceauWikipedia = (extrait) => {
   const txt = String(extrait || '').replace(/\s+/g, ' ').trim();
   const m = WIKI_EST.exec(txt);
-  if (!m || m.index > 300) return null;
+  if (!m || m.index > WIKI.fenetreVerbe) return null;
   let reste = txt.slice(m.index + m[0].length);
   for (let a; (a = WIKI_ADJECTIFS.exec(reste));) reste = reste.slice(a[0].length);
   let morceau = reste.slice(0, finDePhrase(reste));
-  if (morceau.length > 250) morceau = morceau.slice(0, Math.max(morceau.lastIndexOf(' ', 250), 150));
+  if (morceau.length > WIKI.longueurPhrase) morceau = morceau.slice(0, Math.max(morceau.lastIndexOf(' ', WIKI.longueurPhrase), WIKI.repli));
   morceau = morceau.replace(/[\s.,;:]+$/, '');
   return morceau || null;
 };
@@ -1064,14 +1066,14 @@ const concerneeWiki = (c) => {
 // Une requête : jusqu'à 20 titres. Lève une erreur si l'appel est bloqué (réseau, CSP, CORS) ou si Wikipédia répond en erreur.
 const appelWikipedia = async (titres) => {
   const url = WIKI_API + '?action=query&format=json&redirects=1&prop=extracts%7Cpageprops&ppprop=disambiguation&exintro=1&explaintext=1'
-    + '&exchars=500&origin=*&titles=' + encodeURIComponent(titres.join('|'));
+    + '&exchars=' + WIKI.extrait + '&origin=*&titles=' + encodeURIComponent(titres.join('|'));
   let r;
-  for (let essai = 1; essai <= 3; essai++) {
+  for (let essai = 1; essai <= WIKI.essaisAppel; essai++) {
     arret();
     mesurer((m) => { m.requetes++; });
     r = await fetch(url);
     if (r.ok || (r.status < 500 && r.status !== 429)) break;
-    if (essai < 3) await sleep(3000);
+    if (essai < WIKI.essaisAppel) await sleep(WIKI.delaiEssaisMs);
   }
   if (!r.ok) throw new Error('Wikipédia a répondu en erreur (' + r.status + ')');
   const j = await r.json();
@@ -1288,7 +1290,7 @@ const planAvecPhrase = (c, phrases) => {
 // L'empreinte couvre aussi tout le code qui décide du classement d'après Wikipédia (extraction du morceau, cartes concernées,
 // plan avec phrase) : l'améliorer fait relire les cartes déjà vues. Test : « EMPREINTE_REGLES : tout le code… Wikipédia ».
 const EMPREINTE_REGLES = (() => {
-  const s = JSON.stringify([DOMAINES, AMBIGUS, IGNORER, COLLECTIONS, SEULEMENT_EN_PREMIER, MOTIFS_DE_TITRE, MAX_DOMAINES, A_TRAITER, FEMININS]) + classer + scan + kwRegex
+  const s = JSON.stringify([DOMAINES, AMBIGUS, IGNORER, COLLECTIONS, SEULEMENT_EN_PREMIER, MOTIFS_DE_TITRE, MAX_DOMAINES, A_TRAITER, FEMININS, REGLAGES]) + classer + scan + kwRegex
     + morceauWikipedia + finDePhrase + planAvecPhrase + concerneeWiki + WIKI_EST + WIKI_ADJECTIFS + [...WIKI_ABREVIATIONS].join();
   let h = 2166136261;
   for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619) >>> 0;
