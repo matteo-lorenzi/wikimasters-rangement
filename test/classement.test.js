@@ -664,11 +664,11 @@ test("REGLAGES.wikipedia : valeurs d'origine, et app.js lit chaque réglage au l
   const R = JSON.parse(JSON.stringify(vm.runInContext(regles + '\n;REGLAGES.wikipedia;', vm.createContext({}))));
   assert.deepEqual(R, {
     lot: 20, extrait: 500, pauseMs: 1000, tentativesTitre: 3, essaisAppel: 3, delaiEssaisMs: 3000, retenteJours: 30, essai: 40,
-    fenetreVerbe: 300, longueurPhrase: 250, repli: 150, secondDomaineMots: 3, lieuGeneriqueMots: 5, precisionMinimale: R.precisionMinimale,
+    fenetreVerbe: 300, longueurPhrase: 250, repli: 150, secondDomaineMots: 3, lieuGeneriqueMots: 5, motFaibleMots: 5, precisionMinimale: R.precisionMinimale,
   });
   assert.ok(R.precisionMinimale > 0 && R.precisionMinimale <= 0.95, 'precisionMinimale entre 0 et 0,95');
-  // precisionMinimale sert à l'essai (scripts/essai-wikipedia.js), secondDomaineMots au moteur (regles.js, scanPhrase)
-  for (const cle of Object.keys(R).filter((k) => !['precisionMinimale', 'secondDomaineMots', 'lieuGeneriqueMots'].includes(k))) {
+  // precisionMinimale sert à l'essai (scripts/essai-wikipedia.js), secondDomaineMots, lieuGeneriqueMots et motFaibleMots au moteur (regles.js, scanPhrase)
+  for (const cle of Object.keys(R).filter((k) => !['precisionMinimale', 'secondDomaineMots', 'lieuGeneriqueMots', 'motFaibleMots'].includes(k))) {
     assert.match(app, new RegExp(`\\bWIKI\\.${cle}\\b`), `app.js ne lit pas REGLAGES.wikipedia.${cle}`);
   }
   assert.match(app, /const WIKI = REGLAGES\.wikipedia;/);
@@ -705,6 +705,25 @@ test("REGLAGES.wikipedia : lieuGeneriqueMots est bien lu par le moteur (« ville
   assert.deepEqual(avec(5), []);
   assert.deepEqual(avec(99), ['Géographie']);
   assert.deepEqual(avec(5, true), ['Géographie'], 'sans la liste LIEUX_GENERIQUES, « ville » range la carte');
+});
+
+test("REGLAGES.wikipedia : motFaibleMots est bien lu par le moteur (« histoire » du 11e mot : retirée avec 5, gardée avec 99 ; le réglage des lieux ne la touche pas), et MOTS_FAIBLES vient de la liste", () => {
+  const fs = require('fs');
+  const path = require('path');
+  const vm = require('vm');
+  const { SRC } = require('./charger');
+  const regles = fs.readFileSync(path.join(SRC, 'regles.js'), 'utf8');
+  const d = 'pluriel de Hikayat un mot arabe qui veut dire histoire et qui est souvent utilisé dans la tradition malaisienne';
+  const avec = (reglage, n, vide = false) => {
+    let src = regles.replace(new RegExp(reglage + ': \\d+,'), `${reglage}: ${n},`);
+    assert.ok(src.includes(`${reglage}: ${n},`), reglage);
+    if (vide) src = src.replace(/const MOTS_FAIBLES = \[[^\]]*\]/, 'const MOTS_FAIBLES = []');
+    return [...vm.runInContext(src + '\n;classer({ t: "Hikaitaan", d: ' + JSON.stringify(d) + ' }, true).etiquettes;', vm.createContext({}))];
+  };
+  assert.deepEqual(avec('motFaibleMots', 5), []);
+  assert.deepEqual(avec('motFaibleMots', 99), ['Histoire']);
+  assert.deepEqual(avec('lieuGeneriqueMots', 99), [], 'lieuGeneriqueMots ne règle pas les mots faibles');
+  assert.deepEqual(avec('motFaibleMots', 5, true), ['Histoire'], 'sans la liste MOTS_FAIBLES, « histoire » range la carte');
 });
 
 test("LIEUX_GENERIQUES : chaque mot existe dans la liste Géographie de DOMAINES (sinon une faute de frappe le rend inutile)", () => {

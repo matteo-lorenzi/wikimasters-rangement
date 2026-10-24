@@ -557,6 +557,7 @@ const REGLAGES = {
     repli: 150,               // coupe au dernier espace avant 250, sans descendre sous ce nombre de caractères
     secondDomaineMots: 3,     // dans une phrase Wikipédia, un second domaine n'est gardé que si son mot est parmi les 3 premiers mots
     lieuGeneriqueMots: 5,     // dans une phrase Wikipédia, un mot de LIEUX_GENERIQUES après les 5 premiers mots ne range pas la carte
+    motFaibleMots: 5,         // dans une phrase Wikipédia, un mot de MOTS_FAIBLES après les 5 premiers mots ne range pas la carte
     precisionMinimale: 0.95,  // précision exigée de la référence par `npm run essai` et les tests ; relevée à chaque amélioration, cible 0.95 (docs/suivi-wikipedia.md)
   },
 };
@@ -639,7 +640,7 @@ const motsAvant = (texte, pos) => (norm(texte).slice(0, pos).match(/[a-z0-9]+/g)
 // alors être parmi les premiers mots (sinon un détail tardif deviendrait le sujet : « …à 5 km de la ville d'El Jadida, constituée de résidences »).
 const lieuxGeneriques = new Set(LIEUX_GENERIQUES.map(norm));
 // Un mot de MOTS_FAIBLES (D2) : (1) cède devant tout mot sûr d'un autre domaine, qui devient alors le premier domaine (donc le sujet) ;
-// (2) après les mêmes premiers mots que les lieux génériques, il ne range plus la carte (sans promouvoir un mot suivant, comme eux).
+// (2) après les REGLAGES.wikipedia.motFaibleMots premiers mots, il ne range plus la carte (sans promouvoir un mot suivant, comme les lieux).
 const faibles = new Set(MOTS_FAIBLES.map(norm));
 const scanPhrase = (phrase) => {
   const brut = scan(phrase);
@@ -649,7 +650,8 @@ const scanPhrase = (phrase) => {
   return tous.filter((h) => {
     if (h.kind !== 'sur') return true;
     const rang = motsAvant(phrase, h.pos);
-    if ((lieuxGeneriques.has(norm(h.kw)) || faibles.has(norm(h.kw))) && rang >= REGLAGES.wikipedia.lieuGeneriqueMots) return false;
+    if (lieuxGeneriques.has(norm(h.kw)) && rang >= REGLAGES.wikipedia.lieuGeneriqueMots) return false;
+    if (faibles.has(norm(h.kw)) && rang >= REGLAGES.wikipedia.motFaibleMots) return false;
     return h === premier || rang < REGLAGES.wikipedia.secondDomaineMots;
   });
 };
