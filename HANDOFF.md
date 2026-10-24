@@ -1,6 +1,6 @@
 # Passation — userscript WikiMasters
 
-Mis à jour le 2026-10-24 : **v1.9.14** sur la branche `claude/v1914` (lot 4 : mots faibles et pièges de description, plus 8 mots décidés par la personne ; couverture 75,8 % hors pages de dates sur le rapport v1.9.13, précision stricte ~92 à 97 % selon l’échantillon neuf), en attente de la revue et du oui de la personne pour `main`. **v1.9.13 est sur `main`** (voir plus bas). **v1.9.12 et v1.9.11 sur `main`** (mots manquants de Ranger : mots courants jamais proposés, exemplaires comptés une fois, règles `base de données`, `organisme public/gouvernemental`, `jour de l’année` ignoré). **v1.9.10 sur `main`** (3 règles corrigées après le 1er essai Wikipédia : `lanceur` retiré, `hippique` et `hippodrome` en Sport, `ben` jamais proposé). **v1.9.9 sur `main`** : Ranger lit Wikipédia (essai de 40 cartes) ; 1er essai fait par la personne le 2026-10-23 : 23 cartes sur 40 classées, 20 justes, 3 imprécises (corrigées en v1.9.10). v1.9.8 (Compléter, tour 5) et v1.9.7 sur `main`. Les instructions durables sont dans `CLAUDE.md` ; ce fichier garde l'état, les décisions, la suite et les questions en suspens.
+Mis à jour le 2026-10-25 : **v1.9.14 est sur `main`** (poussée le 2026-10-24 avec l’accord de la personne ; 536 tests, 100 mutations). Phase 3 Wikipédia : couverture 63,2 % → 75,9 % sur le rapport réel, précision 95/100 sur 100 cartes neuves jugées par Claude (±5 points, non validée par la personne). **Prochaine action : la personne installe la v1.9.14, lance Ranger sans « Appliquer » et enregistre le rapport JSON dans `resultats` (par exemple `rapport-wikipedia-2026-10-24c.txt`) ; Claude juge alors 100 cartes neuves avant de toucher aux règles** (section « Bilan phase 3 Wikipédia et suite »). Les instructions durables sont dans `CLAUDE.md` ; ce fichier garde l’état, les décisions, la suite et les questions en suspens.
 
 ## Avant tout, en début de session : ce que la personne fait
 
@@ -25,7 +25,7 @@ Si Claude doit regarder le vrai site (observer un bouton, lire une carte) : Chro
 
 ## État
 
-- **v1.9.14 sur la branche `claude/v1914`** (536 tests, 100 mutations) ; **v1.9.13, v1.9.12, v1.9.11, v1.9.10 et v1.9.9 sur `main`** (voir la section Wikipédia), seul l’essai de 40 cartes a été fait sur le vrai site. **v1.9.8 est sur `main`** (2026-10-23) : elle réunit « Compléter les cartes rangées » et les règles du tour 5, **ni l'un ni l'autre essayés sur le vrai site**. v1.9.7 : la personne l’a installée et a rangé avec (36 cartes sans `!À traiter`). Node.js 26 et Python 3.13 installés sur la machine de travail le 2026-10-23.
+- **v1.9.14 sur `main`** (536 tests, 100 mutations) ; **v1.9.13 à v1.9.9 sur `main` aussi** (voir la section Wikipédia), la v1.9.13 a été essayée en entier sur le vrai site (rapport du 2026-10-24b, lecture sans « Appliquer »), la v1.9.14 pas encore. **v1.9.8 est sur `main`** (2026-10-23) : elle réunit « Compléter les cartes rangées » et les règles du tour 5, **ni l'un ni l'autre essayés sur le vrai site**. v1.9.7 : la personne l’a installée et a rangé avec (36 cartes sans `!À traiter`). Node.js 26 et Python 3.13 installés sur la machine de travail le 2026-10-23.
 - Le panneau du script a six boutons :
   - **Ranger les nouvelles cartes** : lit les cartes sans étiquette (seulement les nouvelles, ou **toutes si les règles ont changé** depuis le dernier rangement, v1.9.3), montre l'aperçu, pose les domaines après « Appliquer ». Recherches groupées à partir de 200 cartes (`docs/piste-1.md`). Rechargement et reprise automatiques sur raté du site.
   - **Suggestions** (v1.9.0–1.9.1, lecture seule) : compteur des cartes sans domaine, mots inconnus des règles (dès 3 cartes, domaine proposé d'après les cartes déjà étiquetées), « Copier pour Claude » et « Copier les cartes sans règle ». C'est l'outil du chantier en cours (voir plus bas).
@@ -179,7 +179,7 @@ Objectif : la PRÉCISION hors entraînement. La revue du lot 3 avait mesuré 35/
 
 **Pour reprendre** : lire cette section, puis `docs/suivi-wikipedia.md` (une ligne par tâche, chiffres avant/après) et `docs/tests.md` (« Mesure Wikipédia »). `npm test` = 536 tests, `python scripts/regressions.py` = 100/100, `npm run essai [rapport]` rejoue le moteur hors navigateur.
 
-### Où on en est (v1.9.14 sur `claude/v1914`, revue faite, pas encore sur `main`)
+### Où on en est (v1.9.14 sur `main`, revue faite)
 | Mesure | v1.9.12 (départ) | v1.9.14 |
 |---|---|---|
 | Couverture, rapport réel de la personne (706 cartes) | 63,2 % | **75,8 %** hors 13 pages de dates (525/693) |
