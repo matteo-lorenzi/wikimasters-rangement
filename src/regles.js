@@ -264,6 +264,8 @@ const DOMAINES = {
     // Suggestions du 2026-10-14 (4e tour) ; pas les mois : seuls, ils ne disent rien,
     // et avec un événement (« guerre », « bataille »…) la carte est déjà rangée
     'char de combat', 'luftwaffe', 'conflit armé', 'clan', 'duché', 'seigneurie', 'offensive', 'chef amérindien',
+    // Phase 3 Wikipédia, 2026-10-24 : le trait d'union cache « amiral » (Friedrich Lützow, « vice-amiral et écrivain militaire »)
+    'vice-amiral', 'contre-amiral',
   ],
   'Religion & Mythes': [
     'mythologie', 'personnage de la mythologie', 'homme d\'église', 'femme d\'église', 'dieu', 'déesse', 'divinité', 'saint', 'sainte', 'pape',
@@ -460,8 +462,8 @@ const REGLAGES = {
     fenetreVerbe: 300,        // « est un / une / le / la » est cherché dans les 300 premiers caractères de l'extrait
     longueurPhrase: 250,      // longueur au plus du morceau de phrase gardé
     repli: 150,               // coupe au dernier espace avant 250, sans descendre sous ce nombre de caractères
-    secondDomaineMots: 3,     // pas encore utilisé (réservé à une tâche suivante)
-    precisionMinimale: 0.89,  // précision exigée de la référence par `npm run essai` et les tests ; relevée à chaque amélioration, cible 0.95 (docs/suivi-wikipedia.md)
+    secondDomaineMots: 3,     // dans une phrase Wikipédia, un second domaine n'est gardé que si son mot est parmi les 3 premiers mots
+    precisionMinimale: 0.94,  // précision exigée de la référence par `npm run essai` et les tests ; relevée à chaque amélioration, cible 0.95 (docs/suivi-wikipedia.md)
   },
 };
 
@@ -531,9 +533,20 @@ const scan = (text, onlyAtStart = false) => {
   return hits.sort((a, b) => a.pos - b.pos);
 };
 
-// Classe une carte { t: titre, d: description }.
+// Analyse une phrase venue de Wikipédia (jamais une description de carte). Elle dit d'abord ce qu'est la carte :
+// le premier domaine reste toujours, un domaine suivant ne reste que si son mot est parmi les REGLAGES.wikipedia.secondDomaineMots
+// premiers mots de la phrase (« …dirigée par l'écrivain et explorateur Christian Clot » : explorateur est un détail, pas un domaine).
+// Une seule fonction pour Ranger (planAvecPhrase) et pour la mesure (classerPhrase), via classer(carte, true).
+const motsAvant = (texte, pos) => (norm(texte).slice(0, pos).match(/[a-z0-9]+/g) || []).length;
+const scanPhrase = (phrase) => {
+  const hits = scan(phrase);
+  const premier = hits.find((h) => h.kind === 'sur');
+  return hits.filter((h) => h.kind !== 'sur' || h === premier || motsAvant(phrase, h.pos) < REGLAGES.wikipedia.secondDomaineMots);
+};
+
+// Classe une carte { t: titre, d: description }. `deWikipedia` : d est une phrase Wikipédia (voir scanPhrase).
 // Renvoie { etiquettes: [...], statut: 'classee'|'a_traiter'|'ignoree'|'inconnue', source, mots }.
-const classer = (carte) => {
+const classer = (carte, deWikipedia = false) => {
   // le titre : la parenthèse d'abord (« Cherry (film, 2021) »)
   const titre = () => {
     const paren = (carte.t.match(/\(([^)]*)\)/) || [])[1] || '';
@@ -553,7 +566,7 @@ const classer = (carte) => {
   };
   let hits, source;
   if (carte.d && carte.d.trim()) {
-    hits = scan(carte.d); source = 'description';
+    hits = deWikipedia ? scanPhrase(carte.d) : scan(carte.d); source = 'description';
     // description sans domaine (et pas une page à ignorer) : le titre en secours (« Miss Moldavie — concours de beauté »)
     if (!hits.some((h) => h.kind === 'sur' || h.kind === 'ignore')) {
       const t = titre();

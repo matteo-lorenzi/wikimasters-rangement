@@ -348,26 +348,22 @@ const precisionMinimale = () => {
   return require('vm').runInContext(fs.readFileSync(path.join(SRC, 'regles.js'), 'utf8') + '\n;REGLAGES.wikipedia.precisionMinimale;', require('vm').createContext({}));
 };
 
-test('essai : référence figée (moteur après P3), 80 justes sur 89 classées sur 97 cartes', () => {
+test('essai : référence figée (moteur après P1), 84 justes sur 89 classées sur 97 cartes', () => {
   const r = essai([path.join('test', 'reference-wikipedia.json')]);
   const x = r.resultat;
   const QUOI_FAIRE = 'moteur ou règles changés : relance npm run essai, mets à jour couverture, précision et les fausses ici et dans le nom du test, relève precisionMinimale (src/regles.js) si la précision monte, puis docs/tests.md et docs/suivi-wikipedia.md';
   assert.deepEqual({ ...x.couverture }, { classees: 89, lues: 97, taux: 0.918 }, QUOI_FAIRE);
-  assert.deepEqual({ ...x.precision }, { verifiees: 89, justes: 80, taux: 0.899 }, QUOI_FAIRE);
+  assert.deepEqual({ ...x.precision }, { verifiees: 89, justes: 84, taux: 0.944 }, QUOI_FAIRE);
   // chacune a un domaine attendu PLUS un domaine en trop, ou un domaine hors attendu et acceptables
   assert.deepEqual(x.fausses.map((f) => [f.titre, f.domaines, f.motsResponsables]), [
-    ['Corso di Buono', ['Arts', 'Sciences'], ['école']],
-    ['Addington Palace', ['Patrimoine', 'Histoire'], ['historique']],
-    ['Pilot chart', ['Patrimoine', 'Transports'], ['domaine']],
+    ['Pilot chart', ['Patrimoine'], ['domaine']],
     ['Ali ben Hammud al-Nasir', ['Religion & Mythes'], ['calife']],
-    ['Explora', ['Littérature', 'Histoire'], ['explorateur']],
-    ['Léon Volterra', ['Géographie'], ['arrondissement', 'ville']],
-    ['Fares Maakaroun', ['Religion & Mythes', 'Patrimoine'], ['église']],
-    ['Albéric Crescitelli', ['Religion & Mythes', 'Patrimoine'], ['église']],
-    ['Monkiss', ['Arts', 'Transports'], ['bus']],
+    ['Téti (fils de Minhotep)', ['Politique & Droit'], ['fonctionnaire']],
+    ['Léon Volterra', ['Géographie'], ['arrondissement']],
+    ['Ethnoprimatologie', ['Sciences'], ['sociétés humaines']],
   ], QUOI_FAIRE);
   assert.match(r.stdout, /Couverture : 89 \/ 97 \(92 %\)/, QUOI_FAIRE);
-  assert.match(r.stdout, /Précision : 80 \/ 89 \(90 %\)/, QUOI_FAIRE);
+  assert.match(r.stdout, /Précision : 84 \/ 89 \(94 %\)/, QUOI_FAIRE);
 });
 
 test('essai : garde-fou de précision, la référence ne passe pas sous REGLAGES.wikipedia.precisionMinimale', () => {
@@ -384,7 +380,7 @@ test('essai : garde-fou de précision, la référence ne passe pas sous REGLAGES
 test('essai : la référence sous le minimum de précision, l\'essai sort en code 1 avec un message qui dit quoi faire', () => {
   const r = essai([path.join('test', 'reference-wikipedia.json'), '--minimum', '0.99']);
   assert.equal(r.status, 1);
-  assert.match(r.stderr, /Précision 90 % sous le minimum de 99 %/);
+  assert.match(r.stderr, /Précision 94 % sous le minimum de 99 %/);
   assert.match(r.stderr, /REGLAGES\.wikipedia\.precisionMinimale/);
   // un rapport réel (autre fichier que la vérité) ne déclenche pas le garde-fou
   const exemple = essai([path.join('resultats', 'exemple.json'), '--minimum', '0.99']);

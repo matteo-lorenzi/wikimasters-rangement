@@ -314,6 +314,42 @@ for (const [t, d, attendu, statut] of CAS) {
   });
 }
 
+// ── phrases Wikipédia : le second domaine doit venir du début de la phrase (Phase 3 Wikipédia, P1, 2026-10-24) ──
+// classer(carte, true) lit la description comme une phrase Wikipédia (c'est ce que font planAvecPhrase et la mesure) ;
+// une vraie description (classer(carte)) n'est jamais filtrée.
+const phraseWiki = (t, d) => { const r = R.classer({ t, d }, true); return { ...r, etiquettes: [...r.etiquettes] }; };
+const PHRASES = [
+  // [titre, phrase, domaines attendus] : cartes réelles du rapport du 2026-10-24
+  ['Monkiss', 'danse lancée par Eddie Barclay au Bus Palladium, qui a eu un succès éphémère au début des années 1960', ['Arts']], // bus : 7e mot
+  ['Explora', "collection de bande dessinée lancée en 2012 aux éditions Glénat, dirigée par l'écrivain et explorateur Christian Clot", ['Littérature']], // explorateur : 15e mot
+  ['Albéric Crescitelli', "prêtre catholique italien des « Missions étrangères de Milan » PIME, missionnaire en Chine, vénéré comme saint martyr par l'Église catholique (fête le 21 juillet)", ['Religion & Mythes']], // église : 21e mot
+  ['Fares Maakaroun', "prélat de l'Église grecque-catholique melkite, éparque de l'éparchie Notre-Dame du Paradis de São Paulo des Melkites au Brésil de 1999 à 2014", ['Religion & Mythes']], // église : 4e mot
+  // « vice-amiral » : le trait d'union cache « amiral » (comme « artiste-peintre »), sinon « écrivain » devenait le premier domaine
+  ['Friedrich Lützow', 'vice-amiral et écrivain militaire allemand', ['Histoire']],
+  // le second domaine reste quand son mot est dans les premiers mots
+  ['Johnny Hallyday', 'chanteur et acteur français', ['Musique', 'Cinéma & TV']],
+  ['Antoine Bernheim', 'banquier et homme politique français', ['Économie', 'Politique & Droit']],
+  // le premier domaine reste toujours, même si son mot est loin
+  ['Chaîne locale', 'petite structure qui diffuse depuis 1990 une émission hebdomadaire', ['Médias']],
+];
+for (const [t, d, attendu] of PHRASES) {
+  test(`phrase Wikipédia : ${t} — ${d}`, () => {
+    assert.deepEqual(phraseWiki(t, d).etiquettes, attendu);
+  });
+}
+
+test('phrase Wikipédia : seul le domaine tardif est retiré, la même chaîne lue comme description de carte garde ses deux domaines', () => {
+  const d = 'danse lancée par Eddie Barclay au Bus Palladium, qui a eu un succès éphémère au début des années 1960';
+  assert.deepEqual(classe('Monkiss', d).etiquettes, ['Arts', 'Transports']);
+  assert.deepEqual(phraseWiki('Monkiss', d).etiquettes, ['Arts']);
+});
+
+test('phrase Wikipédia : un seul mot tardif sans autre domaine reste le premier domaine', () => {
+  const r = phraseWiki('Xyz', 'une chose lancée par des gens de passage dans un film');
+  assert.deepEqual(r.etiquettes, ['Cinéma & TV']);
+  assert.equal(r.statut, 'classee');
+});
+
 // ── pièges connus ──
 
 test('golfe ≠ golf : « État du golfe Persique » n\'est pas du Sport', () => {
@@ -405,7 +441,7 @@ test("EMPREINTE_REGLES : tout le code qui décide du classement d'après Wikipé
   const bloc = (app.match(/const EMPREINTE_REGLES = \(\(\) => \{([\s\S]*?)\n\}\)\(\);/) || [])[1] || '';
   assert.ok(bloc, 'bloc EMPREINTE_REGLES introuvable dans app.js');
   // Sinon améliorer l'extraction ou le filtrage de Wikipédia ne ferait pas relire les cartes déjà vues par Ranger.
-  for (const nom of ['morceauWikipedia', 'finDePhrase', 'planAvecPhrase', 'concerneeWiki', 'WIKI_EST', 'WIKI_ADJECTIFS', 'WIKI_ABREVIATIONS']) {
+  for (const nom of ['morceauWikipedia', 'finDePhrase', 'planAvecPhrase', 'scanPhrase', 'concerneeWiki', 'WIKI_EST', 'WIKI_ADJECTIFS', 'WIKI_ABREVIATIONS']) {
     assert.match(bloc, new RegExp(`\\b${nom}\\b`), `${nom} (app.js) n'est pas dans EMPREINTE_REGLES : un changement de l'extraction Wikipédia ne ferait pas relire les cartes`);
   }
 });
@@ -423,11 +459,27 @@ test("REGLAGES.wikipedia : valeurs d'origine, et app.js lit chaque réglage au l
     fenetreVerbe: 300, longueurPhrase: 250, repli: 150, secondDomaineMots: 3, precisionMinimale: R.precisionMinimale,
   });
   assert.ok(R.precisionMinimale > 0 && R.precisionMinimale <= 0.95, 'precisionMinimale entre 0 et 0,95');
-  // precisionMinimale sert à l'essai (scripts/essai-wikipedia.js), secondDomaineMots à une tâche suivante
+  // precisionMinimale sert à l'essai (scripts/essai-wikipedia.js), secondDomaineMots au moteur (regles.js, scanPhrase)
   for (const cle of Object.keys(R).filter((k) => !['precisionMinimale', 'secondDomaineMots'].includes(k))) {
     assert.match(app, new RegExp(`\\bWIKI\\.${cle}\\b`), `app.js ne lit pas REGLAGES.wikipedia.${cle}`);
   }
   assert.match(app, /const WIKI = REGLAGES\.wikipedia;/);
+});
+
+test("REGLAGES.wikipedia : secondDomaineMots est bien lu par le moteur (2 mots : « Bus » du 7e mot retiré ; 8 mots : gardé)", () => {
+  const fs = require('fs');
+  const path = require('path');
+  const vm = require('vm');
+  const { SRC } = require('./charger');
+  const regles = fs.readFileSync(path.join(SRC, 'regles.js'), 'utf8');
+  const d = 'danse lancée par Eddie Barclay au Bus Palladium, qui a eu un succès éphémère au début des années 1960';
+  const avec = (n) => {
+    const src = regles.replace(/secondDomaineMots: \d+,/, `secondDomaineMots: ${n},`);
+    assert.ok(src.includes(`secondDomaineMots: ${n},`));
+    return [...vm.runInContext(src + '\n;classer({ t: "Monkiss", d: ' + JSON.stringify(d) + ' }, true).etiquettes;', vm.createContext({}))];
+  };
+  assert.deepEqual(avec(2), ['Arts']);
+  assert.deepEqual(avec(8), ['Arts', 'Transports']);
 });
 
 // ── cartes sans description : lues par leur titre, la parenthèse d'abord ──

@@ -901,6 +901,23 @@ test('Wikipédia : l\'aperçu liste les cartes classées d\'après Wikipédia av
   site.fermer();
 });
 
+test('Wikipédia : un second domaine venu d\'un mot tardif de la phrase n\'est pas posé (Phase 3, P1), le premier domaine reste', async () => {
+  const cartes = cartesSansDescription(['Monkiss', 'Johnny H']);
+  const site = await creerSite({ cartes, wikipedia: { articles: {
+    'Monkiss': 'Le Monkiss est une danse lancée par Eddie Barclay au Bus Palladium, qui a eu un succès éphémère au début des années 1960.',
+    'Johnny H': 'Johnny H. est un chanteur et acteur français, né en 1943.', // deux domaines, tous deux dans les premiers mots : les deux restent
+  } } });
+  sansEssai(site);
+  const p = await apercuWiki(site);
+  assert.match(sortie(p), /Monkiss — danse lancée par Eddie Barclay[^→]*→ Arts(?!, )/, 'Transports (« Bus Palladium », 7e mot) n\'est pas proposé');
+  p.appliquer();
+  assert.ok(await attendreQue(() => BILAN.test(p.statut()), 60000), p.statut());
+  assert.deepEqual(etiquettesCarte(site, 'Monkiss'), ['Arts']);
+  assert.deepEqual(etiquettesCarte(site, 'Johnny H'), ['Musique', 'Cinéma & TV']);
+  sansIncident(site);
+  site.fermer();
+});
+
 test('Wikipédia : seules les cartes sans description sans règle ou à traiter sont envoyées ; ignorées, classées et décrites jamais', async () => {
   const cartes = [
     { t: 'Sans Description', d: '', obtenu: date(1) },

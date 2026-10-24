@@ -593,8 +593,8 @@ const contientMot = (c, mots) => { const t = norm(c.d + ' ' + c.t); return mots.
 const estMarquee = (c) => (c.tags || []).includes(A_TRAITER);
 
 // Étiquettes finales d'une carte, avec ses anciennes étiquettes éventuelles.
-const planCarte = (c, anciennes = []) => {
-  const r = classer(c);
+const planCarte = (c, anciennes = [], deWikipedia = false) => {
+  const r = classer(c, deWikipedia);
   const domDesc = r.etiquettes.filter((e) => DOMAINES[e]);
   const coll = r.etiquettes.filter((e) => !DOMAINES[e] && e !== A_TRAITER);
   const domAnc = [], gestion = [];
@@ -1194,7 +1194,7 @@ const estEbauche = (titre, extrait) => {
 };
 // Le moteur sur une phrase Wikipédia, comme Ranger (planAvecPhrase) : la phrase tient lieu de description.
 const classerPhrase = (c, phrase) => {
-  const w = classer({ ...c, d: phrase });
+  const w = classer({ ...c, d: phrase }, true);
   const cause = w.statut === 'classee' ? 'classee' : w.statut === 'a_traiter' ? 'phrase-ambigue' : 'phrase-sans-regle';
   return { cause, domaines: cause === 'classee' ? w.etiquettes.filter((x) => DOMAINES[x]) : [], mots: [...w.mots] };
 };
@@ -1277,7 +1277,7 @@ const planAvecPhrase = (c, phrases) => {
   const p = planCarte(c);
   const phrase = phrases[cle(c)];
   if (!phrase) return p;
-  const w = planCarte({ ...c, d: phrase });
+  const w = planCarte({ ...c, d: phrase }, [], true);
   // la phrase ne sert que si elle range la carte, ou si elle la rend « à traiter » alors qu'elle n'avait rien
   return w.statut === 'classee' || (w.statut === 'a_traiter' && p.statut === 'inconnue') ? { ...w, phrase } : p;
 };
@@ -1290,7 +1290,7 @@ const planAvecPhrase = (c, phrases) => {
 // L'empreinte couvre aussi tout le code qui décide du classement d'après Wikipédia (extraction du morceau, cartes concernées,
 // plan avec phrase) : l'améliorer fait relire les cartes déjà vues. Test : « EMPREINTE_REGLES : tout le code… Wikipédia ».
 const EMPREINTE_REGLES = (() => {
-  const s = JSON.stringify([DOMAINES, AMBIGUS, IGNORER, PHRASES_NEUTRES, COLLECTIONS, SEULEMENT_EN_PREMIER, MOTIFS_DE_TITRE, MAX_DOMAINES, A_TRAITER, FEMININS, REGLAGES]) + classer + scan + kwRegex
+  const s = JSON.stringify([DOMAINES, AMBIGUS, IGNORER, PHRASES_NEUTRES, COLLECTIONS, SEULEMENT_EN_PREMIER, MOTIFS_DE_TITRE, MAX_DOMAINES, A_TRAITER, FEMININS, REGLAGES]) + classer + scan + scanPhrase + motsAvant + kwRegex
     + morceauWikipedia + finDePhrase + planAvecPhrase + concerneeWiki + WIKI_EST + WIKI_ADJECTIFS + [...WIKI_ABREVIATIONS].join();
   let h = 2166136261;
   for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619) >>> 0;
