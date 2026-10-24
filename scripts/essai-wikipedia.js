@@ -69,7 +69,7 @@ const cartes = rapport.cartes.map((c) => {
   return x;
 });
 const bilan = monde(W.bilanWikipedia(cartes, verite));
-// Les anciens rapports (avant la v1.9.13) coupent l'extrait à 250 caractères (« … » en 250e) alors que l'extraction cherche sur 300 :
+// Les anciens rapports (avant la prochaine version) coupent l'extrait à 250 caractères (« … » en 250e) alors que l'extraction cherche sur 300 :
 // le rejeu d'extraction y est incomplet.
 const coupes = rapport.cartes.filter((c) => c.extrait && c.extrait.length === 250 && c.extrait.endsWith('…')).length;
 const avertissements = coupes ? [`extraits coupés à 250 caractères dans ce rapport (${coupes} carte(s)) : le rejeu de l'extraction est incomplet, relis les cartes avec une version récente du script (extraits de 500 caractères)`] : [];

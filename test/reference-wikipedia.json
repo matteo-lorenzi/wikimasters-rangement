@@ -34,7 +34,7 @@
   {"titre":"Cuir de Venise","phrase":"cuir peint ou ciselé, auquel a été ajoutée une feuille d’argent, mais il n’est pas gaufré par presse","attendu":["Arts"],"acceptables":["Économie"]},
   {"titre":"Documenta 7","phrase":"manifestation culturelle qui s'est déroulée du 19 juin au 28 septembre 1982 à Cassel, en Allemagne sous la direction de l'historien de l'art Manfred Schneckenburger","attendu":["Arts"]},
   {"titre":"Eupholus chevrolati","phrase":"espèce d'insectes coléoptères phytophages du genre Eupholus (charançon bleu) originaire des îles Aru","attendu":["Nature"]},
-  {"titre":"Ali ben Hammud al-Nasir","phrase":"émir de Malaga et d'Algésiras de 1010 à 1018, puis calife de Cordoue de 1016 à 1018","attendu":["Histoire"],"acceptables":["Politique & Droit"]},
+  {"titre":"Ali ben Hammud al-Nasir","phrase":"émir de Malaga et d'Algésiras de 1010 à 1018, puis calife de Cordoue de 1016 à 1018","attendu":["Histoire"],"acceptables":["Politique & Droit","Religion & Mythes"]},
   {"titre":"Les Cars Rose","phrase":"société de transports de voyageurs qui appartenait au groupe Transdev desservant principalement la communauté d'agglomération Val-et-Forêt située dans le Val-d'Oise","attendu":["Économie","Transports"]},
   {"titre":"Explora","phrase":"collection de bande dessinée lancée en 2012 aux éditions Glénat, dirigée par l'écrivain et explorateur Christian Clot","attendu":["Littérature"],"acceptables":["Arts"]},
   {"titre":"Zaghalti (Latchine)","phrase":"village de la région de Latchine en Azerbaïdjan","attendu":["Géographie"]},

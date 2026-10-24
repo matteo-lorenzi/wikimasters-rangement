@@ -1,4 +1,5 @@
 node_modules/
 # rapports Wikipédia collés et résultats de `npm run essai` : locaux ; seul l'exemple est commité
 resultats/*.json
+resultats/*.txt
 !resultats/exemple.json
