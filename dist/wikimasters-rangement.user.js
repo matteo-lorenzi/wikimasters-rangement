@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WikiMasters — Rangement des cartes
 // @namespace    wikimasters-rangement
-// @version      1.9.12
+// @version      1.9.13
 // @description  Étiquette tes cartes WikiMasters par domaine (aperçu avant application, jamais de défausse).
 // @match        https://www.wiki-masters.com/*
 // @match        https://wiki-masters.com/*
@@ -25,6 +25,14 @@
 //  • Le moteur lit la description ; si elle ne donne aucun domaine, il lit aussi le titre.
 //  • Un titre peut aussi ranger une carte par sa FORME : voir MOTIFS_DE_TITRE plus bas
 //    (« Famille Whitney » → Histoire, « Kix (groupe) » → Musique). Une ligne par motif.
+//  • PHRASES_NEUTRES : des expressions que le moteur ne lit pas (« en général » n'est pas un général de l'armée) ;
+//    ajoute-y une expression entre apostrophes, elle est effacée avant la lecture. LIEUX_GENERIQUES : des mots de lieu
+//    (« ville », « comté »…) qui, loin dans une phrase Wikipédia, ne rangent pas la carte (« …né dans le 8e arrondissement
+//    de Paris » n'est pas de la Géographie) ; chaque mot doit déjà exister dans la liste Géographie de DOMAINES.
+//  • Les NOMBRES de la lecture dans Wikipédia (taille des lots, pauses, longueur de la phrase gardée…) sont
+//    tous dans REGLAGES, plus bas : une valeur par ligne, avec son rôle. Ne change que ce que tu comprends ;
+//    « lot » et « extrait » sont des limites de Wikipédia. Un réglage modifié fait relire toutes les cartes
+//    sans étiquette au prochain Ranger.
 // ═══════════════════════════════════════════════════════════════════
 
 const DOMAINES = {
@@ -42,6 +50,8 @@ const DOMAINES = {
     'golden globe', 'prix génie',
     // Suggestions du 2026-10-14 (4e tour) : « film » a 4 lettres, il ne trouve pas son pluriel
     'films',
+    // Phase 3 Wikipédia, 2026-10-24 (C2) : tour de vocabulaire des phrases sans règle
+    'documentaire',
   ],
   'Musique': [
     'chanteur', 'chanteuse', 'compositeur', 'compositrice', 'auteur-compositeur', 'autrice-compositrice',
@@ -53,11 +63,15 @@ const DOMAINES = {
     'opéra', 'orchestre', 'symphonie', 'concerto', 'sonate', 'genre musical', 'label', 'maison de disques',
     'producteur de musique', 'productrice de musique', 'producteur de disques', 'ténor', 'soprano', 'baryton',
     'jazzman', 'chorale', 'festival de musique', 'comédie musicale', 'musique', 'interprète de musique',
-    'auteure-compositrice-interprète', 'autrice-compositrice-interprète', 'auteure-compositrice', 'girls band', 'boys band', 'chant', 'composition', 'piano', 'manager musical', 'discographie', 'concert', 'tournée',
+    'auteure-compositrice-interprète', 'autrice-compositrice-interprète', 'auteure-compositrice', 'girls band', 'boys band', 'chant', 'composition musicale', 'compositions musicales', 'piano', 'manager musical', 'discographie', 'concert', 'tournée',
     // Suggestions du 2026-10-13
     'musical', 'instrumental', 'jazz', 'trio à cordes',
     // Suggestions du 2026-10-13 (3e tour)
     'grammy',
+    // Phase 3 Wikipédia, 2026-10-24 (C2) : tour de vocabulaire des phrases sans règle : « ballade » seul est aussi un poème
+    'ballade populaire',
+    // Phase 3 Wikipédia, 2026-10-24 (C3) : genres musicaux (« groupe allemand de punk rock ») ; jamais « metal » seul : le moteur ignore les accents et « métal » serait pris
+    'punk rock', 'metalcore', 'italo disco', 'digital hardcore', 'heavy metal',
   ],
   'Littérature': [
     'écrivain', 'écrivaine', 'romancier', 'romancière', 'poète', 'poétesse', 'auteur', 'autrice',
@@ -69,6 +83,10 @@ const DOMAINES = {
     'auteure', 'expression latine', 'proverbe', 'locution', 'rhétorique', 'philologue',
     // Suggestions du 2026-10-13
     'light novel',
+    // Phase 3 Wikipédia, 2026-10-24 : « album » seul est de la Musique, pas « album de bande dessinée »
+    'album de bande dessinée', 'albums de bande dessinée',
+    // Phase 3 Wikipédia, 2026-10-24 (C2) : tour de vocabulaire des phrases sans règle
+    'lexicographe', 'collection éditoriale',
   ],
   'Arts': [
     'peintre', 'sculpt*', 'artiste', 'illustrateur', 'illustratrice', 'dessinateur', 'dessinatrice',
@@ -84,6 +102,12 @@ const DOMAINES = {
     'designeuse',
     // Suggestions du 2026-10-14 (4e tour) : le trait d'union cache « artiste » et « peintre »
     'artiste-peintre',
+    // Phase 3 Wikipédia, 2026-10-24 : « historien » seul reste en Sciences (Documenta 7)
+    'historien de l\'art', 'historienne de l\'art',
+    // P2 : « homme de spectacle français… né dans le 8e arrondissement de Paris » (Léon Volterra) n'est pas de la Géographie
+    'homme de spectacle', 'femme de spectacle',
+    // Phase 3 Wikipédia, 2026-10-24 (C2) : tour de vocabulaire des phrases sans règle
+    'paysagiste', 'stucateur',
   ],
   'Sport': [
     'footballeur', 'footballeuse', 'football', 'joueur de football', 'cycliste', 'coureur cycliste',
@@ -118,6 +142,14 @@ const DOMAINES = {
     'saison 19*', 'saison 20*',
     // Premier essai Wikipédia (2026-10-23) : « course hippique… Comté de Kildare » partait en Géographie
     'hippique', 'hippodrome',
+    // Phase 3 Wikipédia, 2026-10-24 : « pilote autrichien de vitesse moto » (Michael Ranseder), sinon « pilote » + « moto » = Transports
+    'vitesse moto',
+    // Phase 3 Wikipédia, 2026-10-24 (R) : « titre de la presse sportive » est aussi du Sport (comme avant P3)
+    'presse sportive',
+    // Phase 3 Wikipédia, 2026-10-24 (C1) : une « franchise professionnelle de hockey » est une équipe, pas une franchise de fiction
+    'franchise professionnelle',
+    // Phase 3 Wikipédia, 2026-10-24 (C2) : tour de vocabulaire des phrases sans règle
+    'lugeur', 'bobeur', 'grimpeur', 'concours complet', 'cavalier de concours complet', 'combiné nordique',
   ],
   'Politique & Droit': [
     'homme politique', 'femme politique', 'personnalité politique', 'politicien', 'politicienne', 'ministre',
@@ -144,6 +176,8 @@ const DOMAINES = {
     'politique dans', 'politique en',
     // Mots manquants de Ranger (2026-10-23) : « organisme » seul est piégé (organismes génétiquement modifiés)
     'organisme public', 'organisme gouvernemental',
+    // P2 : « infraction pénale reconnue dans différents pays » (Corruption de mineur) n'est pas de la Géographie
+    'infraction pénale',
   ],
   'Économie': [
     'homme d\'affaires', 'femme d\'affaires', 'entrepreneur', 'entrepreneuse', 'chef d\'entreprise',
@@ -152,6 +186,8 @@ const DOMAINES = {
     'constructeur automobile', 'compagnie', 'compagnie aérienne', 'compagnie ferroviaire', 'société', 'groupe industriel',
     'chaîne de magasins', 'enseigne', 'brasserie', 'distillerie', 'fabricant', 'éditeur de logiciels',
     'éditeur de jeux vidéo', 'start-up', 'conglomérat', 'centrale thermique', 'centrale nucléaire', 'usine',
+    // Phase 3 Wikipédia, 2026-10-24 (C1) : « l'une des plus grandes mines de nickel » (Ambatovy)
+    'grandes mines',
     'mine', 'monnaie', 'bourse', 'publicitaire', 'publicité', 'restaurateur', 'chef cuisinier', 'cuisinier',
     'cuisinière', 'siège social', 'gastronomie', 'plat', 'recette', 'fromage', 'vin', 'bière', 'boisson',
     'pain', 'pâtisserie', 'gâteau', 'dessert', 'confiserie', 'cuisine', 'spécialité culinaire', 'centre commercial', 'appellation d\'origine', 'épice', 'économie', 'hôtel', 'hôtels', 'chaîne d\'hôtels',
@@ -168,7 +204,7 @@ const DOMAINES = {
     'chroniqueuse', 'éditorialiste', 'reporter', 'youtubeur', 'youtubeuse', 'vidéaste', 'influenceur',
     'influenceuse', 'podcasteur', 'streameur', 'streameuse', 'émission de télévision', 'émission de radio',
     'émission', 'chaîne de télévision', 'station de radio', 'radio', 'journal', 'quotidien',
-    'hebdomadaire', 'magazine', 'revue', 'périodique', 'presse', 'agence de presse', 'site web', 'site internet',
+    'hebdomadaire', 'magazine', 'revue', 'périodique', 'agence de presse', 'site web', 'site internet',
     'réseau social', 'blogueur', 'blogueuse', 'personnalité de la télévision', 'télé-réalité', 'jeu télévisé',
     'humour', 'one-man-show', 'stand-up', 'imitateur', 'imitatrice',
     'miss', 'émetteur', 'audiovisuel',
@@ -176,6 +212,13 @@ const DOMAINES = {
     'média', 'concours de beauté',
     // Suggestions du 2026-10-14 (4e tour)
     'télé', 'tv',
+    // Phase 3 Wikipédia, 2026-10-24 : « presse » seul est retiré (« gaufré par presse », Cuir de Venise) ; restent les emplois du journalisme
+    'presse écrite', 'presse quotidienne', 'presse magazine', 'presse people', 'presse spécialisée', 'presse régionale',
+    'presse nationale', 'presse locale', 'presse en ligne', 'presse gratuite', 'presse d\'information', 'presse hebdomadaire',
+    'presse papier', 'attaché de presse', 'attachée de presse', 'conférence de presse', 'liberté de la presse', 'groupe de presse',
+    'titre de presse', 'patron de presse', 'photographe de presse', 'dessinateur de presse', 'revue de presse',
+    // Phase 3 Wikipédia, 2026-10-24 (R, lot 3) : « magnat de la presse australien », « titre de la presse sportive »
+    'magnat de la presse', 'baron de la presse', 'presse sportive', 'presse satirique', 'presse féminine',
   ],
   'Sciences': [
     'scientifique', 'chercheur', 'chercheuse', 'physicien', 'physicienne', 'chimiste', 'biologiste',
@@ -204,6 +247,10 @@ const DOMAINES = {
     'diffraction', 'fermentation', 'diviseur',
     // Mots manquants de Ranger (2026-10-23) : ⚠ une base de données électorale irait aussi en Sciences
     'base de données',
+    // Phase 3 Wikipédia, 2026-10-24 : « société » seul donne l'Économie (Ethnoprimatologie)
+    'sociétés humaines', 'société humaine',
+    // Phase 3 Wikipédia, 2026-10-24 (C2) : tour de vocabulaire des phrases sans règle : « artère » seul est aussi une rue, donc seulement l'anatomie
+    'géométrie', 'graphe', 'lemniscate', 'artère systémique', 'fournisseur d\'accès',
   ],
   'Espace': [
     'astéroïde', 'galaxie', 'constellation', 'nébuleuse', 'étoile', 'planète', 'exoplanète', 'planète mineure',
@@ -234,6 +281,16 @@ const DOMAINES = {
     'fossil*', 'super-famille', 'nématode', 'opilion', 'psoque', 'eucaryote', 'espace vert',
     // Suggestions du 2026-10-14 (4e tour)
     'quercus', 'dypsis', 'réserve nationale', 'faune', 'sous-classe',
+    // Phase 3 Wikipédia, 2026-10-24 : « mer » seul est de la Géographie (Penilpidia, Actinernus)
+    'concombre de mer', 'concombres de mer', 'anémone de mer', 'anémones de mer', 'séquoia',
+    // Phase 3 Wikipédia, 2026-10-24 (C1) : « tribu de papillons de nuit » est un taxon, pas un peuple (Omopterini)
+    'tribu de papillons',
+    // … et les cyclones : « saison 2004 » ne les range pas en Sport (Tempête tropicale Earl)
+    'tempête tropicale', 'phénomène cyclonique', 'tempête tropicale de la saison 20*', 'phénomène cyclonique de la saison 20*',
+    // Phase 3 Wikipédia, 2026-10-24 (C2) : tour de vocabulaire des phrases sans règle
+    'archée',
+    // Phase 3 Wikipédia, 2026-10-24 (C3) : taxons (« genre de scorpions ») ; « scorpion » seul reste libre : c'est aussi un groupe, un signe, un personnage
+    'cténophore', 'conodonte', 'genre de scorpion', 'famille de scorpion', 'espèce de scorpion',
   ],
   'Histoire': [
     'bataille', 'guerre', 'siège', 'sac de', 'révolution', 'dynastie', 'empire', 'royaume', 'roi', 'reine',
@@ -248,7 +305,7 @@ const DOMAINES = {
     'ancien état', 'histoire', 'historique', 'événement', 'tueur en série', 'criminel', 'criminelle',
     'meurtrier', 'affaire criminelle', 'gangster', 'mafieux', 'espion', 'espionne', 'condottiere',
     'traité de paix', 'sénateur romain', 'consul romain', 'personnalité de la rome antique', 'grec ancien', 'personnage historique',
-    'sultan', 'sultanat', 'khaganat', 'khanat', 'émirat', 'hiéroglyphe', 'peuple', 'peuple autochtone', 'ethnie', 'tribu', 'résistance française', 'camp de concentration', 'mercenaire', 'mercenaires', 'étude et narration du passé',
+    'sultan', 'sultanat', 'khaganat', 'khanat', 'émirat', 'émir', 'hiéroglyphe', 'peuple', 'peuple autochtone', 'ethnie', 'tribu', 'résistance française', 'camp de concentration', 'mercenaire', 'mercenaires', 'étude et narration du passé',
     // Suggestions du 2026-10-13
     // pas de date seule (jour, mois, année) : il faut l'événement, le personnage, le bâtiment… (2026-10-14)
     'chronologie', 'consul', 'tribun', 'doge', 'sénéchal', 'romain', 'révolte', 'soulèvement',
@@ -257,6 +314,8 @@ const DOMAINES = {
     // Suggestions du 2026-10-14 (4e tour) ; pas les mois : seuls, ils ne disent rien,
     // et avec un événement (« guerre », « bataille »…) la carte est déjà rangée
     'char de combat', 'luftwaffe', 'conflit armé', 'clan', 'duché', 'seigneurie', 'offensive', 'chef amérindien',
+    // Phase 3 Wikipédia, 2026-10-24 : le trait d'union cache « amiral » (Friedrich Lützow, « vice-amiral et écrivain militaire »)
+    'vice-amiral', 'contre-amiral',
   ],
   'Religion & Mythes': [
     'mythologie', 'personnage de la mythologie', 'homme d\'église', 'femme d\'église', 'dieu', 'déesse', 'divinité', 'saint', 'sainte', 'pape',
@@ -271,6 +330,8 @@ const DOMAINES = {
     'gourou', 'sikhisme', 'bouddh*', 'soufisme', 'islam', 'aumônier', 'kabbale', 'concile', 'confucianisme',
     // Suggestions du 2026-10-13 (3e tour)
     'marie de nazareth', 'procession', 'musulman', 'buddha',
+    // Phase 3 Wikipédia, 2026-10-24 (C2) : tour de vocabulaire des phrases sans règle
+    'antipape',
   ],
   'Géographie': [
     'commune', 'village', 'ville', 'municipalité', 'localité', 'hameau', 'lieu-dit', 'département',
@@ -291,6 +352,12 @@ const DOMAINES = {
     'sous-préfecture',
     // Suggestions du 2026-10-14 (4e tour)
     'río', 'étang', 'récif', 'caverne', 'township', 'socken', 'amt', 'porte de paris', 'section de',
+    // Phase 3 Wikipédia, 2026-10-24 : « paroisse » seule reste religieuse (ici : Irlande, Groenland)
+    'townland', 'paroisse civile', 'fjord',
+    // Phase 3 Wikipédia, 2026-10-24 (C1) : le pluriel (« huit paroisses civiles »)
+    'paroisses civiles',
+    // … et P2 : leur sujet est un lieu même quand le seul autre mot de lieu est un LIEUX_GENERIQUES tardif (Okroug municipal, Côte de Jor)
+    'division municipale', 'site naturel',
   ],
   'Patrimoine': [
     'château', 'château fort', 'monument', 'monument historique', 'musée', 'cathédrale', 'chapelle', 'abbaye',
@@ -318,6 +385,8 @@ const DOMAINES = {
     'chemins de fer',
     // Suggestions du 2026-10-13 (3e tour)
     'chariot', 'aéronaval',
+    // Phase 3 Wikipédia, 2026-10-24 (C2) : tour de vocabulaire des phrases sans règle
+    'patrouilleur', 'berline',
   ],
   'Fiction & Jeux': [
     'personnage de fiction', 'personnage', 'de fiction', 'fictif', 'fictive', 'univers de fiction',
@@ -402,6 +471,28 @@ const PAS_SUGGERER = [
   'uruguayen', 'vénézuélien', 'vietnamien', 'wallon',
 ];
 
+// Expressions que le moteur ne lit pas du tout (elles contiennent un mot de DOMAINES employé dans un autre sens).
+// « en général » n'est pas un général de l'armée ; « Password Hashing Competition » est un nom propre, pas du Sport.
+// Phase 3 Wikipédia, 2026-10-24.
+const PHRASES_NEUTRES = [
+  'en général', 'plus général', 'sens général', 'password hashing competition',
+  // C1 : le verbe « désigner » n'est pas « designer » (le moteur ignore les accents) ; « montagnes russes » n'est pas de la Géographie
+  'pour désigner', 'à désigner', 'de désigner', 'montagnes russes',
+];
+// …sauf quand l'expression est suivie de l'un de ces bouts : « promu en général de brigade » est bien un grade de l'armée
+// (R, lot 3, 2026-10-24).
+const NEUTRES_SAUF_SUIVI_DE = ['de brigade', 'de division', 'd\'armée', 'de corps'];
+
+// Mots de lieu trop généraux pour être le sujet d'une phrase Wikipédia quand ils arrivent tard dans la phrase
+// (« …dans le comté de Cavan, en Irlande », « …né dans le 8e arrondissement de Paris »). Seulement pour les phrases
+// Wikipédia (jamais les descriptions de cartes) : au début de la phrase (« village de la région de… »), le mot compte comme
+// d'habitude ; ailleurs, il ne range la carte que si un autre mot du même domaine le confirme.
+// Chaque mot doit exister dans DOMAINES. Phase 3 Wikipédia, 2026-10-24.
+const LIEUX_GENERIQUES = [
+  'ville', 'comté', 'comtés', 'mer', 'province', 'quartier', 'arrondissement', 'région', 'pays', 'état du', 'état des',
+  'département', 'district', 'canton', 'commune', 'capitale', 'territoire', 'océan', 'île', 'îles',
+];
+
 // Collections personnelles : la carte reçoit l'étiquette si TOUS les groupes
 // ont au moins un mot présent.
 const COLLECTIONS = [
@@ -427,6 +518,28 @@ const MOTIFS_DE_TITRE = [
 
 const MAX_DOMAINES = 5;
 const A_TRAITER = '!À traiter';
+
+// Réglages de la lecture dans Wikipédia (Ranger). Ce sont des nombres : change-les ici, nulle part ailleurs.
+// Modifier UN réglage fait relire toutes les cartes sans étiquette au prochain Ranger (voulu : les cartes déjà vues
+// sont reclassées avec le nouveau réglage).
+const REGLAGES = {
+  wikipedia: {
+    lot: 20,                  // titres demandés par requête : limite de Wikipédia (20 extraits renvoyés au plus), ne pas changer
+    extrait: 500,             // caractères d'introduction demandés par article : limite de Wikipédia, ne pas changer
+    pauseMs: 1000,            // pause entre deux requêtes (environ une par seconde)
+    tentativesTitre: 3,       // un titre qui disparaît de la réponse est redemandé, 3 fois au plus
+    essaisAppel: 3,           // une requête en erreur 429 ou 5xx est refaite, 3 fois au plus
+    delaiEssaisMs: 3000,      // attente entre deux essais d'une requête en erreur
+    retenteJours: 30,         // un titre absent ou sans résumé exploitable est retenté après ce nombre de jours
+    essai: 40,                // « Essai Wikipédia » : les 40 premières cartes concernées seulement
+    fenetreVerbe: 300,        // « est un / une / le / la » est cherché dans les 300 premiers caractères de l'extrait
+    longueurPhrase: 250,      // longueur au plus du morceau de phrase gardé
+    repli: 150,               // coupe au dernier espace avant 250, sans descendre sous ce nombre de caractères
+    secondDomaineMots: 3,     // dans une phrase Wikipédia, un second domaine n'est gardé que si son mot est parmi les 3 premiers mots
+    lieuGeneriqueMots: 5,     // dans une phrase Wikipédia, un mot de LIEUX_GENERIQUES après les 5 premiers mots ne range pas la carte
+    precisionMinimale: 0.95,  // précision exigée de la référence par `npm run essai` et les tests ; relevée à chaque amélioration, cible 0.95 (docs/suivi-wikipedia.md)
+  },
+};
 
 // ═══════════════════════════════════════════════════════════════════
 //  MOTEUR DE CLASSEMENT — pas besoin d'y toucher
@@ -476,6 +589,12 @@ const INDEX = buildIndex();
 // Analyse un texte : renvoie les correspondances avec leur position.
 const scan = (text, onlyAtStart = false) => {
   let work = norm(text);
+  // les expressions de PHRASES_NEUTRES sont effacées (même longueur : les positions ne changent pas)
+  const sauf = NEUTRES_SAUF_SUIVI_DE.map((s) => norm(s).replace(/ /g, '\\s+')).join('|');
+  for (const p of PHRASES_NEUTRES) {
+    const re = new RegExp('(?<![a-z0-9])' + norm(p).replace(/ /g, '\\s+') + '(?![a-z0-9])' + (sauf ? '(?!\\s+(?:' + sauf + ')(?![a-z0-9]))' : ''), 'g');
+    work = work.replace(re, (m) => ' '.repeat(m.length));
+  }
   const hits = [];
   for (const e of INDEX) {
     e.re.lastIndex = 0;
@@ -489,9 +608,30 @@ const scan = (text, onlyAtStart = false) => {
   return hits.sort((a, b) => a.pos - b.pos);
 };
 
-// Classe une carte { t: titre, d: description }.
+// Analyse une phrase venue de Wikipédia (jamais une description de carte). Elle dit d'abord ce qu'est la carte :
+// le premier domaine reste toujours, un domaine suivant ne reste que si son mot est parmi les REGLAGES.wikipedia.secondDomaineMots
+// premiers mots de la phrase (« …dirigée par l'écrivain et explorateur Christian Clot » : explorateur est un détail, pas un domaine).
+// Une seule fonction pour Ranger (planAvecPhrase) et pour la mesure (classerPhrase), via classer(carte, true).
+const motsAvant = (texte, pos) => (norm(texte).slice(0, pos).match(/[a-z0-9]+/g) || []).length;
+// Un mot de LIEUX_GENERIQUES loin dans la phrase (après les REGLAGES.wikipedia.lieuGeneriqueMots premiers mots) n'est pas
+// le sujet de la carte : « …né dans le 8e arrondissement de Paris » ne range pas en Géographie. Au début, il reste.
+// Si c'était le premier mot de domaine de la phrase, il n'y a plus de « premier domaine » à garder : tout mot suivant doit
+// alors être parmi les premiers mots (sinon un détail tardif deviendrait le sujet : « …à 5 km de la ville d'El Jadida, constituée de résidences »).
+const lieuxGeneriques = new Set(LIEUX_GENERIQUES.map(norm));
+const scanPhrase = (phrase) => {
+  const tous = scan(phrase);
+  const premier = tous.find((h) => h.kind === 'sur');
+  return tous.filter((h) => {
+    if (h.kind !== 'sur') return true;
+    const rang = motsAvant(phrase, h.pos);
+    if (lieuxGeneriques.has(norm(h.kw)) && rang >= REGLAGES.wikipedia.lieuGeneriqueMots) return false;
+    return h === premier || rang < REGLAGES.wikipedia.secondDomaineMots;
+  });
+};
+
+// Classe une carte { t: titre, d: description }. `deWikipedia` : d est une phrase Wikipédia (voir scanPhrase).
 // Renvoie { etiquettes: [...], statut: 'classee'|'a_traiter'|'ignoree'|'inconnue', source, mots }.
-const classer = (carte) => {
+const classer = (carte, deWikipedia = false) => {
   // le titre : la parenthèse d'abord (« Cherry (film, 2021) »)
   const titre = () => {
     const paren = (carte.t.match(/\(([^)]*)\)/) || [])[1] || '';
@@ -511,7 +651,7 @@ const classer = (carte) => {
   };
   let hits, source;
   if (carte.d && carte.d.trim()) {
-    hits = scan(carte.d); source = 'description';
+    hits = deWikipedia ? scanPhrase(carte.d) : scan(carte.d); source = 'description';
     // description sans domaine (et pas une page à ignorer) : le titre en secours (« Miss Moldavie — concours de beauté »)
     if (!hits.some((h) => h.kind === 'sur' || h.kind === 'ignore')) {
       const t = titre();
@@ -1131,8 +1271,8 @@ const contientMot = (c, mots) => { const t = norm(c.d + ' ' + c.t); return mots.
 const estMarquee = (c) => (c.tags || []).includes(A_TRAITER);
 
 // Étiquettes finales d'une carte, avec ses anciennes étiquettes éventuelles.
-const planCarte = (c, anciennes = []) => {
-  const r = classer(c);
+const planCarte = (c, anciennes = [], deWikipedia = false) => {
+  const r = classer(c, deWikipedia);
   const domDesc = r.etiquettes.filter((e) => DOMAINES[e]);
   const coll = r.etiquettes.filter((e) => !DOMAINES[e] && e !== A_TRAITER);
   const domAnc = [], gestion = [];
@@ -1551,13 +1691,19 @@ const resumePlan = (cartes, plans) => {
 // ═══════════════════════════════════════════════════════════════════
 
 const WIKI_API = 'https://fr.wikipedia.org/w/api.php';
-const WIKI_LOT = 20; // Wikipédia accepte 50 titres mais ne renvoie que 20 extraits par requête
-const WIKI_PAUSE = 1000; // environ une requête par seconde, en série
-const WIKI_TENTATIVES = 3; // un titre qui disparaît de la réponse est redemandé, 3 fois au plus
-const WIKI_RETENTE = 30 * 24 * 3600e3; // un titre absent ou sans résumé exploitable est retenté après 30 jours
-const WIKI_ESSAI = 40; // « Essai Wikipédia » : les 40 premières cartes concernées seulement
+const WIKI = REGLAGES.wikipedia; // les nombres se règlent dans regles.js (REGLAGES), pas ici
+const WIKI_LOT = WIKI.lot; // Wikipédia accepte 50 titres mais ne renvoie que 20 extraits par requête
+const WIKI_PAUSE = WIKI.pauseMs; // environ une requête par seconde, en série
+const WIKI_TENTATIVES = WIKI.tentativesTitre; // un titre qui disparaît de la réponse est redemandé, 3 fois au plus
+const WIKI_RETENTE = WIKI.retenteJours * 24 * 3600e3; // un titre absent ou sans résumé exploitable est retenté après 30 jours
+const WIKI_ESSAI = WIKI.essai; // « Essai Wikipédia » : les 40 premières cartes concernées seulement
 const WIKI_EST = /(?<![\p{L}\p{N}'’-])est\s+(?:un|une|le|la)\s+/iu;
-const WIKI_ADJECTIFS = /^(?:premier|première|ancien|ancienne|dernier|dernière|seul|seule|unique)\s+/i;
+// À défaut de « est un/une/le/la » : un autre verbe de définition (« étaient », « fut », « sont », « a été », « forment »,
+// « constituent », « désigne ») SUIVI D'UN ARTICLE (obligatoire : « est né », « fut brièvement comte », « a été fondée » ne
+// définissent rien), ou « est / sont l'une des… ». L'article doit être un mot entier (« la » n'est pas « laïque »).
+const WIKI_EST_ELARGI = new RegExp("(?<![\\p{L}\\p{N}'’-])(?:(?:est|sont)\\s+l['’]une?\\s+des\\s+"
+  + "|(?:était|étaient|fut|furent|sont|a\\s+été|ont\\s+été|forment|constituent|désigne)\\s+(?:l['’]une?\\s+des\\s+|(?:un|une|le|la|les|des|deux|trois)(?![\\p{L}\\p{N}])\\s*|l['’](?=\\p{L})))", 'iu');
+const WIKI_ADJECTIFS =/^(?:premier|première|ancien|ancienne|dernier|dernière|seul|seule|unique)\s+/i;
 const WIKI_ABREVIATIONS = new Set(['av', 'apr', 'env', 'etc', 'jr', 'sr', 'st', 'ste', 'mr', 'dr', 'ca', 'cf', 'vol', 'no', 'hab', 'éd']);
 const nfc = (s) => String(s || '').normalize('NFC').trim();
 
@@ -1572,14 +1718,16 @@ const finDePhrase = (t) => {
 };
 // Ce qui suit le PREMIER « est un / une / le / la » (dans les ~300 premiers caractères), l'adjectif d'ouverture sauté,
 // sur environ 250 caractères au plus et jusqu'à la fin de la phrase. Pas de « est un… » : null, la carte reste telle quelle.
+// (300, 250 et 150 : REGLAGES.wikipedia.fenetreVerbe, longueurPhrase et repli.)
 const morceauWikipedia = (extrait) => {
   const txt = String(extrait || '').replace(/\s+/g, ' ').trim();
-  const m = WIKI_EST.exec(txt);
-  if (!m || m.index > 300) return null;
+  let m = WIKI_EST.exec(txt);
+  if (!m || m.index > WIKI.fenetreVerbe) m = WIKI_EST_ELARGI.exec(txt);
+  if (!m || m.index > WIKI.fenetreVerbe) return null;
   let reste = txt.slice(m.index + m[0].length);
   for (let a; (a = WIKI_ADJECTIFS.exec(reste));) reste = reste.slice(a[0].length);
   let morceau = reste.slice(0, finDePhrase(reste));
-  if (morceau.length > 250) morceau = morceau.slice(0, Math.max(morceau.lastIndexOf(' ', 250), 150));
+  if (morceau.length > WIKI.longueurPhrase) morceau = morceau.slice(0, Math.max(morceau.lastIndexOf(' ', WIKI.longueurPhrase), WIKI.repli));
   morceau = morceau.replace(/[\s.,;:]+$/, '');
   return morceau || null;
 };
@@ -1602,14 +1750,14 @@ const concerneeWiki = (c) => {
 // Une requête : jusqu'à 20 titres. Lève une erreur si l'appel est bloqué (réseau, CSP, CORS) ou si Wikipédia répond en erreur.
 const appelWikipedia = async (titres) => {
   const url = WIKI_API + '?action=query&format=json&redirects=1&prop=extracts%7Cpageprops&ppprop=disambiguation&exintro=1&explaintext=1'
-    + '&exchars=500&origin=*&titles=' + encodeURIComponent(titres.join('|'));
+    + '&exchars=' + WIKI.extrait + '&origin=*&titles=' + encodeURIComponent(titres.join('|'));
   let r;
-  for (let essai = 1; essai <= 3; essai++) {
+  for (let essai = 1; essai <= WIKI.essaisAppel; essai++) {
     arret();
     mesurer((m) => { m.requetes++; });
     r = await fetch(url);
     if (r.ok || (r.status < 500 && r.status !== 429)) break;
-    if (essai < 3) await sleep(3000);
+    if (essai < WIKI.essaisAppel) await sleep(WIKI.delaiEssaisMs);
   }
   if (!r.ok) throw new Error('Wikipédia a répondu en erreur (' + r.status + ')');
   const j = await r.json();
@@ -1714,7 +1862,17 @@ const mesurer = (f) => {
   }
 };
 const CAUSES_WIKIPEDIA = ['classee', 'titre-absent', 'homonymie', 'extrait-vide-ou-stub', 'pas-de-est-un',
-  'phrase-sans-regle', 'phrase-ambigue', 'non-lue-essai', 'appel-bloque', 'redirection'];
+  'phrase-sans-regle', 'phrase-ambigue', 'non-lue-essai', 'appel-bloque', 'redirection', 'page-ignoree'];
+// Une page de dates (« 1869 en France », « 18 octobre 1965 ») : sa définition dit l'année ou le jour, jamais un sujet. Elle n'est pas un
+// échec de la lecture : la mesure la sort du dénominateur de la couverture (C4). Changement de MESURE, pas de classement.
+const MOIS_DATE = 'janvier|février|mars|avril|mai|juin|juillet|août|septembre|octobre|novembre|décembre';
+const pageDeDate = (titre, texte) => {
+  const t = nfc(titre), x = nfc(texte).replace(/\s+/g, ' ');
+  return new RegExp('^(?:\\d{1,2}(?:er)? )?(?:' + MOIS_DATE + ') \\d{3,4}(?: (?:en|au|aux) .+)?$', 'iu').test(t) // « 18 octobre 1965 », « Septembre 2008 en France »
+    || /^\d{3,4} (?:en|au|aux|dans) \S/u.test(t) // « 1869 en France »
+    || /^(?:cette page|cet article) (?:concerne|présente|traite|reprend|recense) .{0,80}?(?:l['’]année \d|événements?|évènements?|faits? marquants?)/iu.test(x)
+    || /\b\d+(?:er|e|ème) jour de l['’]année\b/iu.test(x); // « 291e jour de l'année 1965 »
+};
 const court = (s, n = 250) => (s.length > n ? s.slice(0, n - 1) + '…' : s);
 const noterLuWikipedia = (q, t) => {
   const vers = (liste, x) => { const r = (liste || []).find((y) => y.from === x); return r ? r.to : x; };
@@ -1730,7 +1888,7 @@ const estEbauche = (titre, extrait) => {
 };
 // Le moteur sur une phrase Wikipédia, comme Ranger (planAvecPhrase) : la phrase tient lieu de description.
 const classerPhrase = (c, phrase) => {
-  const w = classer({ ...c, d: phrase });
+  const w = classer({ ...c, d: phrase }, true);
   const cause = w.statut === 'classee' ? 'classee' : w.statut === 'a_traiter' ? 'phrase-ambigue' : 'phrase-sans-regle';
   return { cause, domaines: cause === 'classee' ? w.etiquettes.filter((x) => DOMAINES[x]) : [], mots: [...w.mots] };
 };
@@ -1738,8 +1896,9 @@ const classerPhrase = (c, phrase) => {
 const causeWikipedia = (c, e) => {
   if (!e || e.absent) return { cause: 'titre-absent', domaines: [] };
   if (e.homonymie) return { cause: 'homonymie', domaines: [] };
+  if (pageDeDate(c.t, e.extrait)) return { cause: 'page-ignoree', domaines: [] };
   const phrase = morceauWikipedia(e.extrait);
-  if (!phrase) return { cause: estEbauche(c.t, e.extrait) ? 'extrait-vide-ou-stub' : 'pas-de-est-un', domaines: [], extrait: court(nfc(e.extrait).replace(/\s+/g, ' ')) };
+  if (!phrase) return { cause: estEbauche(c.t, e.extrait) ? 'extrait-vide-ou-stub' : 'pas-de-est-un', domaines: [], extrait: court(nfc(e.extrait).replace(/\s+/g, ' '), WIKI.extrait) }; // tout l'extrait (500), pour rejouer l'extraction hors navigateur
   return { phrase: court(phrase), ...classerPhrase(c, phrase) };
 };
 // Juste si au moins un domaine attendu est proposé et rien hors des attendus et acceptables ; attendu vide : rien ne doit être proposé.
@@ -1754,12 +1913,13 @@ const taux = (a, b) => (b ? Math.round((a / b) * 1000) / 1000 : null);
 const bilanWikipedia = (cartes, verite = null) => {
   const parCause = Object.fromEntries(CAUSES_WIKIPEDIA.map((k) => [k, 0]));
   for (const c of cartes) parCause[c.cause] = (parCause[c.cause] || 0) + 1;
-  const lues = cartes.filter((c) => c.cause !== 'non-lue-essai').length;
+  const pagesIgnorees = parCause['page-ignoree']; // C4 : hors du dénominateur, comme les non-lues
+  const lues = cartes.filter((c) => c.cause !== 'non-lue-essai' && c.cause !== 'page-ignoree').length;
   const couverture = { classees: parCause.classee, lues, taux: taux(parCause.classee, lues) };
-  if (!verite) return { parCause, couverture, precision: null };
+  if (!verite) return { parCause, couverture, pagesIgnorees, precision: null };
   const verifiees = cartes.filter((c) => c.cause === 'classee' && verite[nfc(c.titre)]);
   const justes = verifiees.filter((c) => jugerWikipedia(c.domaines, verite[nfc(c.titre)]) === 'juste').length;
-  return { parCause, couverture, precision: verifiees.length ? { verifiees: verifiees.length, justes, taux: taux(justes, verifiees.length) } : null };
+  return { parCause, couverture, pagesIgnorees, precision: verifiees.length ? { verifiees: verifiees.length, justes, taux: taux(justes, verifiees.length) } : null };
 };
 const rapportWikipedia = (concernees, lues, m, echec, essai, debut) => {
   const lus = new Set(lues.map(cle)), vus = new Set(), cartes = [];
@@ -1808,13 +1968,26 @@ const wikiAReprendre = () => {
   return !!r && (r.raison === 'essai' ? !store.get('wiki_essai', true) : r.version !== VERSION);
 };
 
+// Le plan d'une carte avec sa phrase Wikipédia (voir preparerRanger plus bas). Défini ici, avant EMPREINTE_REGLES qui le lit.
+const planAvecPhrase = (c, phrases) => {
+  const p = planCarte(c);
+  const phrase = phrases[cle(c)];
+  if (!phrase) return p;
+  const w = planCarte({ ...c, d: phrase }, [], true);
+  // la phrase ne sert que si elle range la carte, ou si elle la rend « à traiter » alors qu'elle n'avait rien
+  return w.statut === 'classee' || (w.statut === 'a_traiter' && p.statut === 'inconnue') ? { ...w, phrase } : p;
+};
+
 // ── Mode Ranger : les nouvelles cartes sans étiquette ──
 // Le script retient la date de la dernière carte rangée et ne relit que les cartes obtenues depuis.
 // La dernière lecture est sauvegardée : après un rechargement de la page, on peut la reprendre.
 // Si les règles ont changé depuis cette date (nouvelle version, regles.js modifié), toutes les cartes
 // sans étiquette sont relues : les anciennes que les nouvelles règles savent ranger ne restent pas de côté.
+// L'empreinte couvre aussi tout le code qui décide du classement d'après Wikipédia (extraction du morceau, cartes concernées,
+// plan avec phrase) : l'améliorer fait relire les cartes déjà vues. Test : « EMPREINTE_REGLES : tout le code… Wikipédia ».
 const EMPREINTE_REGLES = (() => {
-  const s = JSON.stringify([DOMAINES, AMBIGUS, IGNORER, COLLECTIONS, SEULEMENT_EN_PREMIER, MOTIFS_DE_TITRE, MAX_DOMAINES, A_TRAITER, FEMININS]) + classer + scan + kwRegex;
+  const s = JSON.stringify([DOMAINES, AMBIGUS, IGNORER, PHRASES_NEUTRES, LIEUX_GENERIQUES, COLLECTIONS, SEULEMENT_EN_PREMIER, MOTIFS_DE_TITRE, MAX_DOMAINES, A_TRAITER, FEMININS, REGLAGES, NEUTRES_SAUF_SUIVI_DE]) + classer + scan + scanPhrase + motsAvant + kwRegex
+    + morceauWikipedia + finDePhrase + planAvecPhrase + concerneeWiki + WIKI_EST + WIKI_EST_ELARGI + WIKI_ADJECTIFS + [...WIKI_ABREVIATIONS].join();
   let h = 2166136261;
   for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619) >>> 0;
   return h.toString(36);
@@ -1875,14 +2048,6 @@ const lireMarquees = async () => {
 // neuves : cartes sans étiquette ; marquees : cartes !À traiter que les règles rangent maintenant (domaine puis retrait).
 // phrases : { clé de carte → phrase Wikipédia } ; le plan d'une carte à phrase est calculé avec la phrase comme description,
 // mais reste rangé sous la clé de la carte réelle (description vide), la seule qu'on retrouve sur le site.
-const planAvecPhrase = (c, phrases) => {
-  const p = planCarte(c);
-  const phrase = phrases[cle(c)];
-  if (!phrase) return p;
-  const w = planCarte({ ...c, d: phrase });
-  // la phrase ne sert que si elle range la carte, ou si elle la rend « à traiter » alors qu'elle n'avait rien
-  return w.statut === 'classee' || (w.statut === 'a_traiter' && p.statut === 'inconnue') ? { ...w, phrase } : p;
-};
 const preparerRanger = (cartes, depuis, phrases = {}) => {
   const plans = new Map(cartes.map((c) => [cle(c), planAvecPhrase(c, phrases)]));
   const cibles = cartes.filter((c) => plans.get(cle(c)).tags.length);
@@ -2401,7 +2566,7 @@ if (window.__WMR_TEST__ || store.get('debug', false)) {
     classer, planCarte, norm, cle, store, cartesDom, lireCarte, pageInfo,
     lireVue, lireApi, parcourirVue, changerPage, choisirFiltre, choisirTri, listerEtiquettes,
     modeSelection, poserEtiquette, appliquerSurPage, appliquerRanger, modeRanger, modeMigration, motsGroupes, rechercher,
-    supprimerEtiquette, rapportSuppression, suggestions, morceauWikipedia, monterUI, ui: () => ui, stop: () => { STOP = true; },
+    supprimerEtiquette, rapportSuppression, suggestions, morceauWikipedia, pageDeDate, monterUI, ui: () => ui, stop: () => { STOP = true; },
     // mesure Wikipédia, aussi pour scripts/essai-wikipedia.js
     CAUSES_WIKIPEDIA, causeWikipedia, classerPhrase, jugerWikipedia, bilanWikipedia, jsonRapport, VERSION,
   };
