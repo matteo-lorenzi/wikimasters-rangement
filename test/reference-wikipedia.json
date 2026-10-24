@@ -1,6 +1,6 @@
 {
  "description": "Vérité pour npm run essai (scripts/essai-wikipedia.js) : cartes réelles, phrase Wikipédia lue par Ranger, domaines attendus. Juste = au moins un domaine de « attendu » proposé, et aucun domaine hors de « attendu » et « acceptables ». « attendu » vide : rien ne doit être proposé.",
- "source": "97 cartes : 23 cartes classées de l'essai fait par la personne le 2026-10-23 (v1.9.9), 3 cas sans classement attendu, et 60 cartes classées tirées au hasard (graine 24, tirage de scripts jetables) du rapport réel de la personne du 2026-10-24 (699 cartes, v1.9.12). Un domaine tolérable mais pas idéal est dans « acceptables ».",
+ "source": "104 cartes : 23 cartes classées de l'essai fait par la personne le 2026-10-23 (v1.9.9), 3 cas sans classement attendu, et 60 cartes classées tirées au hasard (graine 24, tirage de scripts jetables) du rapport réel de la personne du 2026-10-24 (699 cartes, v1.9.12). Un domaine tolérable mais pas idéal est dans « acceptables ».",
  "statut": "« attendu » et « acceptables » = jugement de Claude, à valider par la personne (surtout les 60 cartes du 2026-10-24).",
  "cartes": [
   {"titre":"K-186 Omsk","phrase":"sous-marin nucléaire lanceur de missiles de croisière du Projet 949A « Anteï » (code OTAN : classe Oscar-II), appartenant à la Flotte du Pacifique de la Marine soviétique puis de la Marine russe","attendu":["Transports"]},
@@ -99,6 +99,13 @@
   {"titre":"Spolvero","phrase":"terme italien (dérivé de polvere, « poudre ») qui désigne une technique de transfert d'un dessin préparatoire sur le support de la composition picturale","attendu":["Arts"]},
   {"titre":"Gentilés du Maroc","phrase":"nom donné aux habitants d'un lieu, un pays, un continent, une région, une province, etc. Maroc (le) : Marocain, Marocains, Marocaine, Marocaines ; adjectif : marocain, marocains, marocaine, marocaines et maroco- en composition ; glottonyme : marocain","attendu":["Géographie"],"acceptables":["Sciences"]},
   {"titre":"Argon2","phrase":"fonction de dérivation de clé, gagnante de la Password Hashing Competition en juillet 2015","attendu":["Sciences"]},
-  {"titre":"Tempête tropicale Earl (2004)","phrase":"5e phénomène cyclonique de la saison 2004 dans l'Atlantique nord","attendu":["Nature"]}
+  {"titre":"Tempête tropicale Earl (2004)","phrase":"5e phénomène cyclonique de la saison 2004 dans l'Atlantique nord","attendu":["Nature"]},
+  {"titre":"Okroug municipal","phrase":"division municipale présente dans certains sujets russes et certaines villes d'importance fédérale en Russie","attendu":["Géographie"]},
+  {"titre":"Corruption de mineur","phrase":"infraction pénale reconnue dans différents pays qui consiste à profiter de la jeunesse d'une personne mineure pour l'initier au vice","attendu":["Politique & Droit"]},
+  {"titre":"Bibliothèque d'Arabianranta","phrase":"bibliothèque de la section Arabianranta du quartier de Toukola à Helsinki en Finlande","attendu":["Patrimoine"]},
+  {"titre":"Côte de Jor","phrase":"site naturel français situé en Périgord noir, dans le département de la Dordogne, sur la commune de Saint-Léon-sur-Vézère","attendu":["Géographie"]},
+  {"titre":"Tharp's Log","phrase":"tronc de séquoia géant dans le comté de Tulare, en Californie, dans l'ouest des États-Unis","attendu":["Nature"],"acceptables":["Géographie"]},
+  {"titre":"Sokho","phrase":"nom de plusieurs villes de l'Israël antique mentionnées dans le Tanakh, par Hazal ou par d'autres sources","attendu":["Géographie"],"acceptables":["Histoire"]},
+  {"titre":"Chef de l'opposition officielle (Colombie-Britannique)","phrase":"membre de l'Assemblée législative de la province canadienne de Colombie-Britannique qui dirige le parti reconnu d'Opposition officielle","attendu":["Politique & Droit"]}
  ]
 }

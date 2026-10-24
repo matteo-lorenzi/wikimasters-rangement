@@ -140,6 +140,16 @@ Objectif : précision >= 95 % (couverture 72-75 %) de Wikipédia dans Ranger. Su
 - Chiffres : 328 tests, 33 mutations ; couverture sur le rapport de 699 cartes : 442 / 699 = 63,2 % (inchangée).
 - Suite : corriger les 14 fausses de la référence (mots responsables dans `npm run essai`), puis la couverture.
 
+### Phase 3 Wikipédia (lot 2) — branche `claude/wiki-p3-precision` (depuis `claude/wiki-p3-mesure`, version et `dist` non touchées)
+
+Précision de la référence : 83,1 % -> **95,7 %** (89 / 93 sur 104 cartes), `precisionMinimale` = 0,95 (cible atteinte). Couverture sur le rapport de 699 cartes : 63,2 % -> 61,7 % (442 -> 431 ; les pertes sont surtout des cartes fausses). Détail et chiffres avant/après de chaque tâche : `docs/suivi-wikipedia.md`.
+- **P3** : corrections de mots ciblées (cartes réelles dans `test/classement.test.js`, bloc « Phase 3 Wikipédia, 2026-10-24 »). Nouveau `PHRASES_NEUTRES` dans `regles.js` : expressions effacées avant la lecture (« en général », « plus général », « Password Hashing Competition »). `presse` seul est retiré (restent « presse écrite », « agence de presse »…), `composition` devient `composition musicale`. Limite connue : `compétition` seul reste en Sport (seul le nom propre ci-dessus est neutralisé).
+- **P1** : `scanPhrase` (`regles.js`), appelée par `classer(carte, true)`, utilisée par `planAvecPhrase` (Ranger) ET `classerPhrase` (mesure) : le premier domaine d'une phrase Wikipédia reste, un domaine suivant ne reste que si son mot est dans les `REGLAGES.wikipedia.secondDomaineMots` = 3 premiers mots. Jamais appliqué aux descriptions de cartes. N=2 donne autant que N=3 ; N=5 est moins précis (92,1 %). Aucun test « Classées d'après Wikipédia » de `page.test.js` n'a dû changer (aucun ne reposait sur un second domaine tardif).
+- **P2** : `LIEUX_GENERIQUES` (`regles.js`) : dans une phrase Wikipédia, un de ces mots après les `REGLAGES.wikipedia.lieuGeneriqueMots` = 5 premiers mots ne range plus la carte. S'il était le premier mot de domaine de la phrase, un mot suivant tardif n'est pas promu sujet (la carte devient « à traiter »). 5 plutôt que 3 : Sokho (« nom de plusieurs villes ») est gardée, et la perte de couverture reste sous 1 point.
+- Chiffres : 381 tests, 55 mutations. `EMPREINTE_REGLES` contient `PHRASES_NEUTRES`, `LIEUX_GENERIQUES`, `scanPhrase`, `motsAvant` et `REGLAGES` (les cartes déjà vues seront relues au prochain Ranger).
+- Reste faux dans la référence : Pilot chart (« domaine » en Patrimoine), Ali ben Hammud al-Nasir (« calife » en Religion), Téti (« fonctionnaire » avant « roi »), Ethnoprimatologie (Sciences au lieu de Nature). Cartes du rapport à regarder : Première Nation Oromocto (classée Géographie par « province » au 6e mot).
+- Suite : un nouveau rapport avec la version qui garde l'extrait sur 500 caractères (pour mesurer l'extraction : 142 cartes « pas de est un », 72 sans règle) ; faire valider la référence (104 cartes, jugées par Claude) par la personne.
+
 ## Questions en suspens
 
 Chacune avec le contexte et la recommandation à proposer. Ne pas trancher à la place de la personne.

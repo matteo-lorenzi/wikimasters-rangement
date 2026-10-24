@@ -326,6 +326,22 @@ const PHRASES = [
   ['Fares Maakaroun', "prélat de l'Église grecque-catholique melkite, éparque de l'éparchie Notre-Dame du Paradis de São Paulo des Melkites au Brésil de 1999 à 2014", ['Religion & Mythes']], // église : 4e mot
   // « vice-amiral » : le trait d'union cache « amiral » (comme « artiste-peintre »), sinon « écrivain » devenait le premier domaine
   ['Friedrich Lützow', 'vice-amiral et écrivain militaire allemand', ['Histoire']],
+  // P2 : un lieu générique (LIEUX_GENERIQUES : ville, arrondissement, quartier, pays, province, comté…) loin dans la phrase n'est pas le sujet
+  ['Léon Volterra', 'homme de spectacle français, producteur de spectacles, directeur de salles, né le 10 mars 1888 dans le 8e arrondissement de Paris et mort le 5 juin 1949 dans le 16e arrondissement de la même ville', ['Arts']],
+  ['Corruption de mineur', "infraction pénale reconnue dans différents pays qui consiste à profiter de la jeunesse d'une personne mineure pour l'initier au vice", ['Politique & Droit']],
+  ["Bibliothèque d'Arabianranta", 'bibliothèque de la section Arabianranta du quartier de Toukola à Helsinki en Finlande', []],
+  ["Chef de l'opposition officielle (Colombie-Britannique)", "membre de l'Assemblée législative de la province canadienne de Colombie-Britannique qui dirige le parti reconnu d'Opposition officielle", ['!À traiter']],
+  ['Penilpidia', 'genre de concombres de mer des abysses, de la famille des Elpidiidae', ['Nature']],
+  // sans « premier domaine » (le lieu tardif est retiré), un mot suivant tardif ne devient pas le sujet : la carte reste à traiter
+  ['Sidi Bouzid (Maroc)', "station balneaire à 5 km de la ville d'El jadida, elle est constituée de résidences secondaires d'un ensemble de bungalows, d'un club de vacances, de restaurants et théâtre en plein air", ['!À traiter']],
+  // … mais un lieu au début de la phrase reste le sujet, et les autres mots de lieu de la carte ne disparaissent pas
+  ['Zaghalti (Latchine)', 'village de la région de Latchine en Azerbaïdjan', ['Géographie']],
+  ['Okroug municipal', "division municipale présente dans certains sujets russes et certaines villes d'importance fédérale en Russie", ['Géographie']],
+  ['Côte de Jor', 'site naturel français situé en Périgord noir, dans le département de la Dordogne, sur la commune de Saint-Léon-sur-Vézère', ['Géographie']],
+  ['Perlerfiup Kangerlua', "fjord de la municipalité d'Avannaata dans le nord-ouest du Groenland", ['Géographie']],
+  ['Sokho', "nom de plusieurs villes de l'Israël antique mentionnées dans le Tanakh, par Hazal ou par d'autres sources", ['Géographie']],
+  ["Tharp's Log", "tronc de séquoia géant dans le comté de Tulare, en Californie, dans l'ouest des États-Unis", ['Nature']],
+  ['Bronson Canyon', 'canyon/grotte de Griffith Park à Los Angeles, en Californie', ['Géographie']],
   // le second domaine reste quand son mot est dans les premiers mots
   ['Johnny Hallyday', 'chanteur et acteur français', ['Musique', 'Cinéma & TV']],
   ['Antoine Bernheim', 'banquier et homme politique français', ['Économie', 'Politique & Droit']],
@@ -342,6 +358,21 @@ test('phrase Wikipédia : seul le domaine tardif est retiré, la même chaîne l
   const d = 'danse lancée par Eddie Barclay au Bus Palladium, qui a eu un succès éphémère au début des années 1960';
   assert.deepEqual(classe('Monkiss', d).etiquettes, ['Arts', 'Transports']);
   assert.deepEqual(phraseWiki('Monkiss', d).etiquettes, ['Arts']);
+});
+
+test('phrase Wikipédia : les lieux génériques tardifs ne touchent pas les descriptions de cartes (seulement les phrases Wikipédia)', () => {
+  const d = 'lieu fréquenté depuis longtemps par les touristes de la ville';
+  assert.deepEqual(classe('X', d).etiquettes, ['Géographie']);
+  assert.deepEqual(phraseWiki('X', d).etiquettes, []);
+  // et la phrase de Corruption de mineur : « pays » tardif retiré, « infraction pénale » range en Politique & Droit
+  const c = "infraction pénale reconnue dans différents pays qui consiste à profiter de la jeunesse d'une personne mineure pour l'initier au vice";
+  assert.deepEqual(phraseWiki('Corruption de mineur', c).etiquettes, ['Politique & Droit']);
+});
+
+test('phrase Wikipédia : un lieu générique tardif ne compte pas, mais le même mot avec un autre mot déclencheur du domaine reste', () => {
+  // « ville » (13e mot) ne range pas ; « ville portuaire » n'est pas un lieu générique à lui seul, « port » le range en Transports
+  assert.deepEqual(phraseWiki('X', 'lieu fréquenté depuis longtemps par les touristes de la ville').etiquettes, []);
+  assert.deepEqual(phraseWiki('X', 'lieu fréquenté depuis longtemps par les touristes du port').etiquettes, ['Transports']);
 });
 
 test('phrase Wikipédia : un seul mot tardif sans autre domaine reste le premier domaine', () => {
@@ -456,11 +487,11 @@ test("REGLAGES.wikipedia : valeurs d'origine, et app.js lit chaque réglage au l
   const R = JSON.parse(JSON.stringify(vm.runInContext(regles + '\n;REGLAGES.wikipedia;', vm.createContext({}))));
   assert.deepEqual(R, {
     lot: 20, extrait: 500, pauseMs: 1000, tentativesTitre: 3, essaisAppel: 3, delaiEssaisMs: 3000, retenteJours: 30, essai: 40,
-    fenetreVerbe: 300, longueurPhrase: 250, repli: 150, secondDomaineMots: 3, precisionMinimale: R.precisionMinimale,
+    fenetreVerbe: 300, longueurPhrase: 250, repli: 150, secondDomaineMots: 3, lieuGeneriqueMots: 5, precisionMinimale: R.precisionMinimale,
   });
   assert.ok(R.precisionMinimale > 0 && R.precisionMinimale <= 0.95, 'precisionMinimale entre 0 et 0,95');
   // precisionMinimale sert à l'essai (scripts/essai-wikipedia.js), secondDomaineMots au moteur (regles.js, scanPhrase)
-  for (const cle of Object.keys(R).filter((k) => !['precisionMinimale', 'secondDomaineMots'].includes(k))) {
+  for (const cle of Object.keys(R).filter((k) => !['precisionMinimale', 'secondDomaineMots', 'lieuGeneriqueMots'].includes(k))) {
     assert.match(app, new RegExp(`\\bWIKI\\.${cle}\\b`), `app.js ne lit pas REGLAGES.wikipedia.${cle}`);
   }
   assert.match(app, /const WIKI = REGLAGES\.wikipedia;/);
@@ -480,6 +511,23 @@ test("REGLAGES.wikipedia : secondDomaineMots est bien lu par le moteur (2 mots :
   };
   assert.deepEqual(avec(2), ['Arts']);
   assert.deepEqual(avec(8), ['Arts', 'Transports']);
+});
+
+test("REGLAGES.wikipedia : lieuGeneriqueMots est bien lu par le moteur (« ville » du 10e mot : retirée avec 5, gardée avec 99), et LIEUX_GENERIQUES vient de la liste", () => {
+  const fs = require('fs');
+  const path = require('path');
+  const vm = require('vm');
+  const { SRC } = require('./charger');
+  const regles = fs.readFileSync(path.join(SRC, 'regles.js'), 'utf8');
+  const d = 'lieu fréquenté depuis longtemps par les touristes de la ville';
+  const avec = (n, vide = false) => {
+    let src = regles.replace(/lieuGeneriqueMots: \d+,/, `lieuGeneriqueMots: ${n},`);
+    if (vide) src = src.replace(/const LIEUX_GENERIQUES = \[[^\]]*\]/, 'const LIEUX_GENERIQUES = []');
+    return [...vm.runInContext(src + '\n;classer({ t: "X", d: ' + JSON.stringify(d) + ' }, true).etiquettes;', vm.createContext({}))];
+  };
+  assert.deepEqual(avec(5), []);
+  assert.deepEqual(avec(99), ['Géographie']);
+  assert.deepEqual(avec(5, true), ['Géographie'], 'sans la liste LIEUX_GENERIQUES, « ville » range la carte');
 });
 
 // ── cartes sans description : lues par leur titre, la parenthèse d'abord ──

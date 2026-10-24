@@ -78,6 +78,8 @@ const DOMAINES = {
     'artiste-peintre',
     // Phase 3 Wikipédia, 2026-10-24 : « historien » seul reste en Sciences (Documenta 7)
     'historien de l\'art', 'historienne de l\'art',
+    // P2 : « homme de spectacle français… né dans le 8e arrondissement de Paris » (Léon Volterra) n'est pas de la Géographie
+    'homme de spectacle', 'femme de spectacle',
   ],
   'Sport': [
     'footballeur', 'footballeuse', 'football', 'joueur de football', 'cycliste', 'coureur cycliste',
@@ -140,6 +142,8 @@ const DOMAINES = {
     'politique dans', 'politique en',
     // Mots manquants de Ranger (2026-10-23) : « organisme » seul est piégé (organismes génétiquement modifiés)
     'organisme public', 'organisme gouvernemental',
+    // P2 : « infraction pénale reconnue dans différents pays » (Corruption de mineur) n'est pas de la Géographie
+    'infraction pénale',
   ],
   'Économie': [
     'homme d\'affaires', 'femme d\'affaires', 'entrepreneur', 'entrepreneuse', 'chef d\'entreprise',
@@ -238,7 +242,7 @@ const DOMAINES = {
     // Suggestions du 2026-10-14 (4e tour)
     'quercus', 'dypsis', 'réserve nationale', 'faune', 'sous-classe',
     // Phase 3 Wikipédia, 2026-10-24 : « mer » seul est de la Géographie (Penilpidia, Actinernus)
-    'concombre de mer', 'concombres de mer', 'anémone de mer', 'anémones de mer',
+    'concombre de mer', 'concombres de mer', 'anémone de mer', 'anémones de mer', 'séquoia',
     // … et les cyclones : « saison 2004 » ne les range pas en Sport (Tempête tropicale Earl)
     'tempête tropicale', 'phénomène cyclonique', 'tempête tropicale de la saison 20*', 'phénomène cyclonique de la saison 20*',
   ],
@@ -302,6 +306,8 @@ const DOMAINES = {
     'río', 'étang', 'récif', 'caverne', 'township', 'socken', 'amt', 'porte de paris', 'section de',
     // Phase 3 Wikipédia, 2026-10-24 : « paroisse » seule reste religieuse (ici : Irlande, Groenland)
     'townland', 'paroisse civile', 'fjord',
+    // … et P2 : leur sujet est un lieu même quand le seul autre mot de lieu est un LIEUX_GENERIQUES tardif (Okroug municipal, Côte de Jor)
+    'division municipale', 'site naturel',
   ],
   'Patrimoine': [
     'château', 'château fort', 'monument', 'monument historique', 'musée', 'cathédrale', 'chapelle', 'abbaye',
@@ -420,6 +426,16 @@ const PHRASES_NEUTRES = [
   'en général', 'plus général', 'sens général', 'password hashing competition',
 ];
 
+// Mots de lieu trop généraux pour être le sujet d'une phrase Wikipédia quand ils arrivent tard dans la phrase
+// (« …dans le comté de Cavan, en Irlande », « …né dans le 8e arrondissement de Paris »). Seulement pour les phrases
+// Wikipédia (jamais les descriptions de cartes) : au début de la phrase (« village de la région de… »), le mot compte comme
+// d'habitude ; ailleurs, il ne range la carte que si un autre mot du même domaine le confirme.
+// Chaque mot doit exister dans DOMAINES. Phase 3 Wikipédia, 2026-10-24.
+const LIEUX_GENERIQUES = [
+  'ville', 'comté', 'comtés', 'mer', 'province', 'quartier', 'arrondissement', 'région', 'pays', 'état du', 'état des',
+  'département', 'district', 'canton', 'commune', 'capitale', 'territoire', 'océan', 'île', 'îles',
+];
+
 // Collections personnelles : la carte reçoit l'étiquette si TOUS les groupes
 // ont au moins un mot présent.
 const COLLECTIONS = [
@@ -463,7 +479,8 @@ const REGLAGES = {
     longueurPhrase: 250,      // longueur au plus du morceau de phrase gardé
     repli: 150,               // coupe au dernier espace avant 250, sans descendre sous ce nombre de caractères
     secondDomaineMots: 3,     // dans une phrase Wikipédia, un second domaine n'est gardé que si son mot est parmi les 3 premiers mots
-    precisionMinimale: 0.94,  // précision exigée de la référence par `npm run essai` et les tests ; relevée à chaque amélioration, cible 0.95 (docs/suivi-wikipedia.md)
+    lieuGeneriqueMots: 5,     // dans une phrase Wikipédia, un mot de LIEUX_GENERIQUES après les 5 premiers mots ne range pas la carte
+    precisionMinimale: 0.95,  // précision exigée de la référence par `npm run essai` et les tests ; relevée à chaque amélioration, cible 0.95 (docs/suivi-wikipedia.md)
   },
 };
 
@@ -538,10 +555,20 @@ const scan = (text, onlyAtStart = false) => {
 // premiers mots de la phrase (« …dirigée par l'écrivain et explorateur Christian Clot » : explorateur est un détail, pas un domaine).
 // Une seule fonction pour Ranger (planAvecPhrase) et pour la mesure (classerPhrase), via classer(carte, true).
 const motsAvant = (texte, pos) => (norm(texte).slice(0, pos).match(/[a-z0-9]+/g) || []).length;
+// Un mot de LIEUX_GENERIQUES loin dans la phrase (après les REGLAGES.wikipedia.lieuGeneriqueMots premiers mots) n'est pas
+// le sujet de la carte : « …né dans le 8e arrondissement de Paris » ne range pas en Géographie. Au début, il reste.
+// Si c'était le premier mot de domaine de la phrase, il n'y a plus de « premier domaine » à garder : tout mot suivant doit
+// alors être parmi les premiers mots (sinon un détail tardif deviendrait le sujet : « …à 5 km de la ville d'El Jadida, constituée de résidences »).
+const lieuxGeneriques = new Set(LIEUX_GENERIQUES.map(norm));
 const scanPhrase = (phrase) => {
-  const hits = scan(phrase);
-  const premier = hits.find((h) => h.kind === 'sur');
-  return hits.filter((h) => h.kind !== 'sur' || h === premier || motsAvant(phrase, h.pos) < REGLAGES.wikipedia.secondDomaineMots);
+  const tous = scan(phrase);
+  const premier = tous.find((h) => h.kind === 'sur');
+  return tous.filter((h) => {
+    if (h.kind !== 'sur') return true;
+    const rang = motsAvant(phrase, h.pos);
+    if (lieuxGeneriques.has(norm(h.kw)) && rang >= REGLAGES.wikipedia.lieuGeneriqueMots) return false;
+    return h === premier || rang < REGLAGES.wikipedia.secondDomaineMots;
+  });
 };
 
 // Classe une carte { t: titre, d: description }. `deWikipedia` : d est une phrase Wikipédia (voir scanPhrase).
