@@ -12,9 +12,15 @@
 //  • Un titre peut aussi ranger une carte par sa FORME : voir MOTIFS_DE_TITRE plus bas
 //    (« Famille Whitney » → Histoire, « Kix (groupe) » → Musique). Une ligne par motif.
 //  • PHRASES_NEUTRES : des expressions que le moteur ne lit pas (« en général » n'est pas un général de l'armée) ;
-//    ajoute-y une expression entre apostrophes, elle est effacée avant la lecture. LIEUX_GENERIQUES : des mots de lieu
+//    ajoute-y une expression entre apostrophes, elle est effacée avant la lecture (le pluriel s'écrit à part : « fonds documentaire »
+//    et « fonds documentaires »). NEUTRES_SAUF_SUIVI_DE : des bouts qui annulent cet effacement quand ils suivent l'expression
+//    (« en général » est neutre, mais « en général de brigade » reste un grade). LIEUX_GENERIQUES : des mots de lieu
 //    (« ville », « comté »…) qui, loin dans une phrase Wikipédia, ne rangent pas la carte (« …né dans le 8e arrondissement
 //    de Paris » n'est pas de la Géographie) ; chaque mot doit déjà exister dans la liste Géographie de DOMAINES.
+//  • MOTS_FAIBLES : des mots de DOMAINES qui ont aussi un sens courant (« jeu », « histoire », « concept »…). Dans une phrase
+//    Wikipédia seulement, un mot faible cède devant un mot sûr d'un autre domaine (« le jeu au football américain » → Sport) et
+//    ne range plus la carte quand il arrive tard dans la phrase (« un mot qui veut dire histoire »). Un mot faible doit déjà
+//    exister dans DOMAINES ; n'en ajoute un que si une carte réelle le justifie (test dans classement.test.js).
 //  • Les NOMBRES de la lecture dans Wikipédia (taille des lots, pauses, longueur de la phrase gardée…) sont
 //    tous dans REGLAGES, plus bas : une valeur par ligne, avec son rôle. Ne change que ce que tu comprends ;
 //    « lot » et « extrait » sont des limites de Wikipédia. Un réglage modifié fait relire toutes les cartes
@@ -168,6 +174,8 @@ const DOMAINES = {
     'organisme public', 'organisme gouvernemental',
     // P2 : « infraction pénale reconnue dans différents pays » (Corruption de mineur) n'est pas de la Géographie
     'infraction pénale',
+    // Phase 3 Wikipédia, 2026-10-24 (D1) : un « patrouilleur de la police » est un policier, pas un navire (« patrouilleur » seul reste aux Transports)
+    'patrouilleur de la police', 'patrouilleur de police',
   ],
   'Économie': [
     'homme d\'affaires', 'femme d\'affaires', 'entrepreneur', 'entrepreneuse', 'chef d\'entreprise',
@@ -188,6 +196,11 @@ const DOMAINES = {
     // Suggestions du 2026-10-14 (4e tour)
     'commerce de détail', 'charbon', 'centrale solaire', 'secteur de l\'énergie', 'bank', 'agroalimentaire',
     'agriculture', 'tourisme',
+    // Phase 3 Wikipédia, 2026-10-24 (D2) : « concept en finance » est de l'Économie ; « ingénieur commercial » n'est pas un ingénieur (Pamela Gidi Masías)
+    'finance',
+    'ingénieure commerciale', 'ingénieur commercial',
+    // Phase 3 Wikipédia, 2026-10-24 (D1) : une « franchise professionnelle de restauration rapide » est une enseigne, pas une équipe de sport
+    'franchise professionnelle de restauration',
   ],
   'Médias': [
     'journaliste', 'humoriste', 'animateur', 'animatrice', 'présentateur', 'présentatrice', 'chroniqueur',
@@ -241,6 +254,8 @@ const DOMAINES = {
     'sociétés humaines', 'société humaine',
     // Phase 3 Wikipédia, 2026-10-24 (C2) : tour de vocabulaire des phrases sans règle : « artère » seul est aussi une rue, donc seulement l'anatomie
     'géométrie', 'graphe', 'lemniscate', 'artère systémique', 'fournisseur d\'accès',
+    // Phase 3 Wikipédia, 2026-10-24 (D2) : « symétrie des lois physiques » (Symétrie CPT) n'est pas du Droit
+    'loi physique', 'lois physiques',
   ],
   'Espace': [
     'astéroïde', 'galaxie', 'constellation', 'nébuleuse', 'étoile', 'planète', 'exoplanète', 'planète mineure',
@@ -281,6 +296,8 @@ const DOMAINES = {
     'archée',
     // Phase 3 Wikipédia, 2026-10-24 (C3) : taxons (« genre de scorpions ») ; « scorpion » seul reste libre : c'est aussi un groupe, un signe, un personnage
     'cténophore', 'conodonte', 'genre de scorpion', 'famille de scorpion', 'espèce de scorpion',
+    // Phase 3 Wikipédia, 2026-10-24 (D1) : un « oiseau grimpeur » est un oiseau, pas un sportif (« grimpeur » seul reste du Sport)
+    'oiseau grimpeur', 'oiseaux grimpeurs',
   ],
   'Histoire': [
     // 2026-10-24 : mots acceptés par la personne. « seigneur de! » est exact pour ne pas prendre « Le Seigneur des anneaux ».
@@ -385,6 +402,8 @@ const DOMAINES = {
   ],
   'Fiction & Jeux': [
     'personnage de fiction', 'personnage', 'de fiction', 'fictif', 'fictive', 'univers de fiction',
+    // D2 (lot 4) : le pluriel (« développement de jeux vidéo »), sinon « jeux », devenu un mot faible, ne suffit plus
+    'jeux vidéo', 'jeux de société', 'jeux de rôle', 'jeux de cartes',
     'jeu vidéo', 'série de jeux vidéo', 'jeu de société', 'jeu de cartes', 'jeu de rôle', 'jeu d\'adresse',
     'jeu', 'jeux', 'jouet', 'poupée', 'franchise', 'super-héros', 'super-héroïne', 'super-vilain', 'anime',
     'dessin animé', 'échecs', 'joueur d\'échecs', 'joueuse d\'échecs', 'pokémon', 'mascotte', 'personnage de jeu vidéo',
@@ -473,6 +492,13 @@ const PHRASES_NEUTRES = [
   'en général', 'plus général', 'sens général', 'password hashing competition',
   // C1 : le verbe « désigner » n'est pas « designer » (le moteur ignore les accents) ; « montagnes russes » n'est pas de la Géographie
   'pour désigner', 'à désigner', 'de désigner', 'montagnes russes',
+  // D1 (lot 4) : « Europe à géométrie variable » n'est pas des mathématiques
+  'géométrie variable',
+  // D2 (lot 4) : « Livre Guinness des records » n'est pas de la Littérature ; « histoire naturelle » est de la Nature, pas de l'Histoire
+  'livre guinness des records', 'livre des records',
+  'histoire naturelle',
+  // … et « fonds / recherche documentaire » n'est pas un film
+  'fonds documentaire', 'fonds documentaires', 'recherche documentaire', 'recherches documentaires', 'ressources documentaires',
 ];
 // …sauf quand l'expression est suivie de l'un de ces bouts : « promu en général de brigade » est bien un grade de l'armée
 // (R, lot 3, 2026-10-24).
@@ -487,6 +513,14 @@ const LIEUX_GENERIQUES = [
   'ville', 'comté', 'comtés', 'mer', 'province', 'quartier', 'arrondissement', 'région', 'pays', 'état du', 'état des',
   'département', 'district', 'canton', 'commune', 'capitale', 'territoire', 'océan', 'île', 'îles',
 ];
+
+// Mots FAIBLES : des mots de DOMAINES qui ont aussi un sens courant (« le jeu au football américain », « un mot qui veut dire
+// histoire », « un concept en finance », « le domaine maritime »). Seulement pour les phrases Wikipédia (jamais les descriptions
+// de cartes). Un mot faible : (1) cède devant un mot SÛR d'un autre domaine, qui devient alors le sujet de la carte (« jeu » +
+// « football américain » → Sport) ; (2) après les premiers mots de la phrase, il ne range plus la carte, sauf si un autre mot du
+// même domaine le confirme (« …qui veut dire histoire » n'est pas de l'Histoire). Chaque mot doit exister dans DOMAINES.
+// Phase 3 Wikipédia, 2026-10-24 (D2, lot 4).
+const MOTS_FAIBLES = ['jeu', 'jeux', 'histoire', 'concept', 'domaine'];
 
 // Collections personnelles : la carte reçoit l'étiquette si TOUS les groupes
 // ont au moins un mot présent.
@@ -532,6 +566,7 @@ const REGLAGES = {
     repli: 150,               // coupe au dernier espace avant 250, sans descendre sous ce nombre de caractères
     secondDomaineMots: 3,     // dans une phrase Wikipédia, un second domaine n'est gardé que si son mot est parmi les 3 premiers mots
     lieuGeneriqueMots: 5,     // dans une phrase Wikipédia, un mot de LIEUX_GENERIQUES après les 5 premiers mots ne range pas la carte
+    motFaibleMots: 5,         // dans une phrase Wikipédia, un mot de MOTS_FAIBLES après les 5 premiers mots ne range pas la carte
     precisionMinimale: 0.95,  // précision exigée de la référence par `npm run essai` et les tests ; relevée à chaque amélioration, cible 0.95 (docs/suivi-wikipedia.md)
   },
 };
@@ -613,13 +648,19 @@ const motsAvant = (texte, pos) => (norm(texte).slice(0, pos).match(/[a-z0-9]+/g)
 // Si c'était le premier mot de domaine de la phrase, il n'y a plus de « premier domaine » à garder : tout mot suivant doit
 // alors être parmi les premiers mots (sinon un détail tardif deviendrait le sujet : « …à 5 km de la ville d'El Jadida, constituée de résidences »).
 const lieuxGeneriques = new Set(LIEUX_GENERIQUES.map(norm));
+// Un mot de MOTS_FAIBLES (D2) : (1) cède devant tout mot sûr d'un autre domaine, qui devient alors le premier domaine (donc le sujet) ;
+// (2) après les REGLAGES.wikipedia.motFaibleMots premiers mots, il ne range plus la carte (sans promouvoir un mot suivant, comme les lieux).
+const faibles = new Set(MOTS_FAIBLES.map(norm));
 const scanPhrase = (phrase) => {
-  const tous = scan(phrase);
+  const brut = scan(phrase);
+  const forts = brut.filter((h) => h.kind === 'sur' && !faibles.has(norm(h.kw)));
+  const tous = brut.filter((h) => h.kind !== 'sur' || !faibles.has(norm(h.kw)) || !forts.some((f) => !f.doms.some((d) => h.doms.includes(d))));
   const premier = tous.find((h) => h.kind === 'sur');
   return tous.filter((h) => {
     if (h.kind !== 'sur') return true;
     const rang = motsAvant(phrase, h.pos);
     if (lieuxGeneriques.has(norm(h.kw)) && rang >= REGLAGES.wikipedia.lieuGeneriqueMots) return false;
+    if (faibles.has(norm(h.kw)) && rang >= REGLAGES.wikipedia.motFaibleMots) return false;
     return h === premier || rang < REGLAGES.wikipedia.secondDomaineMots;
   });
 };

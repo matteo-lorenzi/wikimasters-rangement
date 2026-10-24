@@ -1025,7 +1025,7 @@ const WIKI_EST = /(?<![\p{L}\p{N}'’-])est\s+(?:un|une|le|la)\s+/iu;
 // définissent rien), ou « est / sont l'une des… ». L'article doit être un mot entier (« la » n'est pas « laïque »).
 const WIKI_EST_ELARGI = new RegExp("(?<![\\p{L}\\p{N}'’-])(?:(?:est|sont)\\s+l['’]une?\\s+des\\s+"
   + "|(?:était|étaient|fut|furent|sont|a\\s+été|ont\\s+été|forment|constituent|désigne)\\s+(?:l['’]une?\\s+des\\s+|(?:un|une|le|la|les|des|deux|trois)(?![\\p{L}\\p{N}])\\s*|l['’](?=\\p{L})))", 'iu');
-const WIKI_ADJECTIFS =/^(?:premier|première|ancien|ancienne|dernier|dernière|seul|seule|unique)\s+/i;
+const WIKI_ADJECTIFS = /^(?:premier|première|ancien|ancienne|dernier|dernière|seul|seule|unique)\s+/i;
 const WIKI_ABREVIATIONS = new Set(['av', 'apr', 'env', 'etc', 'jr', 'sr', 'st', 'ste', 'mr', 'dr', 'ca', 'cf', 'vol', 'no', 'hab', 'éd']);
 const nfc = (s) => String(s || '').normalize('NFC').trim();
 
@@ -1308,7 +1308,7 @@ const planAvecPhrase = (c, phrases) => {
 // L'empreinte couvre aussi tout le code qui décide du classement d'après Wikipédia (extraction du morceau, cartes concernées,
 // plan avec phrase) : l'améliorer fait relire les cartes déjà vues. Test : « EMPREINTE_REGLES : tout le code… Wikipédia ».
 const EMPREINTE_REGLES = (() => {
-  const s = JSON.stringify([DOMAINES, AMBIGUS, IGNORER, PHRASES_NEUTRES, LIEUX_GENERIQUES, COLLECTIONS, SEULEMENT_EN_PREMIER, MOTIFS_DE_TITRE, MAX_DOMAINES, A_TRAITER, FEMININS, REGLAGES, NEUTRES_SAUF_SUIVI_DE]) + classer + scan + scanPhrase + motsAvant + kwRegex
+  const s = JSON.stringify([DOMAINES, AMBIGUS, IGNORER, PHRASES_NEUTRES, LIEUX_GENERIQUES, COLLECTIONS, SEULEMENT_EN_PREMIER, MOTIFS_DE_TITRE, MAX_DOMAINES, MOTS_FAIBLES, A_TRAITER, FEMININS, REGLAGES, NEUTRES_SAUF_SUIVI_DE]) + classer + scan + scanPhrase + motsAvant + kwRegex
     + morceauWikipedia + finDePhrase + planAvecPhrase + concerneeWiki + WIKI_EST + WIKI_EST_ELARGI + WIKI_ADJECTIFS + [...WIKI_ABREVIATIONS].join();
   let h = 2166136261;
   for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619) >>> 0;

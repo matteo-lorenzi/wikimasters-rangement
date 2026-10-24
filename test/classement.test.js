@@ -341,6 +341,76 @@ const CAS = [
   ['Tempête tropicale Earl (2004)', "5e phénomène cyclonique de la saison 2004 dans l'Atlantique nord", ['Nature'], 'classee'],
   ['Tempête tropicale Bonnie', 'tempête tropicale de la saison 2010 dans l’océan Atlantique', ['Nature'], 'classee'],
   ['Championnat 2018-2019', 'saison 2018-2019 du championnat de France de football', ['Sport'], 'classee'],
+  // Phase 3 Wikipédia, 2026-10-24 (D1, lot 4) : les mots ajoutés par C1, C2 et C3 lus comme DESCRIPTIONS de cartes (la collection entière,
+  // pas seulement les phrases Wikipédia) : le sens voulu, puis le piège. Les titres finissent par « (description) » : aucun mot de domaine.
+  // graphe / géométrie
+  ['Graphe orienté (description)', 'graphe orienté', ['Sciences'], 'classee'],
+  ['Ansel (description)', 'photographe américain', ['Arts'], 'classee'], // « graphe » ne se trouve pas dans « photographe »
+  ['Géométrie différentielle (description)', 'géométrie différentielle', ['Sciences'], 'classee'],
+  ['Union différenciée (description)', 'Europe à géométrie variable', [], 'inconnue'], // une image politique, pas des mathématiques
+  // documentaire
+  ['Planète bleue (description)', 'documentaire animalier', ['Cinéma & TV'], 'classee'],
+  ['Archives (description)', 'fonds documentaire de la bibliothèque', [], 'inconnue'], // pas un film
+  ['Archives (description)', 'recherche documentaire en archives', [], 'inconnue'],
+  // grimpeur
+  ['Łukasz (description)', 'grimpeur polonais', ['Sport'], 'classee'],
+  ['Grimpereau (description)', 'oiseau grimpeur des forêts tropicales', ['Nature'], 'classee'], // un oiseau, pas un sportif
+  // patrouilleur / berline
+  ['BRP (description)', 'patrouilleur côtier de la marine philippine', ['Transports'], 'classee'],
+  ['Police municipale (description)', 'patrouilleur de la police municipale', ['Politique & Droit'], 'classee'], // un policier, pas un navire
+  ['Ford (description)', 'berline de luxe', ['Transports'], 'classee'],
+  // archée (la limite connue est plus bas : « archée selon Paracelse »)
+  ['Heimdall (description)', 'archée du groupe des Euryarchaeota', ['Nature'], 'classee'],
+  // sports d'hiver et d'équitation
+  ['Lugeur (description)', 'lugeur italien', ['Sport'], 'classee'],
+  ['Bobeur (description)', 'bobeur américain', ['Sport'], 'classee'],
+  ['Concours complet (description)', 'cavalier de concours complet', ['Sport'], 'classee'],
+  ['Nordique (description)', 'spécialiste allemand du combiné nordique', ['Sport'], 'classee'],
+  ['Miss (description)', 'concours de beauté', ['Médias'], 'classee'], // « concours » seul ne range pas en Sport
+  ['Téléphone (description)', 'combiné de téléphone fixe', [], 'inconnue'], // « combiné » seul non plus
+  // métiers
+  ['Lexicographe (description)', 'lexicographe français', ['Littérature'], 'classee'],
+  ['Paysagiste (description)', 'paysagiste français', ['Arts'], 'classee'],
+  ['Stucateur (description)', 'stucateur italien', ['Arts'], 'classee'],
+  ['Antipape (description)', 'antipape de 1159 à 1164', ['Religion & Mythes'], 'classee'],
+  // collection éditoriale, fournisseur d'accès, ballade populaire
+  ['Collection (description)', 'collection éditoriale de poche', ['Littérature'], 'classee'],
+  ['Timbres (description)', 'collection de timbres', [], 'inconnue'],
+  ['Opérateur (description)', "fournisseur d'accès à Internet", ['Sciences'], 'classee'],
+  ['Fournisseur (description)', 'fournisseur de matériel', [], 'inconnue'],
+  ['Ballade (description)', 'ballade populaire anglaise', ['Musique'], 'classee'],
+  ['Chopin (description)', 'ballade romantique', [], 'inconnue'], // « ballade » seul est aussi un poème
+  // émir et franchise professionnelle
+  ['Bagdad (description)', 'émir de Bagdad', ['Histoire'], 'classee'],
+  ['Hockey (description)', 'franchise professionnelle de hockey sur glace', ['Sport'], 'classee'],
+  ['Restauration (description)', 'franchise professionnelle de restauration rapide', ['Économie'], 'classee'], // une enseigne, pas une équipe
+  // genres musicaux et taxons de C3
+  ['Punk (description)', 'groupe de punk rock', ['Musique'], 'classee'],
+  ['Heavy (description)', 'groupe de heavy metal', ['Musique'], 'classee'],
+  ['Metalcore (description)', 'groupe de metalcore', ['Musique'], 'classee'],
+  ['Disco (description)', "groupe d'italo disco", ['Musique'], 'classee'],
+  ['Hardcore (description)', 'groupe de digital hardcore', ['Musique'], 'classee'],
+  ['Métal (description)', 'métal de transition', [], 'inconnue'], // « metal » seul n'est pas un genre musical
+  ['Cténophore (description)', 'cténophore des abysses', ['Nature'], 'classee'],
+  ['Conodonte (description)', 'conodonte du Trias', ['Nature'], 'classee'],
+  ['Scorpions (description)', 'genre de scorpions', ['Nature'], 'classee'],
+  ['Scorpion (description)', 'scorpion', [], 'inconnue'], // « scorpion » seul reste libre
+  // C1 : tribu de papillons, grandes mines, paroisses civiles
+  ['Omopterini (description)', 'tribu de papillons de nuit', ['Nature'], 'classee'],
+  ['Apaches (description)', 'tribu amérindienne', ['Histoire'], 'classee'],
+  ['Ambatovy (description)', 'grandes mines de nickel', ['Économie'], 'classee'],
+  ['Cork (description)', 'paroisses civiles du comté de Cork', ['Géographie'], 'classee'],
+  // C2 : artère systémique, lemniscate
+  ['Artère (description)', 'artère systémique paire de la tête', ['Sciences'], 'classee'],
+  ['Montréal (description)', 'artère principale de Montréal', [], 'inconnue'], // « artère » seul est aussi une rue
+  ['Lemniscate (description)', 'lemniscate du plan euclidien', ['Sciences'], 'classee'],
+  // D2 (lot 4) : les mots ajoutés pour les phrases Wikipédia, lus comme descriptions de cartes
+  ['Muséum (description)', "Muséum national d'histoire naturelle", [], 'inconnue'], // « histoire naturelle » n'est pas de l'Histoire
+  ['Lois (description)', 'symétrie des lois physiques', ['Sciences'], 'classee'],
+  ['Finance (description)', 'concept en finance', ['Sciences', 'Économie'], 'classee'],
+  ['Ingénieure (description)', 'ingénieure commerciale', ['Économie'], 'classee'],
+  ['Records (description)', 'Livre Guinness des records', [], 'inconnue'],
+  ['Jeux (description)', 'développement de jeux vidéo', ['Fiction & Jeux'], 'classee'],
 ];
 
 for (const [t, d, attendu, statut] of CAS) {
@@ -350,6 +420,13 @@ for (const [t, d, attendu, statut] of CAS) {
     assert.equal(r.statut, statut);
   });
 }
+
+// Limites CONNUES (D1, lot 4) : le résultat actuel est discutable ou faux, sans correction propre. Ce test les fige pour que
+// toute amélioration (ou toute aggravation) se voie ; quand l'une est corrigée, change son attendu ici.
+test('limites connues : « émir » d\'un État actuel va en Histoire, « archée » au sens de Paracelse en Nature', () => {
+  assert.deepEqual(classe('Tamim (description)', 'émir du Qatar').etiquettes, ['Histoire']); // plutôt Politique & Droit : « émir » est écrit pour les émirs historiques
+  assert.deepEqual(classe('Paracelse (description)', 'archée selon Paracelse, principe vital').etiquettes, ['Nature']); // un terme d'alchimie, pas un micro-organisme
+});
 
 // ── phrases Wikipédia : le second domaine doit venir du début de la phrase (Phase 3 Wikipédia, P1, 2026-10-24) ──
 // classer(carte, true) lit la description comme une phrase Wikipédia (c'est ce que font planAvecPhrase et la mesure) ;
@@ -423,6 +500,24 @@ const PHRASES = [
   // … et les pièges : « métal » (sans accent dans le moteur) n'est pas un genre musical, « Scorpions » est un groupe, pas un taxon
   ['Fer (reconstitué)', 'métal de transition', []],
   ['Scorpions', 'groupe de hard rock allemand', ['!À traiter']],
+  // D2 (lot 4, 2026-10-24) : MOTS_FAIBLES (jeu, jeux, histoire, concept, domaine) — cartes réelles de la revue du lot 3 (cartes neuves)
+  // (1) un mot faible cède devant un mot sûr d'un autre domaine, qui devient le sujet
+  ['Kickoff', 'méthode permettant de démarrer ou de redémarrer le jeu au football américain', ['Sport']], // « jeu » n'est pas Fiction & Jeux
+  ["Valeur temps de l'argent", "concept en finance qui veut qu'un montant d'argent reçu ou émis plus tôt vaut davantage qu'un même montant reçu ou émis plus tard", ['Économie']],
+  ["Fiscalité dans l'Égypte antique", 'domaine scientifique peu exploré', ['Sciences']], // « domaine » n'est pas un Patrimoine
+  ['Pamela Gidi Masías', 'ingénieure commerciale, consultante internationale et dirigeante d’entreprise chilienne', ['Économie']], // « ingénieure commerciale » : pas une ingénieure
+  ['Symétrie CPT', 'symétrie des lois physiques pour les transformations impliquant de manière simultanée la charge, la parité et le temps', ['Sciences']], // « lois physiques » ne sont pas du Droit
+  ['High Impact Games', "studio américain de développement de jeux vidéo basé à Los Angeles en Californie, fondé en 2003 par d'anciens membres des studios Insomniac Games", ['Fiction & Jeux']], // le pluriel « jeux vidéo » est un mot sûr
+  ["Musée de l'histoire de France (reconstitué)", "musée consacré à l'histoire de France", ['Patrimoine']], // « histoire » cède devant « musée »
+  // (2) loin dans la phrase, un mot faible ne range plus la carte
+  ['Hikaitaan', 'pluriel de Hikayat un mot arabe qui veut dire histoire et qui est souvent utilisé dans la tradition malaisienne', []],
+  ['Chandra Bahadur Dangi', "Népalais reconnu depuis février 2012 comme l'être humain adulte le plus petit du monde et de l'histoire par le Livre Guinness des records", []], // et le « Livre Guinness des records » n'est pas de la Littérature
+  ['Henri Frédéric Paul Gervais', "ichtyologiste français qui travaillait au Muséum national d'histoire naturelle", []], // « histoire naturelle » n'est pas de l'Histoire
+  ['Pilot chart', "carte marine employée dans le domaine maritime afin de déterminer une route en fonction des conditions climatiques moyennes pour chaque mois de l'année", ['Transports']], // « domaine » cède devant « route »
+  // … mais au début de la phrase, sans mot sûr d'un autre domaine, un mot faible garde son domaine
+  ['Go (reconstitué)', 'jeu de stratégie combinatoire abstrait pour deux joueurs', ['Fiction & Jeux']],
+  ['Histoire de France (reconstitué)', "histoire de la France depuis la préhistoire", ['Histoire']],
+  ['Théorie des cordes (reconstitué)', 'concept de la physique théorique', ['Sciences']],
   // le second domaine reste quand son mot est dans les premiers mots
   ['Johnny Hallyday', 'chanteur et acteur français', ['Musique', 'Cinéma & TV']],
   ['Antoine Bernheim', 'banquier et homme politique français', ['Économie', 'Politique & Droit']],
@@ -454,6 +549,26 @@ test('phrase Wikipédia : un lieu générique tardif ne compte pas, mais le mêm
   // « ville » (13e mot) ne range pas ; « ville portuaire » n'est pas un lieu générique à lui seul, « port » le range en Transports
   assert.deepEqual(phraseWiki('X', 'lieu fréquenté depuis longtemps par les touristes de la ville').etiquettes, []);
   assert.deepEqual(phraseWiki('X', 'lieu fréquenté depuis longtemps par les touristes du port').etiquettes, ['Transports']);
+});
+
+test('phrase Wikipédia : les mots faibles (MOTS_FAIBLES) ne touchent pas les descriptions de cartes, seulement les phrases', () => {
+  const d = 'méthode permettant de démarrer ou de redémarrer le jeu au football américain';
+  assert.deepEqual(classe('Kickoff', d).etiquettes, ['Fiction & Jeux', 'Sport']);
+  assert.deepEqual(phraseWiki('Kickoff', d).etiquettes, ['Sport']);
+  // une description garde aussi son « histoire » tardif
+  assert.deepEqual(classe('X', 'mot arabe qui veut dire histoire et qui est utilisé dans la tradition malaisienne').etiquettes, ['Histoire']);
+});
+
+test('MOTS_FAIBLES : chaque mot existe dans DOMAINES (sinon une faute de frappe le rend inutile)', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const vm = require('vm');
+  const { SRC } = require('./charger');
+  const regles = fs.readFileSync(path.join(SRC, 'regles.js'), 'utf8');
+  const { faibles, tous } = vm.runInContext(regles + '\n;({ faibles: [...MOTS_FAIBLES], tous: Object.values(DOMAINES).flat() });', vm.createContext({}));
+  assert.ok(faibles.length >= 5, `MOTS_FAIBLES ne compte que ${faibles.length} mots`);
+  const connus = new Set(tous.map(R.norm));
+  for (const m of faibles) assert.ok(connus.has(R.norm(m)), `« ${m} » (MOTS_FAIBLES) n'est dans aucun domaine de DOMAINES : faute de frappe ?`);
 });
 
 test('phrase Wikipédia : un seul mot tardif sans autre domaine reste le premier domaine', () => {
@@ -568,11 +683,11 @@ test("REGLAGES.wikipedia : valeurs d'origine, et app.js lit chaque réglage au l
   const R = JSON.parse(JSON.stringify(vm.runInContext(regles + '\n;REGLAGES.wikipedia;', vm.createContext({}))));
   assert.deepEqual(R, {
     lot: 20, extrait: 500, pauseMs: 1000, tentativesTitre: 3, essaisAppel: 3, delaiEssaisMs: 3000, retenteJours: 30, essai: 40,
-    fenetreVerbe: 300, longueurPhrase: 250, repli: 150, secondDomaineMots: 3, lieuGeneriqueMots: 5, precisionMinimale: R.precisionMinimale,
+    fenetreVerbe: 300, longueurPhrase: 250, repli: 150, secondDomaineMots: 3, lieuGeneriqueMots: 5, motFaibleMots: 5, precisionMinimale: R.precisionMinimale,
   });
   assert.ok(R.precisionMinimale > 0 && R.precisionMinimale <= 0.95, 'precisionMinimale entre 0 et 0,95');
-  // precisionMinimale sert à l'essai (scripts/essai-wikipedia.js), secondDomaineMots au moteur (regles.js, scanPhrase)
-  for (const cle of Object.keys(R).filter((k) => !['precisionMinimale', 'secondDomaineMots', 'lieuGeneriqueMots'].includes(k))) {
+  // precisionMinimale sert à l'essai (scripts/essai-wikipedia.js), secondDomaineMots, lieuGeneriqueMots et motFaibleMots au moteur (regles.js, scanPhrase)
+  for (const cle of Object.keys(R).filter((k) => !['precisionMinimale', 'secondDomaineMots', 'lieuGeneriqueMots', 'motFaibleMots'].includes(k))) {
     assert.match(app, new RegExp(`\\bWIKI\\.${cle}\\b`), `app.js ne lit pas REGLAGES.wikipedia.${cle}`);
   }
   assert.match(app, /const WIKI = REGLAGES\.wikipedia;/);
@@ -609,6 +724,25 @@ test("REGLAGES.wikipedia : lieuGeneriqueMots est bien lu par le moteur (« ville
   assert.deepEqual(avec(5), []);
   assert.deepEqual(avec(99), ['Géographie']);
   assert.deepEqual(avec(5, true), ['Géographie'], 'sans la liste LIEUX_GENERIQUES, « ville » range la carte');
+});
+
+test("REGLAGES.wikipedia : motFaibleMots est bien lu par le moteur (« histoire » du 11e mot : retirée avec 5, gardée avec 99 ; le réglage des lieux ne la touche pas), et MOTS_FAIBLES vient de la liste", () => {
+  const fs = require('fs');
+  const path = require('path');
+  const vm = require('vm');
+  const { SRC } = require('./charger');
+  const regles = fs.readFileSync(path.join(SRC, 'regles.js'), 'utf8');
+  const d = 'pluriel de Hikayat un mot arabe qui veut dire histoire et qui est souvent utilisé dans la tradition malaisienne';
+  const avec = (reglage, n, vide = false) => {
+    let src = regles.replace(new RegExp(reglage + ': \\d+,'), `${reglage}: ${n},`);
+    assert.ok(src.includes(`${reglage}: ${n},`), reglage);
+    if (vide) src = src.replace(/const MOTS_FAIBLES = \[[^\]]*\]/, 'const MOTS_FAIBLES = []');
+    return [...vm.runInContext(src + '\n;classer({ t: "Hikaitaan", d: ' + JSON.stringify(d) + ' }, true).etiquettes;', vm.createContext({}))];
+  };
+  assert.deepEqual(avec('motFaibleMots', 5), []);
+  assert.deepEqual(avec('motFaibleMots', 99), ['Histoire']);
+  assert.deepEqual(avec('lieuGeneriqueMots', 99), [], 'lieuGeneriqueMots ne règle pas les mots faibles');
+  assert.deepEqual(avec('motFaibleMots', 5, true), ['Histoire'], 'sans la liste MOTS_FAIBLES, « histoire » range la carte');
 });
 
 test("LIEUX_GENERIQUES : chaque mot existe dans la liste Géographie de DOMAINES (sinon une faute de frappe le rend inutile)", () => {
