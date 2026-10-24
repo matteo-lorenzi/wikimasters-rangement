@@ -1020,7 +1020,12 @@ const WIKI_TENTATIVES = WIKI.tentativesTitre; // un titre qui disparaît de la r
 const WIKI_RETENTE = WIKI.retenteJours * 24 * 3600e3; // un titre absent ou sans résumé exploitable est retenté après 30 jours
 const WIKI_ESSAI = WIKI.essai; // « Essai Wikipédia » : les 40 premières cartes concernées seulement
 const WIKI_EST = /(?<![\p{L}\p{N}'’-])est\s+(?:un|une|le|la)\s+/iu;
-const WIKI_ADJECTIFS = /^(?:premier|première|ancien|ancienne|dernier|dernière|seul|seule|unique)\s+/i;
+// À défaut de « est un/une/le/la » : un autre verbe de définition (« étaient », « fut », « sont », « a été », « forment »,
+// « constituent », « désigne ») SUIVI D'UN ARTICLE (obligatoire : « est né », « fut brièvement comte », « a été fondée » ne
+// définissent rien), ou « est / sont l'une des… ». L'article doit être un mot entier (« la » n'est pas « laïque »).
+const WIKI_EST_ELARGI = new RegExp("(?<![\\p{L}\\p{N}'’-])(?:(?:est|sont)\\s+l['’]une?\\s+des\\s+"
+  + "|(?:était|étaient|fut|furent|sont|a\\s+été|ont\\s+été|forment|constituent|désigne)\\s+(?:l['’]une?\\s+des\\s+|(?:un|une|le|la|les|des|deux|trois)(?![\\p{L}\\p{N}])\\s*|l['’](?=\\p{L})))", 'iu');
+const WIKI_ADJECTIFS =/^(?:premier|première|ancien|ancienne|dernier|dernière|seul|seule|unique)\s+/i;
 const WIKI_ABREVIATIONS = new Set(['av', 'apr', 'env', 'etc', 'jr', 'sr', 'st', 'ste', 'mr', 'dr', 'ca', 'cf', 'vol', 'no', 'hab', 'éd']);
 const nfc = (s) => String(s || '').normalize('NFC').trim();
 
@@ -1038,7 +1043,8 @@ const finDePhrase = (t) => {
 // (300, 250 et 150 : REGLAGES.wikipedia.fenetreVerbe, longueurPhrase et repli.)
 const morceauWikipedia = (extrait) => {
   const txt = String(extrait || '').replace(/\s+/g, ' ').trim();
-  const m = WIKI_EST.exec(txt);
+  let m = WIKI_EST.exec(txt);
+  if (!m || m.index > WIKI.fenetreVerbe) m = WIKI_EST_ELARGI.exec(txt);
   if (!m || m.index > WIKI.fenetreVerbe) return null;
   let reste = txt.slice(m.index + m[0].length);
   for (let a; (a = WIKI_ADJECTIFS.exec(reste));) reste = reste.slice(a[0].length);
@@ -1291,7 +1297,7 @@ const planAvecPhrase = (c, phrases) => {
 // plan avec phrase) : l'améliorer fait relire les cartes déjà vues. Test : « EMPREINTE_REGLES : tout le code… Wikipédia ».
 const EMPREINTE_REGLES = (() => {
   const s = JSON.stringify([DOMAINES, AMBIGUS, IGNORER, PHRASES_NEUTRES, LIEUX_GENERIQUES, COLLECTIONS, SEULEMENT_EN_PREMIER, MOTIFS_DE_TITRE, MAX_DOMAINES, A_TRAITER, FEMININS, REGLAGES, NEUTRES_SAUF_SUIVI_DE]) + classer + scan + scanPhrase + motsAvant + kwRegex
-    + morceauWikipedia + finDePhrase + planAvecPhrase + concerneeWiki + WIKI_EST + WIKI_ADJECTIFS + [...WIKI_ABREVIATIONS].join();
+    + morceauWikipedia + finDePhrase + planAvecPhrase + concerneeWiki + WIKI_EST + WIKI_EST_ELARGI + WIKI_ADJECTIFS + [...WIKI_ABREVIATIONS].join();
   let h = 2166136261;
   for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619) >>> 0;
   return h.toString(36);

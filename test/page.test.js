@@ -845,6 +845,39 @@ test('Wikipédia : le morceau lu est ce qui suit le premier « est un/une/le/la 
   site.fermer();
 });
 
+test('Wikipédia : extraction élargie (était / fut / sont / a été / forment / constituent / désigne + article obligatoire), « est un » reste prioritaire', async () => {
+  const site = await creerSite({ cartes: [] });
+  const m = site.wmr.morceauWikipedia;
+  // cartes réelles du rapport du 2026-10-24 (extraits de 500 caractères relus dans l'API)
+  assert.equal(m('Les Svendborg Rabbits sont un club danois de basket-ball basé à Svendborg.'), 'club danois de basket-ball basé à Svendborg');
+  assert.equal(m('Gartnait mac Girom, dit Gartnait Ier, fils de Girom était le roi des Pictes entre 536 et 543.'), 'roi des Pictes entre 536 et 543');
+  assert.equal(m("Ambatovy, située à Madagascar à une dizaine de kilomètres nord-est de Moramanga, est l'une des plus grandes mines de nickel latéritique au monde."),
+    'plus grandes mines de nickel latéritique au monde', 'est l\'une des');
+  assert.equal(m("Les chaînes côtières californiennes sont l'une des onze régions géomorphiques de l'État de Californie, dans l'Ouest des États-Unis."),
+    "onze régions géomorphiques de l'État de Californie, dans l'Ouest des États-Unis", 'sont l\'une des');
+  assert.equal(m('Les Paulchoffatiidae (les Paulchoffatiidés en français) sont une famille fossile de mammifères qui vivaient au Jurassique.'),
+    'famille fossile de mammifères qui vivaient au Jurassique');
+  assert.equal(m("Le Leninbund (également appelé Lenin-Bund) était un parti communiste en Allemagne."), 'parti communiste en Allemagne');
+  assert.equal(m("John 'Johnny' Aitken, né le 3 mai 1885 à Indianapolis et mort le 15 octobre 1918, était un pilote automobile américain."), 'pilote automobile américain');
+  assert.equal(m("Fulful ben Sa'id ben Khazrun était un Émir Maghraouides, connu pour s'être rebellé."), "Émir Maghraouides, connu pour s'être rebellé");
+  assert.equal(m('Dom Pedro Fernandes Sardinha, (Évora, 1496 — Brésil, 1556) fut le premier évêque du Brésil. Il avait été ordonné à Paris.'), 'évêque du Brésil', 'l\'adjectif d\'ouverture est sauté');
+  assert.equal(m('Les Sterrofustia forment un ordre de mollusques aplacophores.'), 'ordre de mollusques aplacophores');
+  assert.equal(m('Marching squares désigne un algorithme d\'infographie qui permet la construction de courbes de niveau.'), "algorithme d'infographie qui permet la construction de courbes de niveau");
+  assert.equal(m('Les mésosidérites constituent une classe de météorites très rares.'), 'classe de météorites très rares');
+  // « est un » reste prioritaire, même quand un autre verbe vient avant lui
+  assert.equal(m('Le roi fut un homme sage. Son fils est un peintre célèbre.'), 'peintre célèbre', '« est un » d\'abord, même plus loin que « fut un »');
+  assert.equal(m("L'usine fut une ruine. Elle est un symbole."), 'symbole', '« est un » d\'abord : le verbe élargi n\'est pas lu');
+  // sans article : rien (« est né », « fut brièvement », « a été fondée », « Cette page concerne »)
+  assert.equal(m('Jean Dupont est né en 1900 à Lyon.'), null);
+  assert.equal(m('Guido Ventimiglia (mort en 1362), fut brièvement comte de Malte de 1360 à sa mort.'), null);
+  assert.equal(m('La société a été fondée en 1910 à New York.'), null);
+  assert.equal(m("Cette page concerne l'année 1869 du calendrier grégorien."), null);
+  assert.equal(m('Cet article traite des événements survenus en 1835 au Canada.'), null);
+  assert.equal(m('Il fut laïque et resta célibataire.'), null, '« la » dans « laïque » n\'est pas un article');
+  assert.equal(m('Les sont-ils partis ? Ils étaient unis.'), null, '« unis » n\'est pas « un »');
+  site.fermer();
+});
+
 test('Wikipédia : page d\'homonymie, titre absent, titre en minuscule, extrait sans « est un » → rien ; une redirection est suivie', async () => {
   const cartes = cartesSansDescription(['Tessier', 'Titre Absent', 'mary butters', 'Mary Butters', 'Hanabie.', 'Pierre F.', 'Bourboulon']);
   const site = await creerSite({ cartes, wikipedia: {

@@ -360,6 +360,14 @@ const PHRASES = [
   ['Sokho', "nom de plusieurs villes de l'Israël antique mentionnées dans le Tanakh, par Hazal ou par d'autres sources", ['Géographie']],
   ["Tharp's Log", "tronc de séquoia géant dans le comté de Tulare, en Californie, dans l'ouest des États-Unis", ['Nature']],
   ['Bronson Canyon', 'canyon/grotte de Griffith Park à Los Angeles, en Californie', ['Géographie']],
+  // C1 (lot 3, 2026-10-24) : phrases venues de l'extraction élargie (« étaient / fut / sont / a été + article »), cartes réelles du rapport
+  ['Bandits de Jackson', "franchise professionnelle de hockey sur glace en Amérique du Nord qui évoluait dans l'ECHL", ['Sport']], // « franchise » seul est de la Fiction
+  ['Paraíso de San José', "huit paroisses civiles de la municipalité de Jiménez dans l'État de Lara au Venezuela", ['Géographie']], // le pluriel de « paroisse civile »
+  ['Flight of Fear', 'montagnes russes lancées enfermées de deux parcs de Cedar Fair aux États-Unis', []], // « montagnes russes » n'est pas de la Géographie
+  ['Enfant noir en Chine', "termes appliqués en Chine pour désigner des enfants nés à l'extérieur de la politique de l’enfant unique", []], // « désigner » (verbe) n'est pas « designer »
+  ['Omopterini', 'tribu de papillons de nuit de la sous-famille des Erebinae (famille des Erebidae)', ['Nature']], // une tribu de papillons n'est pas un peuple
+  ['Ambatovy', 'plus grandes mines de nickel latéritique au monde avec une capacité de production de 40 000 tonnes de nickel', ['Économie']],
+  ["Fulful ben Sa'id", "Émir Maghraouides, connu notamment pour s'être rebellé contre Badis ben Mansur et les Zirides d'Achir", ['Histoire']],
   // le second domaine reste quand son mot est dans les premiers mots
   ['Johnny Hallyday', 'chanteur et acteur français', ['Musique', 'Cinéma & TV']],
   ['Antoine Bernheim', 'banquier et homme politique français', ['Économie', 'Politique & Droit']],
@@ -490,7 +498,7 @@ test("EMPREINTE_REGLES : tout le code qui décide du classement d'après Wikipé
   const bloc = (app.match(/const EMPREINTE_REGLES = \(\(\) => \{([\s\S]*?)\n\}\)\(\);/) || [])[1] || '';
   assert.ok(bloc, 'bloc EMPREINTE_REGLES introuvable dans app.js');
   // Sinon améliorer l'extraction ou le filtrage de Wikipédia ne ferait pas relire les cartes déjà vues par Ranger.
-  for (const nom of ['morceauWikipedia', 'finDePhrase', 'planAvecPhrase', 'scanPhrase', 'concerneeWiki', 'WIKI_EST', 'WIKI_ADJECTIFS', 'WIKI_ABREVIATIONS']) {
+  for (const nom of ['morceauWikipedia', 'finDePhrase', 'planAvecPhrase', 'scanPhrase', 'concerneeWiki', 'WIKI_EST', 'WIKI_EST_ELARGI', 'WIKI_ADJECTIFS', 'WIKI_ABREVIATIONS']) {
     assert.match(bloc, new RegExp(`\\b${nom}\\b`), `${nom} (app.js) n'est pas dans EMPREINTE_REGLES : un changement de l'extraction Wikipédia ne ferait pas relire les cartes`);
   }
 });

@@ -122,6 +122,8 @@ const DOMAINES = {
     'vitesse moto',
     // Phase 3 Wikipédia, 2026-10-24 (R) : « titre de la presse sportive » est aussi du Sport (comme avant P3)
     'presse sportive',
+    // Phase 3 Wikipédia, 2026-10-24 (C1) : une « franchise professionnelle de hockey » est une équipe, pas une franchise de fiction
+    'franchise professionnelle',
   ],
   'Politique & Droit': [
     'homme politique', 'femme politique', 'personnalité politique', 'politicien', 'politicienne', 'ministre',
@@ -158,6 +160,8 @@ const DOMAINES = {
     'constructeur automobile', 'compagnie', 'compagnie aérienne', 'compagnie ferroviaire', 'société', 'groupe industriel',
     'chaîne de magasins', 'enseigne', 'brasserie', 'distillerie', 'fabricant', 'éditeur de logiciels',
     'éditeur de jeux vidéo', 'start-up', 'conglomérat', 'centrale thermique', 'centrale nucléaire', 'usine',
+    // Phase 3 Wikipédia, 2026-10-24 (C1) : « l'une des plus grandes mines de nickel » (Ambatovy)
+    'grandes mines',
     'mine', 'monnaie', 'bourse', 'publicitaire', 'publicité', 'restaurateur', 'chef cuisinier', 'cuisinier',
     'cuisinière', 'siège social', 'gastronomie', 'plat', 'recette', 'fromage', 'vin', 'bière', 'boisson',
     'pain', 'pâtisserie', 'gâteau', 'dessert', 'confiserie', 'cuisine', 'spécialité culinaire', 'centre commercial', 'appellation d\'origine', 'épice', 'économie', 'hôtel', 'hôtels', 'chaîne d\'hôtels',
@@ -251,6 +255,8 @@ const DOMAINES = {
     'quercus', 'dypsis', 'réserve nationale', 'faune', 'sous-classe',
     // Phase 3 Wikipédia, 2026-10-24 : « mer » seul est de la Géographie (Penilpidia, Actinernus)
     'concombre de mer', 'concombres de mer', 'anémone de mer', 'anémones de mer', 'séquoia',
+    // Phase 3 Wikipédia, 2026-10-24 (C1) : « tribu de papillons de nuit » est un taxon, pas un peuple (Omopterini)
+    'tribu de papillons',
     // … et les cyclones : « saison 2004 » ne les range pas en Sport (Tempête tropicale Earl)
     'tempête tropicale', 'phénomène cyclonique', 'tempête tropicale de la saison 20*', 'phénomène cyclonique de la saison 20*',
   ],
@@ -267,7 +273,7 @@ const DOMAINES = {
     'ancien état', 'histoire', 'historique', 'événement', 'tueur en série', 'criminel', 'criminelle',
     'meurtrier', 'affaire criminelle', 'gangster', 'mafieux', 'espion', 'espionne', 'condottiere',
     'traité de paix', 'sénateur romain', 'consul romain', 'personnalité de la rome antique', 'grec ancien', 'personnage historique',
-    'sultan', 'sultanat', 'khaganat', 'khanat', 'émirat', 'hiéroglyphe', 'peuple', 'peuple autochtone', 'ethnie', 'tribu', 'résistance française', 'camp de concentration', 'mercenaire', 'mercenaires', 'étude et narration du passé',
+    'sultan', 'sultanat', 'khaganat', 'khanat', 'émirat', 'émir', 'hiéroglyphe', 'peuple', 'peuple autochtone', 'ethnie', 'tribu', 'résistance française', 'camp de concentration', 'mercenaire', 'mercenaires', 'étude et narration du passé',
     // Suggestions du 2026-10-13
     // pas de date seule (jour, mois, année) : il faut l'événement, le personnage, le bâtiment… (2026-10-14)
     'chronologie', 'consul', 'tribun', 'doge', 'sénéchal', 'romain', 'révolte', 'soulèvement',
@@ -314,6 +320,8 @@ const DOMAINES = {
     'río', 'étang', 'récif', 'caverne', 'township', 'socken', 'amt', 'porte de paris', 'section de',
     // Phase 3 Wikipédia, 2026-10-24 : « paroisse » seule reste religieuse (ici : Irlande, Groenland)
     'townland', 'paroisse civile', 'fjord',
+    // Phase 3 Wikipédia, 2026-10-24 (C1) : le pluriel (« huit paroisses civiles »)
+    'paroisses civiles',
     // … et P2 : leur sujet est un lieu même quand le seul autre mot de lieu est un LIEUX_GENERIQUES tardif (Okroug municipal, Côte de Jor)
     'division municipale', 'site naturel',
   ],
@@ -432,6 +440,8 @@ const PAS_SUGGERER = [
 // Phase 3 Wikipédia, 2026-10-24.
 const PHRASES_NEUTRES = [
   'en général', 'plus général', 'sens général', 'password hashing competition',
+  // C1 : le verbe « désigner » n'est pas « designer » (le moteur ignore les accents) ; « montagnes russes » n'est pas de la Géographie
+  'pour désigner', 'à désigner', 'de désigner', 'montagnes russes',
 ];
 // …sauf quand l'expression est suivie de l'un de ces bouts : « promu en général de brigade » est bien un grade de l'armée
 // (R, lot 3, 2026-10-24).

@@ -316,6 +316,21 @@ test('essai : une carte sans phrase mais avec un extrait est rejouée par morcea
   assert.deepEqual([...(r.resultat.avertissements || [])], [], 'pas d\'avertissement : aucun extrait coupé à 250');
 });
 
+test('essai : l\'extraction élargie classe une carte « sont un… » / « était le… » (C1), pas une page de date', () => {
+  const r = essaiSurRapport([
+    { titre: 'Svendborg Rabbits', etape: 'cache', cause: 'pas-de-est-un', domaines: [], extrait: 'Les Svendborg Rabbits sont un club danois de basket-ball basé à Svendborg.' },
+    { titre: 'Gartnait Ier', etape: 'cache', cause: 'pas-de-est-un', domaines: [], extrait: 'Gartnait mac Girom, dit Gartnait Ier, fils de Girom était le roi des Pictes entre 536 et 543.' },
+    { titre: 'Guido sans article', etape: 'cache', cause: 'pas-de-est-un', domaines: [], extrait: 'Guido Ventimiglia (mort en 1362), fut brièvement comte de Malte de 1360 à sa mort.' },
+  ]);
+  assert.equal(r.status, 0, r.stderr);
+  const c = Object.fromEntries(r.resultat.cartes.map((x) => [x.titre, x]));
+  assert.equal(c['Svendborg Rabbits'].cause, 'classee');
+  assert.deepEqual(c['Svendborg Rabbits'].domaines, ['Sport']);
+  assert.equal(c['Svendborg Rabbits'].avant, 'pas-de-est-un');
+  assert.deepEqual(c['Gartnait Ier'].domaines, ['Histoire']);
+  assert.equal(c['Guido sans article'].cause, 'pas-de-est-un', 'sans article, pas de phrase');
+});
+
 test('essai : avertit quand les extraits du rapport sont coupés à 250 caractères (ancien rapport)', () => {
   const coupe = ('Mot '.repeat(70)).slice(0, 249) + '…'; // 250 caractères, finit par « … » : l'ancien format
   const r = essaiSurRapport([
@@ -348,21 +363,20 @@ const precisionMinimale = () => {
   return require('vm').runInContext(fs.readFileSync(path.join(SRC, 'regles.js'), 'utf8') + '\n;REGLAGES.wikipedia.precisionMinimale;', require('vm').createContext({}));
 };
 
-test('essai : référence figée (moteur après P2), 89 justes sur 93 classées sur 104 cartes', () => {
+test('essai : référence figée (moteur après C1), 148 justes sur 151 classées sur 164 cartes', () => {
   const r = essai([path.join('test', 'reference-wikipedia.json')]);
   const x = r.resultat;
   const QUOI_FAIRE = 'moteur ou règles changés : relance npm run essai, mets à jour couverture, précision et les fausses ici et dans le nom du test, relève precisionMinimale (src/regles.js) si la précision monte, puis docs/tests.md et docs/suivi-wikipedia.md';
-  assert.deepEqual({ ...x.couverture }, { classees: 93, lues: 104, taux: 0.894 }, QUOI_FAIRE);
-  assert.deepEqual({ ...x.precision }, { verifiees: 93, justes: 89, taux: 0.957 }, QUOI_FAIRE);
+  assert.deepEqual({ ...x.couverture }, { classees: 151, lues: 164, taux: 0.921 }, QUOI_FAIRE);
+  assert.deepEqual({ ...x.precision }, { verifiees: 151, justes: 148, taux: 0.98 }, QUOI_FAIRE);
   // chacune a un domaine attendu PLUS un domaine en trop, ou un domaine hors attendu et acceptables
   assert.deepEqual(x.fausses.map((f) => [f.titre, f.domaines, f.motsResponsables]), [
     ['Pilot chart', ['Patrimoine'], ['domaine']],
-    ['Ali ben Hammud al-Nasir', ['Religion & Mythes'], ['calife']],
     ['Téti (fils de Minhotep)', ['Politique & Droit'], ['fonctionnaire']],
     ['Ethnoprimatologie', ['Sciences'], ['sociétés humaines']],
   ], QUOI_FAIRE);
-  assert.match(r.stdout, /Couverture : 93 \/ 104 \(89 %\)/, QUOI_FAIRE);
-  assert.match(r.stdout, /Précision : 89 \/ 93 \(96 %\)/, QUOI_FAIRE);
+  assert.match(r.stdout, /Couverture : 151 \/ 164 \(92 %\)/, QUOI_FAIRE);
+  assert.match(r.stdout, /Précision : 148 \/ 151 \(98 %\)/, QUOI_FAIRE);
 });
 
 test('essai : garde-fou de précision, la référence ne passe pas sous REGLAGES.wikipedia.precisionMinimale', () => {
@@ -379,7 +393,7 @@ test('essai : garde-fou de précision, la référence ne passe pas sous REGLAGES
 test('essai : la référence sous le minimum de précision, l\'essai sort en code 1 avec un message qui dit quoi faire', () => {
   const r = essai([path.join('test', 'reference-wikipedia.json'), '--minimum', '0.99']);
   assert.equal(r.status, 1);
-  assert.match(r.stderr, /Précision 96 % sous le minimum de 99 %/);
+  assert.match(r.stderr, /Précision 98 % sous le minimum de 99 %/);
   assert.match(r.stderr, /REGLAGES\.wikipedia\.precisionMinimale/);
   // un rapport réel (autre fichier que la vérité) ne déclenche pas le garde-fou
   const exemple = essai([path.join('resultats', 'exemple.json'), '--minimum', '0.99']);
@@ -388,19 +402,19 @@ test('essai : la référence sous le minimum de précision, l\'essai sort en cod
 
 test('essai : sur la référence (test/reference-wikipedia.json), sans réseau, taux cohérents et cas sans classement jamais devinés', () => {
   const ref = JSON.parse(fs.readFileSync(path.join(RACINE, 'test', 'reference-wikipedia.json'), 'utf8'));
-  assert.equal(ref.cartes.length, 104, '23 cartes de l\'essai du 2026-10-23 + 3 cas sans classement + 60 cartes du rapport du 2026-10-24 + 11 cartes de la phase 3 (P3) + 7 cartes de la phase 3 (P2)');
-  assert.equal(ref.cartes.filter((c) => c.phrase).length, 101);
+  assert.equal(ref.cartes.length, 164, '23 cartes de l\'essai du 2026-10-23 + 3 cas sans classement + 60 cartes du rapport du 2026-10-24 + 11 cartes de la phase 3 (P3) + 7 cartes de la phase 3 (P2) + 60 cartes de la phase 3 (C1)');
+  assert.equal(ref.cartes.filter((c) => c.phrase).length, 161);
   const r = essai([path.join('test', 'reference-wikipedia.json')]);
   assert.equal(r.status, 0, r.stderr);
   const x = r.resultat;
-  assert.equal(x.cartes.length, 104);
-  assert.equal(Object.values(x.parCause).reduce((a, b) => a + b, 0), 104);
-  assert.equal(x.couverture.lues, 104);
+  assert.equal(x.cartes.length, 164);
+  assert.equal(Object.values(x.parCause).reduce((a, b) => a + b, 0), 164);
+  assert.equal(x.couverture.lues, 164);
   assert.equal(x.couverture.classees, x.parCause.classee);
   assert.ok(x.precision && x.precision.verifiees === x.couverture.classees, 'chaque carte classée de la référence est vérifiée');
   assert.equal(x.precision.justes + x.fausses.length, x.precision.verifiees);
   for (const t of ['Hanabie.']) assert.equal(x.cartes.find((c) => c.titre === t).cause, 'extrait-vide-ou-stub');
   assert.ok(x.cartes.some((c) => c.cause === 'homonymie') && x.cartes.some((c) => c.cause === 'titre-absent'));
-  assert.match(r.stdout, /Couverture : \d+ \/ 104/);
+  assert.match(r.stdout, /Couverture : \d+ \/ 164/);
   assert.match(r.stdout, /Précision : \d+ \/ \d+/);
 });
