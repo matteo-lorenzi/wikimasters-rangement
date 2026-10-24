@@ -192,6 +192,15 @@
   {"titre":"EC8OR","phrase":"groupe allemand de digital hardcore, originaire de Berlin","attendu":["Musique"]},
   {"titre":"Broteochactas","phrase":"genre de scorpions de la famille des Chactidae","attendu":["Nature"]},
   {"titre":"Radiorama","phrase":"groupe italien d'Italo disco, actif entre 1984 et 2002","attendu":["Musique"]},
-  {"titre":"Terrorgruppe","phrase":"groupe allemand de punk rock, originaire de Berlin","attendu":["Musique"]}
+  {"titre":"Terrorgruppe","phrase":"groupe allemand de punk rock, originaire de Berlin","attendu":["Musique"]},
+  {"titre":"Luis Bolívar","phrase":"matador colombien","attendu":["Arts"]},
+  {"titre":"Antonio Márquez Serrano","phrase":"torero espagnol","attendu":["Arts"]},
+  {"titre":"Grand Orient de Suisse","phrase":"obédience maçonnique fondée le 24 juin 1959","attendu":["Religion & Mythes"]},
+  {"titre":"La Parfaite Union (Namur)","phrase":"titre distinctif de « La Bonne Amitié – François Bovesse », loge maçonnique namuroise affiliée au Grand Orient de Belgique","attendu":["Religion & Mythes"]},
+  {"titre":"VT-4 (US Navy)","phrase":"escadron d'entraînement du Naval Air Training Command de l'US Navy","attendu":["Histoire"]},
+  {"titre":"Mary Butters","phrase":"sorcière irlandaise connue sous nom de la sorcière de Carnmoney","attendu":["Religion & Mythes"]},
+  {"titre":"Čech","phrase":"figure mythique qui a donné son nom aux Tchèques","attendu":["Religion & Mythes"]},
+  {"titre":"Le Pâtre","phrase":"drame lyrique, en cinq actes et en vers, du félibre Théodore Aubanel, écrit en 1866","attendu":["Littérature"]},
+  {"titre":"Roger V Bacon","phrase":"puissant seigneur de Normandie","attendu":["Histoire"]}
  ]
 }

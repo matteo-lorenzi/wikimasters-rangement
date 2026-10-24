@@ -166,11 +166,11 @@ test('suggestions : « opération » et « technique » jamais proposés, refus�
 test('suggestions : un exemplaire en double ne compte qu\'une fois (3 cartes distinctes au moins)', async () => {
   const site = await creerSite({ cartes: [] });
   const deux = [
-    { t: 'Le Pâtre', d: 'drame lyrique zorglub' }, { t: 'Le Pâtre', d: 'drame lyrique zorglub' }, // le même exemplaire, deux fois
-    { t: 'Autre pièce', d: 'drame lyrique zorglub' },
+    { t: 'Le Pâtre', d: 'fantaisie burlesque zorglub' }, { t: 'Le Pâtre', d: 'fantaisie burlesque zorglub' }, // le même exemplaire, deux fois
+    { t: 'Autre pièce', d: 'fantaisie burlesque zorglub' },
   ].map(carteSugg);
   assert.ok(!Array.from(site.wmr.suggestions(deux).candidats, (c) => c.mot).includes('zorglub'), '2 cartes distinctes : pas proposé');
-  const trois = [...deux, { t: 'Troisième pièce', d: 'drame lyrique zorglub' }].map(carteSugg);
+  const trois = [...deux, { t: 'Troisième pièce', d: 'fantaisie burlesque zorglub' }].map(carteSugg);
   assert.ok(Array.from(site.wmr.suggestions(trois).candidats, (c) => c.mot).includes('zorglub'), '3 cartes distinctes : proposé');
   site.fermer();
 });

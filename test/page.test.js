@@ -883,7 +883,7 @@ test('Wikipédia : page d\'homonymie, titre absent, titre en minuscule, extrait 
   const site = await creerSite({ cartes, wikipedia: {
     articles: {
       Tessier: 'Tessier est un joueur de football ou un chirurgien.',
-      'Mary Butters': 'Mary Butters ( c. 1770 - c. 1850) est une sorcière irlandaise connue sous nom de la sorcière de Carnmoney.',
+      'Mary Butters': 'Mary Butters ( c. 1770 - c. 1850) est une chiffonnière irlandaise connue sous le surnom de la dame de Carnmoney.',
       'Hanabie.': 'Hanabie.',
       'Pierre Fehlmann': 'Pierre Fehlmann, né en 1942 à Morges, est un navigateur suisse, célèbre par ses participations aux courses autour du monde.',
       Bourboulon: 'Le nom propre Bourboulon prend différentes significations.',
@@ -895,7 +895,7 @@ test('Wikipédia : page d\'homonymie, titre absent, titre en minuscule, extrait 
   const phrases = site.wmr.store.get('ranger_lecture').phrases;
   // seules les pages exploitables donnent une phrase ; la clé reste celle de la carte réelle (description vide)
   assert.deepEqual(Object.keys(phrases).map((k) => k.split('|').slice(0, 2).join('|')).sort(), ['Mary Butters|', 'Pierre F.|']);
-  assert.equal(phrases['Mary Butters||C'], 'sorcière irlandaise connue sous nom de la sorcière de Carnmoney');
+  assert.equal(phrases['Mary Butters||C'], 'chiffonnière irlandaise connue sous le surnom de la dame de Carnmoney');
   assert.equal(site.wmr.store.get('wp:Tessier').homonymie, true);
   assert.equal(site.wmr.store.get('wp:Titre Absent').absent, true);
   assert.equal(site.wmr.store.get('wp:mary butters').absent, true, 'le titre en minuscule n\'existe pas');
@@ -908,7 +908,7 @@ test('Wikipédia : l\'aperçu liste les cartes classées d\'après Wikipédia av
     'Marcel Dubois': 'Marcel Dubois, né en 1920, est le premier chirurgien français à avoir réalisé une greffe du rein.',
     'McLaren MP4-28': 'La McLaren MP4-28 est la monoplace de Formule 1 engagée par McLaren lors de la saison 2013 de Formule 1.',
     'Pierre Fehlmann': 'Pierre Fehlmann, né en 1942 à Morges, est un navigateur suisse, célèbre par ses participations aux courses autour du monde.',
-    'Mary Butters': 'Mary Butters ( c. 1770 - c. 1850) est une sorcière irlandaise connue sous nom de la sorcière de Carnmoney.',
+    'Mary Butters': 'Mary Butters ( c. 1770 - c. 1850) est une chiffonnière irlandaise connue sous le surnom de la dame de Carnmoney.',
     'Hanabie.': 'Hanabie.',
   } } });
   sansEssai(site);

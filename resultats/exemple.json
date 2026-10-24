@@ -39,7 +39,7 @@
  "cartes": [
   {"titre":"Jean Exemple","rarete":"C","etape":"reseau","phrase":"joueur de football français","cause":"classee","domaines":["Sport"],"mots":["joueur de football"]},
   {"titre":"Paul Exemple","rarete":"R","etape":"reseau","phrase":"peintre français","cause":"classee","domaines":["Arts"],"mots":["peintre"]},
-  {"titre":"Lucie Exemple","rarete":"C","etape":"reseau","phrase":"sorcière irlandaise connue sous nom de la sorcière de Carnmoney","cause":"phrase-sans-regle","domaines":[],"mots":[]},
+  {"titre":"Lucie Exemple","rarete":"C","etape":"reseau","phrase":"chiffonnière irlandaise connue sous le surnom de la dame de Carnmoney","cause":"phrase-sans-regle","domaines":[],"mots":[]},
   {"titre":"Pierre F.","rarete":"C","etape":"cache","phrase":"navigateur suisse, célèbre par ses participations aux courses autour du monde","cause":"phrase-ambigue","domaines":[],"mots":["navigateur"],"redirection":"Pierre Fehlmann"},
   {"titre":"Tessier","rarete":"C","etape":"reseau","cause":"homonymie","domaines":[]},
   {"titre":"Titre Absent","rarete":"C","etape":"reseau","cause":"titre-absent","domaines":[]},

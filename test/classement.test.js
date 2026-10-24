@@ -244,6 +244,25 @@ const CAS = [
   // un jour de l'année est une date : carte ignorée
   ['18 octobre 1965', "291e jour de l'année 1965", [], 'ignoree'],
   ['20 novembre 1954', "324e jour de l'année 1954", [], 'ignoree'],
+  // 8 mots acceptés par la personne le 2026-10-24 (cartes réelles de son rapport v1.9.13)
+  ['Luis Bolívar', 'matador colombien', ['Arts'], 'classee'],
+  ['Antonio Márquez Serrano', 'torero espagnol', ['Arts'], 'classee'],
+  ['Grand Orient de Suisse', 'obédience maçonnique fondée le 24 juin 1959', ['Religion & Mythes'], 'classee'],
+  ['La Parfaite Union (Namur)', 'titre distinctif de « La Bonne Amitié – François Bovesse », loge maçonnique namuroise affiliée au Grand Orient de Belgique', ['Religion & Mythes'], 'classee'],
+  ['VT-4 (US Navy)', "escadron d'entraînement du Naval Air Training Command de l'US Navy", ['Histoire'], 'classee'],
+  ['Mary Butters', 'sorcière irlandaise connue sous nom de la sorcière de Carnmoney', ['Religion & Mythes'], 'classee'],
+  ['Čech', 'figure mythique qui a donné son nom aux Tchèques', ['Religion & Mythes'], 'classee'],
+  ['Le Pâtre', 'drame lyrique, en cinq actes et en vers, du félibre Théodore Aubanel, écrit en 1866', ['Littérature'], 'classee'],
+  ['Roger V Bacon', 'puissant seigneur de Normandie', ['Histoire'], 'classee'],
+  ['Frère Pierre', 'frère dominicain français', ['Religion & Mythes'], 'classee'],
+  // pièges : « seigneur de » ne prend pas « Le Seigneur des anneaux » ; « dominicain » seul est une nationalité, pas une règle
+  ['Le Seigneur des anneaux', 'roman de fantasy de J. R. R. Tolkien', ['Littérature'], 'classee'],
+  ['Seigneur de la guerre', 'film américain de 2005', ['Cinéma & TV'], 'classee'],
+  ['Hubert Niclasse', 'dominicain suisse', [], 'inconnue'],
+  ['Pedro', 'footballeur dominicain', ['Sport'], 'classee'],
+  ['La Sorcière de Blair', 'film américain', ['Cinéma & TV'], 'classee'],
+  ['Matador', 'film espagnol de Pedro Almodóvar', ['Cinéma & TV'], 'classee'],
+  ['Loge', 'loge de théâtre', ['Arts'], 'classee'],
   // « télé » a 4 lettres : pris tel quel, il ne trouve pas « télégraphe »
   ["Ligne du télégraphe Chappe d'Avranches à Cherbourg", '', [], 'inconnue'],
   // mots risqués refusés par la personne : la carte reste sans règle

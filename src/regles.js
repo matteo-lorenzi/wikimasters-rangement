@@ -60,6 +60,8 @@ const DOMAINES = {
     'punk rock', 'metalcore', 'italo disco', 'digital hardcore', 'heavy metal',
   ],
   'Littérature': [
+    // 2026-10-24 : mot accepté par la personne (« Le Pâtre », drame en vers ; la Musique reste possible).
+    'drame lyrique',
     'écrivain', 'écrivaine', 'romancier', 'romancière', 'poète', 'poétesse', 'auteur', 'autrice',
     'essayiste', 'dramaturge', 'nouvelliste', 'éditeur', 'éditrice', 'maison d\'édition', 'roman!', 'livre',
     'recueil', 'poème', 'poésie', 'pièce de théâtre', 'bande dessinée', 'série de bande dessinée',
@@ -75,6 +77,8 @@ const DOMAINES = {
     'lexicographe', 'collection éditoriale',
   ],
   'Arts': [
+    // 2026-10-24 : mots acceptés par la personne (tauromachie rangée en Arts).
+    'torero', 'matador',
     'peintre', 'sculpt*', 'artiste', 'illustrateur', 'illustratrice', 'dessinateur', 'dessinatrice',
     'photographe', 'architecte', 'chorégraphe', 'danseur', 'danseuse', 'danse', 'ballet', 'graveur', 'graveuse',
     'céramiste', 'designer', 'styliste', 'couturier', 'couturière', 'mannequin', 'tableau', 'peinture',
@@ -279,6 +283,8 @@ const DOMAINES = {
     'cténophore', 'conodonte', 'genre de scorpion', 'famille de scorpion', 'espèce de scorpion',
   ],
   'Histoire': [
+    // 2026-10-24 : mots acceptés par la personne. « seigneur de! » est exact pour ne pas prendre « Le Seigneur des anneaux ».
+    'escadron', 'puissant seigneur', 'seigneur de!',
     'bataille', 'guerre', 'siège', 'sac de', 'révolution', 'dynastie', 'empire', 'royaume', 'roi', 'reine',
     'empereur', 'impératrice', 'pharaon', 'nomarque', 'prince', 'princesse', 'duc', 'duchesse', 'marquis',
     'marquise', 'baron', 'baronne', 'noble', 'aristocrate', 'noblesse', 'famille noble', 'militaire', 'général!',
@@ -304,6 +310,9 @@ const DOMAINES = {
     'vice-amiral', 'contre-amiral',
   ],
   'Religion & Mythes': [
+    // 2026-10-24 : mots acceptés par la personne (sorcière, figure mythique, loge/obédience maçonnique, frère/ordre/prêtre dominicain).
+    // « dominicain » seul reste sans règle : c'est aussi une nationalité.
+    'sorcière', 'figure mythique', 'loge maçonnique', 'obédience maçonnique', 'frère dominicain', 'ordre dominicain', 'prêtre dominicain',
     'mythologie', 'personnage de la mythologie', 'homme d\'église', 'femme d\'église', 'dieu', 'déesse', 'divinité', 'saint', 'sainte', 'pape',
     'évêque', 'archevêque', 'cardinal', 'titre cardinalice', 'prêtre', 'moine', 'moniale', 'religieux',
     'religieuse', 'théologien', 'théologienne', 'abbé', 'abbesse', 'prophète', 'apôtre', 'martyr', 'ermite',

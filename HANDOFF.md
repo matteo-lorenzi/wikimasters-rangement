@@ -160,6 +160,12 @@ Couverture sur le rapport de 699 cartes : 61,7 % -> **73,8 % brute** (516 / 699)
 - **C4** : cause `page-ignoree` (`pageDeDate`, app.js) : 14 pages de dates sortent du dénominateur de la couverture. C'est un changement de MESURE, aucune carte n'est mieux classée. `npm run essai` imprime la couverture hors pages de dates et la « Couverture brute ».
 - Python ne peut pas écrire dans `src/` sous cet environnement (PermissionError) : utiliser l'outil d'édition ou un script Node.
 
+### Mots décidés par la personne (2026-10-24) — branche `claude/mots-decides` (depuis `main` v1.9.13)
+
+- Acceptés : torero, matador (Arts) ; loge maçonnique, obédience maçonnique, sorcière, figure mythique, frère/ordre/prêtre dominicain (Religion & Mythes) ; escadron, puissant seigneur, `seigneur de!` (Histoire) ; drame lyrique (Littérature). Cas de piège testés : « Le Seigneur des anneaux » reste Littérature, `dominicain` seul reste sans règle (nationalité). Refusé : `comédie` (reste `!À traiter`).
+- Cartes encore sans règle à cause des restrictions : Hubert Niclasse (« dominicain suisse »), Reparti i Operacioneve Speciale (« unité des forces spéciales » : ajouter `forces spéciales` en Histoire si la personne le veut).
+- Effet : 9 cartes gagnées sur le rapport v1.9.13, couverture 519 → 528 sur 693 ; référence 199 cartes (183/186). À fusionner avec le lot 4 (`claude/wiki-p3-lot4`) dans la prochaine version.
+
 ## Questions en suspens
 
 Chacune avec le contexte et la recommandation à proposer. Ne pas trancher à la place de la personne.
