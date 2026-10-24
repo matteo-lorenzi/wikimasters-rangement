@@ -130,6 +130,16 @@ Moteur : nouvelle constante `MOTIFS_DE_TITRE` dans `regles.js` (une ligne par mo
 
 **Premier usage, avec la personne présente** : installer, ouvrir le panneau, laisser « Essai Wikipédia : 40 cartes » coché, « Ranger », lire le groupe « Classées d'après Wikipédia » carte par carte avant « Appliquer » ; si c'est bon, décocher la case (Ranger relira alors toutes les cartes sans étiquette).
 
+## Phase 3 Wikipédia (lot 1) — branche `claude/wiki-p3-mesure` (depuis `main` v1.9.12, version et `dist` non touchées)
+
+Objectif : précision >= 95 % (couverture 72-75 %) de Wikipédia dans Ranger. Suivi tâche par tâche : `docs/suivi-wikipedia.md`.
+- **M0** : `EMPREINTE_REGLES` inclut `morceauWikipedia`, `finDePhrase`, `planAvecPhrase`, `concerneeWiki`, `WIKI_EST`, `WIKI_ADJECTIFS`, `WIKI_ABREVIATIONS` (changer l'extraction fait relire les cartes déjà vues). `planAvecPhrase` a été déplacée avant l'empreinte (constante pas encore définie sinon).
+- **M1** : `REGLAGES.wikipedia` dans `regles.js` (lot, extrait, pauses, tentatives, rétention, essai, fenêtre, longueurs, `secondDomaineMots: 3` pas encore utilisé, `precisionMinimale`), lu par `app.js` via `WIKI`. Comportement inchangé.
+- **M2** : `test/reference-wikipedia.json` passe à 86 cartes (60 jugées par Claude, à valider par la personne). Précision de départ **69 / 83 = 83,1 %** (14 fausses) ; `precisionMinimale = 0.83`, à relever à chaque tâche jusqu'à 0.95. `npm run essai` sort en code 1 sous ce seuil, un test aussi.
+- **M3** : le rapport garde l'extrait sur 500 caractères ; l'essai rejoue `morceauWikipedia` sur les cartes avec extrait sans phrase, et avertit si le rapport est coupé à 250 (celui du 2026-10-24 : 89 cartes). Il faut un nouveau rapport (version avec M3) pour mesurer un gain d'extraction.
+- Chiffres : 328 tests, 33 mutations ; couverture sur le rapport de 699 cartes : 442 / 699 = 63,2 % (inchangée).
+- Suite : corriger les 14 fausses de la référence (mots responsables dans `npm run essai`), puis la couverture.
+
 ## Questions en suspens
 
 Chacune avec le contexte et la recommandation à proposer. Ne pas trancher à la place de la personne.

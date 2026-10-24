@@ -165,6 +165,17 @@ test('rapport Wikipédia : Ranger sans carte concernée n\'écrase pas le rappor
   site.fermer();
 });
 
+test('rapport Wikipédia : l\'extrait d\'une carte sans phrase est gardé sur 500 caractères (pas 250), pour rejouer l\'extraction hors navigateur', async () => {
+  const long = 'Alpha '.repeat(75).trim(); // 449 caractères, aucun « est un »
+  const site = await creerSite({ cartes: cartesSansDescription(['Long Texte']), wikipedia: { articles: { 'Long Texte': long } } });
+  site.wmr.store.set('wiki_essai', false);
+  await apercu(site);
+  const c = parTitre(rapport(site))['Long Texte'];
+  assert.equal(c.cause, 'pas-de-est-un');
+  assert.equal(c.extrait, long, 'l\'extrait entier, jusqu\'à 500 caractères');
+  site.fermer();
+});
+
 // La mesure est un diagnostic : si elle plante, Ranger continue (aperçu, bouton Appliquer) et le journal des bugs le dit.
 test('rapport Wikipédia : la construction du rapport lève une exception, l\'aperçu arrive quand même avec « Appliquer »', async () => {
   const site = await siteCauses();
@@ -273,6 +284,49 @@ test('essai : précision avec un fichier de vérité, et le mot responsable de c
   assert.deepEqual(r.resultat.fausses[0].motsResponsables, ['peintre']);
   assert.match(r.stdout, /Précision : 1 \/ 2 \(50 %\)/);
   assert.match(r.stdout, /Paul Exemple/);
+});
+
+// Un rapport écrit dans un dossier temporaire, rejoué par l'essai (vérité par défaut : la référence).
+const essaiSurRapport = (cartes, extra = {}) => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'wmr-rapport-'));
+  const fichier = path.join(dir, 'rapport.json');
+  fs.writeFileSync(fichier, JSON.stringify({ outil: 'wmr-rapport-wikipedia', format: 1, version: '1.9.12', cartes, ...extra }));
+  const r = essai([fichier]);
+  fs.rmSync(dir, { recursive: true, force: true });
+  return r;
+};
+
+test('essai : une carte sans phrase mais avec un extrait est rejouée par morceauWikipedia (« est un » entre 250 et 300 caractères)', () => {
+  const extrait = 'Mot '.repeat(66) + 'est un peintre français.'; // « est un » au caractère 264
+  const r = essaiSurRapport([
+    { titre: 'Peintre Lointain', etape: 'cache', cause: 'pas-de-est-un', domaines: [], extrait },
+    { titre: 'Trop Loin', etape: 'cache', cause: 'pas-de-est-un', domaines: [], extrait: 'Mot '.repeat(80) + 'est un peintre français.' }, // au-delà de 300
+    { titre: 'Sans Extrait', etape: 'cache', cause: 'titre-absent', domaines: [] },
+  ]);
+  assert.equal(r.status, 0, r.stderr);
+  const c = Object.fromEntries(r.resultat.cartes.map((x) => [x.titre, x]));
+  assert.equal(c['Peintre Lointain'].cause, 'classee');
+  assert.deepEqual(c['Peintre Lointain'].domaines, ['Arts']);
+  assert.equal(c['Peintre Lointain'].phrase, 'peintre français');
+  assert.equal(c['Peintre Lointain'].avant, 'pas-de-est-un', 'le résultat a changé depuis le rapport');
+  assert.equal(c['Trop Loin'].cause, 'pas-de-est-un', 'hors de la fenêtre de 300 caractères');
+  assert.equal(c['Trop Loin'].avant, undefined);
+  assert.equal(c['Sans Extrait'].cause, 'titre-absent');
+  assert.equal(r.resultat.couverture.classees, 1);
+  assert.deepEqual([...(r.resultat.avertissements || [])], [], 'pas d\'avertissement : aucun extrait coupé à 250');
+});
+
+test('essai : avertit quand les extraits du rapport sont coupés à 250 caractères (ancien rapport)', () => {
+  const coupe = ('Mot '.repeat(70)).slice(0, 249) + '…'; // 250 caractères, finit par « … » : l'ancien format
+  const r = essaiSurRapport([
+    { titre: 'Coupée A', etape: 'cache', cause: 'pas-de-est-un', domaines: [], extrait: coupe },
+    { titre: 'Coupée B', etape: 'cache', cause: 'pas-de-est-un', domaines: [], extrait: coupe },
+    { titre: 'Courte', etape: 'cache', cause: 'extrait-vide-ou-stub', domaines: [], extrait: 'Courte.' },
+  ]);
+  assert.equal(r.status, 0, r.stderr);
+  assert.equal(r.resultat.avertissements.length, 1);
+  assert.match(r.resultat.avertissements[0], /extraits coupés à 250 caractères dans ce rapport \(2 carte\(s\)\)/);
+  assert.match(r.stdout, /Attention : extraits coupés à 250 caractères dans ce rapport/);
 });
 
 test('essai : jugement, un domaine attendu PLUS un domaine non attendu est « fausse »', async () => {

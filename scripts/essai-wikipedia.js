@@ -57,7 +57,9 @@ for (const c of ref.cartes || []) if (Array.isArray(c.attendu)) verite[nfc(c.tit
 // Chaque carte : la phrase rejouée dans le moteur actuel ; sans phrase, la cause lue dans le rapport.
 const cartes = rapport.cartes.map((c) => {
   const x = { titre: c.titre, rarete: c.rarete ?? null, etape: c.etape || 'reference' };
-  if (c.phrase) Object.assign(x, { phrase: c.phrase }, monde(W.classerPhrase({ t: c.titre, d: '' }, c.phrase)));
+  // sans phrase mais avec un extrait : l'extraction actuelle (morceauWikipedia) est rejouée sur l'extrait
+  const phrase = c.phrase || (c.extrait ? W.morceauWikipedia(c.extrait) : null);
+  if (phrase) Object.assign(x, { phrase }, monde(W.classerPhrase({ t: c.titre, d: '' }, phrase)));
   else Object.assign(x, { cause: c.cause, domaines: [] }, c.extrait ? { extrait: c.extrait } : {});
   if (!W.CAUSES_WIKIPEDIA.includes(x.cause)) { console.error(`${c.titre} : cause inconnue « ${x.cause} ».`); process.exit(1); }
   if (c.redirection) x.redirection = c.redirection;
@@ -67,6 +69,10 @@ const cartes = rapport.cartes.map((c) => {
   return x;
 });
 const bilan = monde(W.bilanWikipedia(cartes, verite));
+// Les anciens rapports (avant la v1.9.13) coupent l'extrait à 250 caractères (« … » en 250e) alors que l'extraction cherche sur 300 :
+// le rejeu d'extraction y est incomplet.
+const coupes = rapport.cartes.filter((c) => c.extrait && c.extrait.length === 250 && c.extrait.endsWith('…')).length;
+const avertissements = coupes ? [`extraits coupés à 250 caractères dans ce rapport (${coupes} carte(s)) : le rejeu de l'extraction est incomplet, relis les cartes avec une version récente du script (extraits de 500 caractères)`] : [];
 
 // Le mot responsable d'une carte fausse : celui qui donne un domaine que la vérité n'attend pas.
 const domainesDuMot = (m) => monde(W.classerPhrase({ t: '', d: '' }, m)).domaines;
@@ -88,7 +94,7 @@ const resultat = {
   versionRapport: rapport.version ?? null, dateRapport: rapport.date ?? null, essai: rapport.essai ?? null,
   dureeMs: rapport.dureeMs ?? null, requetes: rapport.requetes ?? null, lots: rapport.lots || [], erreurs: rapport.erreurs || [],
   dureeEssaiMs: Date.now() - debut,
-  ...bilan, fausses, changements: cartes.filter((c) => c.avant).length, cartes,
+  avertissements, ...bilan, fausses, changements: cartes.filter((c) => c.avant).length, cartes,
 };
 fs.mkdirSync(dossierSortie, { recursive: true });
 const sortie = path.join(dossierSortie, nom);
@@ -107,6 +113,7 @@ l.push('Par cause :');
 for (const [k, n] of Object.entries(bilan.parCause)) if (n) l.push(`  ${k.padEnd(22)} ${n}`);
 if (rapport.requetes != null) l.push(`Lecture : ${rapport.requetes} requête(s), ${(rapport.lots || []).length} lot(s), ${((rapport.dureeMs || 0) / 1000).toFixed(1)} s.`);
 for (const e of rapport.erreurs || []) l.push(`Erreur : ${e}`);
+for (const a of avertissements) l.push(`Attention : ${a}`);
 if (fausses.length) {
   l.push('Cartes fausses :');
   for (const f of fausses) l.push(`  - ${f.titre} : « ${f.phrase} » → ${f.domaines.join(', ')} (attendu : ${f.attendu.join(' ou ')})`

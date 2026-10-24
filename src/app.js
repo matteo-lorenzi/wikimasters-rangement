@@ -1203,7 +1203,7 @@ const causeWikipedia = (c, e) => {
   if (!e || e.absent) return { cause: 'titre-absent', domaines: [] };
   if (e.homonymie) return { cause: 'homonymie', domaines: [] };
   const phrase = morceauWikipedia(e.extrait);
-  if (!phrase) return { cause: estEbauche(c.t, e.extrait) ? 'extrait-vide-ou-stub' : 'pas-de-est-un', domaines: [], extrait: court(nfc(e.extrait).replace(/\s+/g, ' ')) };
+  if (!phrase) return { cause: estEbauche(c.t, e.extrait) ? 'extrait-vide-ou-stub' : 'pas-de-est-un', domaines: [], extrait: court(nfc(e.extrait).replace(/\s+/g, ' '), WIKI.extrait) }; // tout l'extrait (500), pour rejouer l'extraction hors navigateur
   return { phrase: court(phrase), ...classerPhrase(c, phrase) };
 };
 // Juste si au moins un domaine attendu est proposé et rien hors des attendus et acceptables ; attendu vide : rien ne doit être proposé.
