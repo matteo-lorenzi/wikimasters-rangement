@@ -363,20 +363,20 @@ const precisionMinimale = () => {
   return require('vm').runInContext(fs.readFileSync(path.join(SRC, 'regles.js'), 'utf8') + '\n;REGLAGES.wikipedia.precisionMinimale;', require('vm').createContext({}));
 };
 
-test('essai : référence figée (moteur après C1), 148 justes sur 151 classées sur 164 cartes', () => {
+test('essai : référence figée (moteur après C3), 174 justes sur 177 classées sur 190 cartes', () => {
   const r = essai([path.join('test', 'reference-wikipedia.json')]);
   const x = r.resultat;
   const QUOI_FAIRE = 'moteur ou règles changés : relance npm run essai, mets à jour couverture, précision et les fausses ici et dans le nom du test, relève precisionMinimale (src/regles.js) si la précision monte, puis docs/tests.md et docs/suivi-wikipedia.md';
-  assert.deepEqual({ ...x.couverture }, { classees: 151, lues: 164, taux: 0.921 }, QUOI_FAIRE);
-  assert.deepEqual({ ...x.precision }, { verifiees: 151, justes: 148, taux: 0.98 }, QUOI_FAIRE);
+  assert.deepEqual({ ...x.couverture }, { classees: 177, lues: 190, taux: 0.932 }, QUOI_FAIRE);
+  assert.deepEqual({ ...x.precision }, { verifiees: 177, justes: 174, taux: 0.983 }, QUOI_FAIRE);
   // chacune a un domaine attendu PLUS un domaine en trop, ou un domaine hors attendu et acceptables
   assert.deepEqual(x.fausses.map((f) => [f.titre, f.domaines, f.motsResponsables]), [
     ['Pilot chart', ['Patrimoine'], ['domaine']],
     ['Téti (fils de Minhotep)', ['Politique & Droit'], ['fonctionnaire']],
     ['Ethnoprimatologie', ['Sciences'], ['sociétés humaines']],
   ], QUOI_FAIRE);
-  assert.match(r.stdout, /Couverture : 151 \/ 164 \(92 %\)/, QUOI_FAIRE);
-  assert.match(r.stdout, /Précision : 148 \/ 151 \(98 %\)/, QUOI_FAIRE);
+  assert.match(r.stdout, /Couverture : 177 \/ 190 \(93 %\)/, QUOI_FAIRE);
+  assert.match(r.stdout, /Précision : 174 \/ 177 \(98 %\)/, QUOI_FAIRE);
 });
 
 test('essai : garde-fou de précision, la référence ne passe pas sous REGLAGES.wikipedia.precisionMinimale', () => {
@@ -402,19 +402,19 @@ test('essai : la référence sous le minimum de précision, l\'essai sort en cod
 
 test('essai : sur la référence (test/reference-wikipedia.json), sans réseau, taux cohérents et cas sans classement jamais devinés', () => {
   const ref = JSON.parse(fs.readFileSync(path.join(RACINE, 'test', 'reference-wikipedia.json'), 'utf8'));
-  assert.equal(ref.cartes.length, 164, '23 cartes de l\'essai du 2026-10-23 + 3 cas sans classement + 60 cartes du rapport du 2026-10-24 + 11 cartes de la phase 3 (P3) + 7 cartes de la phase 3 (P2) + 60 cartes de la phase 3 (C1)');
-  assert.equal(ref.cartes.filter((c) => c.phrase).length, 161);
+  assert.equal(ref.cartes.length, 190, '23 cartes de l\'essai du 2026-10-23 + 3 cas sans classement + 60 cartes du rapport du 2026-10-24 + 11 cartes de la phase 3 (P3) + 7 cartes de la phase 3 (P2) + 60 cartes de la phase 3 (C1) + 20 cartes de la phase 3 (C2) + 6 cartes de la phase 3 (C3)');
+  assert.equal(ref.cartes.filter((c) => c.phrase).length, 187);
   const r = essai([path.join('test', 'reference-wikipedia.json')]);
   assert.equal(r.status, 0, r.stderr);
   const x = r.resultat;
-  assert.equal(x.cartes.length, 164);
-  assert.equal(Object.values(x.parCause).reduce((a, b) => a + b, 0), 164);
-  assert.equal(x.couverture.lues, 164);
+  assert.equal(x.cartes.length, 190);
+  assert.equal(Object.values(x.parCause).reduce((a, b) => a + b, 0), 190);
+  assert.equal(x.couverture.lues, 190);
   assert.equal(x.couverture.classees, x.parCause.classee);
   assert.ok(x.precision && x.precision.verifiees === x.couverture.classees, 'chaque carte classée de la référence est vérifiée');
   assert.equal(x.precision.justes + x.fausses.length, x.precision.verifiees);
   for (const t of ['Hanabie.']) assert.equal(x.cartes.find((c) => c.titre === t).cause, 'extrait-vide-ou-stub');
   assert.ok(x.cartes.some((c) => c.cause === 'homonymie') && x.cartes.some((c) => c.cause === 'titre-absent'));
-  assert.match(r.stdout, /Couverture : \d+ \/ 164/);
+  assert.match(r.stdout, /Couverture : \d+ \/ 190/);
   assert.match(r.stdout, /Précision : \d+ \/ \d+/);
 });

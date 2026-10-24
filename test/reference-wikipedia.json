@@ -1,6 +1,6 @@
 {
  "description": "Vérité pour npm run essai (scripts/essai-wikipedia.js) : cartes réelles, phrase Wikipédia lue par Ranger, domaines attendus. Juste = au moins un domaine de « attendu » proposé, et aucun domaine hors de « attendu » et « acceptables ». « attendu » vide : rien ne doit être proposé.",
- "source": "164 cartes : 23 cartes classées de l'essai fait par la personne le 2026-10-23 (v1.9.9), 3 cas sans classement attendu, 60 cartes classées tirées au hasard (graine 24, tirage de scripts jetables) du rapport réel de la personne du 2026-10-24 (699 cartes, v1.9.12), 18 cartes de la phase 3 (P3 et P2), puis 60 cartes de la phase 3 (C1) : celles que l'extraction élargie (était / fut / sont / a été + article) classe en plus sur les extraits de 500 caractères relus dans l'API publique de Wikipédia. Un domaine tolérable mais pas idéal est dans « acceptables ».",
+ "source": "190 cartes (dont 20 de la phase 3, C2 : cartes classées en plus par le tour de vocabulaire, et 6 de C3 : genres musicaux et taxons) : 23 cartes classées de l'essai fait par la personne le 2026-10-23 (v1.9.9), 3 cas sans classement attendu, 60 cartes classées tirées au hasard (graine 24, tirage de scripts jetables) du rapport réel de la personne du 2026-10-24 (699 cartes, v1.9.12), 18 cartes de la phase 3 (P3 et P2), puis 60 cartes de la phase 3 (C1) : celles que l'extraction élargie (était / fut / sont / a été + article) classe en plus sur les extraits de 500 caractères relus dans l'API publique de Wikipédia. Un domaine tolérable mais pas idéal est dans « acceptables ».",
  "statut": "« attendu » et « acceptables » = jugement de Claude, à valider par la personne (surtout les 60 cartes du 2026-10-24).",
  "cartes": [
   {"titre":"K-186 Omsk","phrase":"sous-marin nucléaire lanceur de missiles de croisière du Projet 949A « Anteï » (code OTAN : classe Oscar-II), appartenant à la Flotte du Pacifique de la Marine soviétique puis de la Marine russe","attendu":["Transports"]},
@@ -26,7 +26,7 @@
   {"titre":"Gallaher Group","phrase":"multinationale anglaise active dans la fabrication et la vente de produits à base de tabac","attendu":["Économie"]},
   {"titre":"Hakea victoria","phrase":"plante buissonnante du genre Hakea originaire d'Australie Occidentale remarquable par son feuillage ornemental","attendu":["Nature"]},
   {"titre":"Web Security Guard","phrase":"logiciel gratuit de sécurité développé par la firme Crawler LLC basée à Boca Raton aux États-Unis","attendu":["Sciences"]},
-  {"titre":"Hanabie.","cause":"extrait-vide-ou-stub","extrait":"Hanabie.","attendu":[],"note":"extrait réduit au titre (vu sur le vrai site)"},
+  {"titre":"Hanabie.","cause":"extrait-vide-ou-stub","extrait":"Hanabie.","attendu":["Musique"],"note":"extrait réduit au titre (vu sur le vrai site le 2026-10-23) ; le rapport du 2026-10-24 donne « groupe japonais de metalcore de Tokyo » : Musique"},
   {"titre":"Mercure","cause":"homonymie","attendu":[],"note":"page d'homonymie (cas construit)"},
   {"titre":"Xqzv Titre Absent","cause":"titre-absent","attendu":[],"note":"titre absent de Wikipédia (cas construit)"},
   {"titre":"Peressadivka","phrase":"commune rurale d'Ukraine méridionale, de l'oblast de Mykolaïv, du raïon de Mykolaïv et de la communauté territoriale de la commune de Voskressenske, en Ukraine méridionale","attendu":["Géographie"]},
@@ -166,6 +166,32 @@
   {"titre":"Matteu Rocca","phrase":"écrivain, peintre et caricaturiste corse","attendu":["Littérature","Arts"]},
   {"titre":"Refuge de servitude","phrase":"aire protégée volontairement classée en refuge pour la faune, flore et fonge sauvages, pour des raisons écologiques, écopaysagères et parfois aménitaires ou pédagogiques par un propriétaires privés ou un groupe de propriétaires","attendu":["Nature"]},
   {"titre":"Enfant noir en Chine","phrase":"termes appliqués en Chine pour désigner des enfants nés à l'extérieur de la politique de l’enfant unique, ou généralement les enfants qui ne sont pas répertoriés dans le système d'enregistrement national des ménages chinois","attendu":[]},
-  {"titre":"Flight of Fear","phrase":"montagnes russes lancées enfermées de deux parcs de Cedar Fair aux États-Unis","attendu":[]}
+  {"titre":"Flight of Fear","phrase":"montagnes russes lancées enfermées de deux parcs de Cedar Fair aux États-Unis","attendu":[]},
+  {"titre":"Virginia Holgate-Leng","phrase":"cavalière britannique de concours complet","attendu":["Sport"]},
+  {"titre":"Les Chefs-d'Œuvre du mystère et du fantastique","phrase":"collection éditoriale créée en 1967 par les Éditions de l’Érable, à Genève","attendu":["Littérature"]},
+  {"titre":"Artère labiale supérieure","phrase":"artère systémique paire de la tête","attendu":["Sciences"]},
+  {"titre":"Norme bémol","phrase":"notion de géométrie différentielle","attendu":["Sciences"]},
+  {"titre":"The Three Ravens","phrase":"ballade populaire d'origine britannique","attendu":["Musique"]},
+  {"titre":"Niall Ó Dónaill","phrase":"lexicographe du gaélique irlandais","attendu":["Littérature"]},
+  {"titre":"François Antoine Peri","phrase":"stucateur actif à Bruxelles au XVIIIe siècle","attendu":["Arts"]},
+  {"titre":"Łukasz Świrk","phrase":"grimpeur polonais","attendu":["Sport"]},
+  {"titre":"Louis-Pierre Bareaud","phrase":"paysagiste français","attendu":["Arts"]},
+  {"titre":"Graphe universel","phrase":"graphe infini qui contient tous les graphes finis (ou dénombrables) comme sous-graphes","attendu":["Sciences"]},
+  {"titre":"Albert (antipape)","phrase":"antipape en janvier 1101","attendu":["Religion & Mythes"]},
+  {"titre":"Black Far West - Une contre-histoire de l'Ouest","phrase":"documentaire français réalisé par Cécile Denjean en 2022","attendu":["Cinéma & TV"]},
+  {"titre":"Heimdallarchaeia","phrase":"classe d'archées, du phylum des Promethearchaeota (les Archées d'Asgård)","attendu":["Nature"]},
+  {"titre":"Hurricane Electric","phrase":"fournisseur d'accès à Internet d'envergure mondiale offrant un accès Internet IPv4 et IPv6, des services de Transit IP, des outils, d'applications réseau , ainsi que des services d'hébergement et de colocation dans ses centres de données à San Jose","attendu":["Sciences","Économie"]},
+  {"titre":"Lemniscate de Booth","phrase":"lemniscate du plan euclidien","attendu":["Sciences"]},
+  {"titre":"Wilfried Huber","phrase":"lugeur italien","attendu":["Sport"]},
+  {"titre":"Stanley Benham","phrase":"bobeur américain","attendu":["Sport"]},
+  {"titre":"Ford Granada (Amérique du Nord)","phrase":"gamme de berlines fabriquées et commercialisées par Ford en Amérique du Nord","attendu":["Transports"]},
+  {"titre":"BRP Enrique Jurado","phrase":"deuxième patrouilleur côtier de classe Jose Andrada de la marine philippine","attendu":["Transports"]},
+  {"titre":"Hans-Peter Pohl","phrase":"spécialiste allemand du combiné nordique","attendu":["Sport"]},
+  {"titre":"Bathyctena","phrase":"genre de cténophores de l'ordre des Cydippida, le seul de la famille des Bathyctenidae","attendu":["Nature"]},
+  {"titre":"Cypridodella","phrase":"genre éteint de conodontes","attendu":["Nature"]},
+  {"titre":"EC8OR","phrase":"groupe allemand de digital hardcore, originaire de Berlin","attendu":["Musique"]},
+  {"titre":"Broteochactas","phrase":"genre de scorpions de la famille des Chactidae","attendu":["Nature"]},
+  {"titre":"Radiorama","phrase":"groupe italien d'Italo disco, actif entre 1984 et 2002","attendu":["Musique"]},
+  {"titre":"Terrorgruppe","phrase":"groupe allemand de punk rock, originaire de Berlin","attendu":["Musique"]}
  ]
 }

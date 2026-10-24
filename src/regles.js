@@ -36,6 +36,8 @@ const DOMAINES = {
     'golden globe', 'prix génie',
     // Suggestions du 2026-10-14 (4e tour) : « film » a 4 lettres, il ne trouve pas son pluriel
     'films',
+    // Phase 3 Wikipédia, 2026-10-24 (C2) : tour de vocabulaire des phrases sans règle
+    'documentaire',
   ],
   'Musique': [
     'chanteur', 'chanteuse', 'compositeur', 'compositrice', 'auteur-compositeur', 'autrice-compositrice',
@@ -52,6 +54,10 @@ const DOMAINES = {
     'musical', 'instrumental', 'jazz', 'trio à cordes',
     // Suggestions du 2026-10-13 (3e tour)
     'grammy',
+    // Phase 3 Wikipédia, 2026-10-24 (C2) : tour de vocabulaire des phrases sans règle : « ballade » seul est aussi un poème
+    'ballade populaire',
+    // Phase 3 Wikipédia, 2026-10-24 (C3) : genres musicaux (« groupe allemand de punk rock ») ; jamais « metal » seul : le moteur ignore les accents et « métal » serait pris
+    'punk rock', 'metalcore', 'italo disco', 'digital hardcore', 'heavy metal',
   ],
   'Littérature': [
     'écrivain', 'écrivaine', 'romancier', 'romancière', 'poète', 'poétesse', 'auteur', 'autrice',
@@ -65,6 +71,8 @@ const DOMAINES = {
     'light novel',
     // Phase 3 Wikipédia, 2026-10-24 : « album » seul est de la Musique, pas « album de bande dessinée »
     'album de bande dessinée', 'albums de bande dessinée',
+    // Phase 3 Wikipédia, 2026-10-24 (C2) : tour de vocabulaire des phrases sans règle
+    'lexicographe', 'collection éditoriale',
   ],
   'Arts': [
     'peintre', 'sculpt*', 'artiste', 'illustrateur', 'illustratrice', 'dessinateur', 'dessinatrice',
@@ -84,6 +92,8 @@ const DOMAINES = {
     'historien de l\'art', 'historienne de l\'art',
     // P2 : « homme de spectacle français… né dans le 8e arrondissement de Paris » (Léon Volterra) n'est pas de la Géographie
     'homme de spectacle', 'femme de spectacle',
+    // Phase 3 Wikipédia, 2026-10-24 (C2) : tour de vocabulaire des phrases sans règle
+    'paysagiste', 'stucateur',
   ],
   'Sport': [
     'footballeur', 'footballeuse', 'football', 'joueur de football', 'cycliste', 'coureur cycliste',
@@ -124,6 +134,8 @@ const DOMAINES = {
     'presse sportive',
     // Phase 3 Wikipédia, 2026-10-24 (C1) : une « franchise professionnelle de hockey » est une équipe, pas une franchise de fiction
     'franchise professionnelle',
+    // Phase 3 Wikipédia, 2026-10-24 (C2) : tour de vocabulaire des phrases sans règle
+    'lugeur', 'bobeur', 'grimpeur', 'concours complet', 'cavalier de concours complet', 'combiné nordique',
   ],
   'Politique & Droit': [
     'homme politique', 'femme politique', 'personnalité politique', 'politicien', 'politicienne', 'ministre',
@@ -223,6 +235,8 @@ const DOMAINES = {
     'base de données',
     // Phase 3 Wikipédia, 2026-10-24 : « société » seul donne l'Économie (Ethnoprimatologie)
     'sociétés humaines', 'société humaine',
+    // Phase 3 Wikipédia, 2026-10-24 (C2) : tour de vocabulaire des phrases sans règle : « artère » seul est aussi une rue, donc seulement l'anatomie
+    'géométrie', 'graphe', 'lemniscate', 'artère systémique', 'fournisseur d\'accès',
   ],
   'Espace': [
     'astéroïde', 'galaxie', 'constellation', 'nébuleuse', 'étoile', 'planète', 'exoplanète', 'planète mineure',
@@ -259,6 +273,10 @@ const DOMAINES = {
     'tribu de papillons',
     // … et les cyclones : « saison 2004 » ne les range pas en Sport (Tempête tropicale Earl)
     'tempête tropicale', 'phénomène cyclonique', 'tempête tropicale de la saison 20*', 'phénomène cyclonique de la saison 20*',
+    // Phase 3 Wikipédia, 2026-10-24 (C2) : tour de vocabulaire des phrases sans règle
+    'archée',
+    // Phase 3 Wikipédia, 2026-10-24 (C3) : taxons (« genre de scorpions ») ; « scorpion » seul reste libre : c'est aussi un groupe, un signe, un personnage
+    'cténophore', 'conodonte', 'genre de scorpion', 'famille de scorpion', 'espèce de scorpion',
   ],
   'Histoire': [
     'bataille', 'guerre', 'siège', 'sac de', 'révolution', 'dynastie', 'empire', 'royaume', 'roi', 'reine',
@@ -298,6 +316,8 @@ const DOMAINES = {
     'gourou', 'sikhisme', 'bouddh*', 'soufisme', 'islam', 'aumônier', 'kabbale', 'concile', 'confucianisme',
     // Suggestions du 2026-10-13 (3e tour)
     'marie de nazareth', 'procession', 'musulman', 'buddha',
+    // Phase 3 Wikipédia, 2026-10-24 (C2) : tour de vocabulaire des phrases sans règle
+    'antipape',
   ],
   'Géographie': [
     'commune', 'village', 'ville', 'municipalité', 'localité', 'hameau', 'lieu-dit', 'département',
@@ -351,6 +371,8 @@ const DOMAINES = {
     'chemins de fer',
     // Suggestions du 2026-10-13 (3e tour)
     'chariot', 'aéronaval',
+    // Phase 3 Wikipédia, 2026-10-24 (C2) : tour de vocabulaire des phrases sans règle
+    'patrouilleur', 'berline',
   ],
   'Fiction & Jeux': [
     'personnage de fiction', 'personnage', 'de fiction', 'fictif', 'fictive', 'univers de fiction',
