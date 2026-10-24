@@ -175,6 +175,46 @@ Objectif : la PRÉCISION hors entraînement. La revue du lot 3 avait mesuré 35/
 - **Précision hors entraînement, à retenir** : témoin graine 11 (40 cartes neuves) 90,0 % -> 97,4 %, mais 3 de ses 4 fausses sont les cas qui ont servi à concevoir D2 ; témoin graine 4242 : 92,5 % -> 95,0 % ; **témoin frais graine 31337 (tiré après D2, jamais regardé avant) : 37/40 = 92,5 %**, donc la cible de 95 % n'est PAS démontrée sur des cartes neuves (intervalle de Wilson large : environ 80-97 %). Fausses de ce témoin, sans règle propre pour l'instant : « Test respiratoire à l'urée » (Nature par « bactérie » au lieu de Sciences), « Georges-Alexandre de Mecklembourg » (« membre de la Maison de… » en Patrimoine au lieu d'Histoire), « Pierre Nicolas Dorsaz » (« habitant du village de… » en Géographie au lieu d'Histoire). Autres fausses vues sur les 699 cartes : « Sequential Circuits Prophet 5 » (Économie par « société », plutôt Musique).
 - Suite possible : juger un témoin plus grand (100 cartes neuves) avant de toucher d'autres règles ; ne pas réutiliser un témoin déjà vu pour valider une règle écrite d'après lui.
 
+## Bilan phase 3 Wikipédia et suite (handoff du 2026-10-24)
+
+**Pour reprendre** : lire cette section, puis `docs/suivi-wikipedia.md` (une ligne par tâche, chiffres avant/après) et `docs/tests.md` (« Mesure Wikipédia »). `npm test` = 535 tests, `python scripts/regressions.py` = 100/100, `npm run essai [rapport]` rejoue le moteur hors navigateur.
+
+### Où on en est (v1.9.14 sur `claude/v1914`, revue faite, pas encore sur `main`)
+| Mesure | v1.9.12 (départ) | v1.9.14 |
+|---|---|---|
+| Couverture, rapport réel de la personne (706 cartes) | 63,2 % | **75,8 %** hors 13 pages de dates (525/693) |
+| Précision, cartes tirées au hasard hors référence (jugées par Claude) | ~82 % strict (n=60) | **95/100** (±5 points, intervalle ~89-98 %) |
+| Précision de la référence (211 cartes, entraînement) | 83 % | 97,4 % (190/195) |
+
+**À retenir sur la précision** : le tirage de 100 cartes neuves de la revue (graine 2026) donne exactement le même résultat avec la v1.9.13 de `main` : les gains des lots 3 et 4 portent sur des cartes déjà dans la référence. La cible de 95 % est atteinte au point estimé, **pas démontrée** (borne basse ~89 %). Les jugements sont ceux de Claude, jamais validés par la personne (demande ouverte : lui faire vérifier ~20 jugements).
+
+### Ce qui reste, mesuré sur le rapport v1.9.13 rejoué avec le moteur v1.9.14
+Non classées : 168 sur 706 = pas-de-est-un 58 · sans règle 63 · ambiguës 34 · titres absents 8 · homonymies 4 · ébauche 1 (+13 pages de dates sorties du calcul).
+- **Sans règle (63)** : têtes de phrase presque toutes différentes (2 au plus pour le même mot) → pas de gros levier, un tour de vocabulaire donne ~10-12 cartes (fonds, confrérie, bibliothèque, clade, monoplans, montagnes russes, station-service, classe de contre-torpilleurs…).
+- **Ambiguës (34)** : dispersées (organisation, association, état, famille, série, membre, groupe, course, club, institution…) ; il faudrait le contexte, pas un mot.
+- **Pas de « est un » (58)** : 24 contiennent « est + nom sans article » (exemples vrais : « X est prêtre, doyen… », « Douglas Laycock est professeur… », « Albert R. Meyer est professeur d'informatique »), mais certains sont des faux positifs (« est menée par ») ; ~8-10 sont récupérables. 27 sont des pages sans phrase de définition (listes, ISO, fortifications…) : seul Wikidata pourrait les aider.
+
+### Prochaines améliorations, par gain attendu (rien n'est lancé)
+1. **Nouvelle mesure avec la v1.9.14 installée** (la personne) : Ranger sans « Appliquer », copier le rapport JSON, l'enregistrer dans `resultats\` ; Claude juge 100 cartes neuves tirées au hasard AVANT de toucher aux règles (témoin). C'est la seule vraie mesure de précision.
+2. **Erreurs réelles des témoins** (précision, ~14 cartes, un cas réel chacune dans `test/classement.test.js` avant la règle) : William Shull (animateur de dessins animés → Médias au lieu de Cinéma & TV), Skatopia (`ferme` pour un skatepark), Denma Locho Rinpoché (`collège` pour un lama), Bride sans mors (`cheval`), Réserve Tuscarora (`tribu`), Test respiratoire à l'urée (`bactérie`), Georges-Alexandre de Mecklembourg (« membre de la Maison de… »), Pierre Nicolas Dorsaz (« habitant du village de… »), Sequential Circuits Prophet 5 (`société`), ProQuartet (`loi`), Controverse fabriquée, Opsites (`historien`), Studentersamfundet i Trondheim, Rossiyane. Risque : sur-apprentissage → ne corriger que par des règles étroites, les ajouter à la référence, mesurer sur un témoin neuf.
+3. **« est + nom sans article »** dans `WIKI_EST_ELARGI` (~+8-10 cartes, +1,3 point de couverture) avec liste de noms de métier ou d'états, pas de verbe seul.
+4. **Un tour de vocabulaire** sur les 63 sans règle (~+10-12 cartes).
+5. **Étude Wikidata** (hors dépôt, `curl`, lecture seule) sur les 27 pages sans définition et les ambiguës : ne coder que si elle montre un gain d'au moins 40 cartes ; coût estimé L (4 fichiers, un second hôte, CSP de wiki-masters.com non vérifiée pour www.wikidata.org).
+6. **Ménage** : « Web Security Guard » en double dans `test/reference-wikipedia.json` (compte deux fois) ; `dist` en CRLF/LF ; branches `claude/*` à supprimer sur GitHub (le système bloque la suppression depuis l'agent : commandes dans la conversation) ; défaut de guidestra à signaler à son auteur (une revue lancée après un autre message n'est pas rattachée à la demande orchestrée, et le verdict « à reprendre » est ignoré sans alerte ; une mission reprise n'a pas de suivi d'étapes).
+
+### Décisions en attente de la personne
+- **`drame lyrique`** : Littérature seul aujourd'hui ; un opéra (« drame lyrique de Claude Debussy ») perd la Musique. Ajouter Musique ?
+- **`figure mythique`** : « chanteur, figure mythique du rock » reçoit Religion & Mythes en plus de Musique. Restreindre (à « figure mythique de la mythologie », par exemple) ?
+- **`dominicain` seul** : Hubert Niclasse (« dominicain suisse ») reste sans règle (c'est aussi une nationalité). Et `forces spéciales` → Histoire pour Reparti i Operacioneve Speciale ?
+- **`comédie`** : refusé, reste `!À traiter`.
+- **Pousser la v1.9.14 sur `main`** (la règle du projet : seulement après son oui).
+
+### Limites connues figées dans les tests (ne pas les « corriger » sans la personne)
+`figure mythique du rock` (Musique + Religion & Mythes) · `drame lyrique de Claude Debussy` (Littérature seule) · `Hazel la sorcière` sans description (Religion & Mythes) · `Matador (film)` (Cinéma & TV + Arts) · `émir du Qatar` (Histoire) · `archée selon Paracelse` (Nature) · `Opsites` (Sciences au lieu d'Histoire).
+
+### Méthode à garder
+Test ou cas réel rouge d'abord → règle la plus étroite → `npm run essai` avant/après → toute carte nouvellement classée jugée une à une → carte ajoutée à la référence → une ligne dans `docs/suivi-wikipedia.md` → mutation si bug. Une revue indépendante (agent « Revue : », bloc `VERDICT`) valide chaque lot. Le témoin de précision ne sert jamais à écrire une règle.
+
 ## Questions en suspens
 
 Chacune avec le contexte et la recommandation à proposer. Ne pas trancher à la place de la personne.
