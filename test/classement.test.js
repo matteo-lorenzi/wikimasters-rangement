@@ -255,6 +255,8 @@ const CAS = [
   ['Le Pâtre', 'drame lyrique, en cinq actes et en vers, du félibre Théodore Aubanel, écrit en 1866', ['Littérature'], 'classee'],
   ['Roger V Bacon', 'puissant seigneur de Normandie', ['Histoire'], 'classee'],
   ['Frère Pierre', 'frère dominicain français', ['Religion & Mythes'], 'classee'],
+  // « forces spéciales » accepté par la personne le 2026-10-24 (les autres décisions en attente restent ouvertes)
+  ['Reparti i Operacioneve Speciale', 'unité des forces spéciales albanaise fondée en février 77 sous le nom de code 77', ['Histoire'], 'classee'],
   // « seigneur de! » prouvé à part (« puissant seigneur » ne suffit pas à le couvrir) ; description reconstituée
   ['Hugues de Lusignan', 'seigneur de Lusignan au XIe siècle', ['Histoire'], 'classee'],
   // LIMITES CONNUES des mots décidés le 2026-10-24, relevées par la revue de la v1.9.14 : elles sont figées ici,

@@ -213,6 +213,7 @@
   {"titre":"Henri Frédéric Paul Gervais","phrase":"ichtyologiste français qui travaillait au Muséum national d'histoire naturelle","attendu":[]},
   {"titre":"Opsites","phrase":"nom mentionné deux fois par l'historien byzantin du VIe siècle Procope dans son œuvre Histoires ou Discours sur les Guerres (De Bellis), alors qu'il aborde les évènements liés à la guerre lazique (541-562) entre l'Empire byzantin et la Perse","attendu":["Histoire"]},
   {"titre":"ProQuartet","phrase":"association française de loi de 1901, créée en 1987 par Georges Zeisel, qui contribue au rayonnement du quatuor à cordes, au soutien de l’ensemble de la communauté de la musique de chambre et à l’élargissement des publics qui s’y intéressent","attendu":["Musique"]},
-  {"titre":"Controverse fabriquée","phrase":"technique utilisée par certains groupes de pression et leurs officines pour confondre l'opinion publique, en lui faisant croire qu'il existe une controverse sur un sujet, alors que celui-ci fait l'objet d'un consensus scientifique","attendu":["Politique & Droit"],"acceptables":["Médias"]}
+  {"titre":"Controverse fabriquée","phrase":"technique utilisée par certains groupes de pression et leurs officines pour confondre l'opinion publique, en lui faisant croire qu'il existe une controverse sur un sujet, alors que celui-ci fait l'objet d'un consensus scientifique","attendu":["Politique & Droit"],"acceptables":["Médias"]},
+  {"titre":"Reparti i Operacioneve Speciale","phrase":"unité des forces spéciales albanaise fondée en février 77 sous le nom de code 77","attendu":["Histoire"]}
  ]
 }

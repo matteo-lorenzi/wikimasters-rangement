@@ -301,7 +301,7 @@ const DOMAINES = {
   ],
   'Histoire': [
     // 2026-10-24 : mots acceptés par la personne. « seigneur de! » est exact pour ne pas prendre « Le Seigneur des anneaux ».
-    'escadron', 'puissant seigneur', 'seigneur de!',
+    'escadron', 'puissant seigneur', 'seigneur de!', 'forces spéciales',
     'bataille', 'guerre', 'siège', 'sac de', 'révolution', 'dynastie', 'empire', 'royaume', 'roi', 'reine',
     'empereur', 'impératrice', 'pharaon', 'nomarque', 'prince', 'princesse', 'duc', 'duchesse', 'marquis',
     'marquise', 'baron', 'baronne', 'noble', 'aristocrate', 'noblesse', 'famille noble', 'militaire', 'général!',

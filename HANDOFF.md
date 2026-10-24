@@ -19,13 +19,13 @@ Si Claude doit regarder le vrai site (observer un bouton, lire une carte) : Chro
 ## Reprendre une session (côté Claude)
 
 1. Lire `CLAUDE.md`, puis ce fichier en entier (surtout « Questions en suspens »).
-2. Dépôt absent → `git clone https://github.com/matteo-lorenzi/wikimasters-rangement`, puis `npm install`. `npm test` doit donner **535 tests verts** (v1.9.14 ; 440 sur la v1.9.13, 321 sur la v1.9.12) ; `PYTHONIOENCODING=utf-8 python scripts/regressions.py` **100/100 mutations détectées** (83 sur le lot 3, 31 sur la v1.9.12 seule).
+2. Dépôt absent → `git clone https://github.com/matteo-lorenzi/wikimasters-rangement`, puis `npm install`. `npm test` doit donner **536 tests verts** (v1.9.14 ; 440 sur la v1.9.13, 321 sur la v1.9.12) ; `PYTHONIOENCODING=utf-8 python scripts/regressions.py` **100/100 mutations détectées** (83 sur le lot 3, 31 sur la v1.9.12 seule).
 3. Travailler sur une nouvelle branche partie de `main` ; `main` n'avance qu'après le oui de la personne (`CLAUDE.md`).
 4. Si la personne n'a pas encore fait « Avant tout » (ci-dessus), le lui donner avant de coder ou de trancher quoi que ce soit.
 
 ## État
 
-- **v1.9.14 sur la branche `claude/v1914`** (535 tests, 100 mutations) ; **v1.9.13, v1.9.12, v1.9.11, v1.9.10 et v1.9.9 sur `main`** (voir la section Wikipédia), seul l’essai de 40 cartes a été fait sur le vrai site. **v1.9.8 est sur `main`** (2026-10-23) : elle réunit « Compléter les cartes rangées » et les règles du tour 5, **ni l'un ni l'autre essayés sur le vrai site**. v1.9.7 : la personne l’a installée et a rangé avec (36 cartes sans `!À traiter`). Node.js 26 et Python 3.13 installés sur la machine de travail le 2026-10-23.
+- **v1.9.14 sur la branche `claude/v1914`** (536 tests, 100 mutations) ; **v1.9.13, v1.9.12, v1.9.11, v1.9.10 et v1.9.9 sur `main`** (voir la section Wikipédia), seul l’essai de 40 cartes a été fait sur le vrai site. **v1.9.8 est sur `main`** (2026-10-23) : elle réunit « Compléter les cartes rangées » et les règles du tour 5, **ni l'un ni l'autre essayés sur le vrai site**. v1.9.7 : la personne l’a installée et a rangé avec (36 cartes sans `!À traiter`). Node.js 26 et Python 3.13 installés sur la machine de travail le 2026-10-23.
 - Le panneau du script a six boutons :
   - **Ranger les nouvelles cartes** : lit les cartes sans étiquette (seulement les nouvelles, ou **toutes si les règles ont changé** depuis le dernier rangement, v1.9.3), montre l'aperçu, pose les domaines après « Appliquer ». Recherches groupées à partir de 200 cartes (`docs/piste-1.md`). Rechargement et reprise automatiques sur raté du site.
   - **Suggestions** (v1.9.0–1.9.1, lecture seule) : compteur des cartes sans domaine, mots inconnus des règles (dès 3 cartes, domaine proposé d'après les cartes déjà étiquetées), « Copier pour Claude » et « Copier les cartes sans règle ». C'est l'outil du chantier en cours (voir plus bas).
@@ -163,7 +163,7 @@ Couverture sur le rapport de 699 cartes : 61,7 % -> **73,8 % brute** (516 / 699)
 ### Mots décidés par la personne (2026-10-24) — branche `claude/mots-decides` (depuis `main` v1.9.13)
 
 - Acceptés : torero, matador (Arts) ; loge maçonnique, obédience maçonnique, sorcière, figure mythique, frère/ordre/prêtre dominicain (Religion & Mythes) ; escadron, puissant seigneur, `seigneur de!` (Histoire) ; drame lyrique (Littérature). Cas de piège testés : « Le Seigneur des anneaux » reste Littérature, `dominicain` seul reste sans règle (nationalité). Refusé : `comédie` (reste `!À traiter`).
-- Cartes encore sans règle à cause des restrictions : Hubert Niclasse (« dominicain suisse »), Reparti i Operacioneve Speciale (« unité des forces spéciales » : ajouter `forces spéciales` en Histoire si la personne le veut).
+- Cartes encore sans règle à cause des restrictions : Hubert Niclasse (« dominicain suisse »), Reparti i Operacioneve Speciale a été rangée ensuite par `forces spéciales` (Histoire), accepté par la personne le 2026-10-24.
 - Effet : 9 cartes gagnées sur le rapport v1.9.13, couverture 519 → 528 sur 693 ; référence 199 cartes (183/186). À fusionner avec le lot 4 (`claude/wiki-p3-lot4`) dans la prochaine version.
 
 ### Phase 3 Wikipédia (lot 4) — branche `claude/wiki-p3-lot4` (depuis `claude/wiki-p3-couverture`, version et `dist` non touchées)
@@ -177,7 +177,7 @@ Objectif : la PRÉCISION hors entraînement. La revue du lot 3 avait mesuré 35/
 
 ## Bilan phase 3 Wikipédia et suite (handoff du 2026-10-24)
 
-**Pour reprendre** : lire cette section, puis `docs/suivi-wikipedia.md` (une ligne par tâche, chiffres avant/après) et `docs/tests.md` (« Mesure Wikipédia »). `npm test` = 535 tests, `python scripts/regressions.py` = 100/100, `npm run essai [rapport]` rejoue le moteur hors navigateur.
+**Pour reprendre** : lire cette section, puis `docs/suivi-wikipedia.md` (une ligne par tâche, chiffres avant/après) et `docs/tests.md` (« Mesure Wikipédia »). `npm test` = 536 tests, `python scripts/regressions.py` = 100/100, `npm run essai [rapport]` rejoue le moteur hors navigateur.
 
 ### Où on en est (v1.9.14 sur `claude/v1914`, revue faite, pas encore sur `main`)
 | Mesure | v1.9.12 (départ) | v1.9.14 |
@@ -205,7 +205,7 @@ Non classées : 168 sur 706 = pas-de-est-un 58 · sans règle 63 · ambiguës 34
 ### Décisions en attente de la personne
 - **`drame lyrique`** : Littérature seul aujourd'hui ; un opéra (« drame lyrique de Claude Debussy ») perd la Musique. Ajouter Musique ?
 - **`figure mythique`** : « chanteur, figure mythique du rock » reçoit Religion & Mythes en plus de Musique. Restreindre (à « figure mythique de la mythologie », par exemple) ?
-- **`dominicain` seul** : Hubert Niclasse (« dominicain suisse ») reste sans règle (c'est aussi une nationalité). Et `forces spéciales` → Histoire pour Reparti i Operacioneve Speciale ?
+- **`dominicain` seul** : Hubert Niclasse (« dominicain suisse ») reste sans règle (c'est aussi une nationalité). **Décidé le 2026-10-24 : `forces spéciales` → Histoire** (Reparti i Operacioneve Speciale), ajouté en v1.9.14 ; seul le pluriel, pas « force spéciale ».
 - **`comédie`** : refusé, reste `!À traiter`.
 - **Pousser la v1.9.14 sur `main`** (la règle du projet : seulement après son oui).
 
