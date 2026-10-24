@@ -6,6 +6,8 @@
 //   npm run essai -- fichier.json              un autre rapport (copié depuis l'aperçu de Ranger)
 //   npm run essai -- fichier.json --verite v.json --sortie dossier
 //
+// Code de sortie 1 si la référence (rapport = vérité) a une précision sous REGLAGES.wikipedia.precisionMinimale.
+
 // Écrit resultats/essai-<AAAA-MM-JJ-HHMM>.json et imprime un résumé.
 const fs = require('fs');
 const path = require('path');
@@ -20,6 +22,9 @@ const args = process.argv.slice(2);
 const option = (nom, def) => { const i = args.indexOf(nom); if (i < 0) return def; const v = args[i + 1]; args.splice(i, 2); return v; };
 const fichierVerite = option('--verite', REFERENCE);
 const dossierSortie = option('--sortie', path.join(RACINE, 'resultats'));
+// Le minimum de précision vient de REGLAGES (src/regles.js), lu par une petite évaluation vm ; --minimum 0.9 pour l'essayer autrement.
+const minimum = +option('--minimum', vm.runInContext(
+  fs.readFileSync(path.join(process.env.WMR_SRC || path.join(RACINE, 'src'), 'regles.js'), 'utf8') + '\n;REGLAGES.wikipedia.precisionMinimale;', vm.createContext({})));
 let source = args[0] || DEFAUT;
 
 const lireJson = (f) => {
@@ -110,3 +115,11 @@ if (fausses.length) {
 if (resultat.changements) l.push(`${resultat.changements} carte(s) dont le résultat a changé depuis le rapport (champ « avant »).`);
 l.push(`Résultat écrit : ${path.relative(RACINE, sortie) || sortie}`);
 console.log(l.join('\n'));
+
+// Garde-fou : la référence rejouée sur elle-même ne doit pas passer sous REGLAGES.wikipedia.precisionMinimale.
+if (pr && path.resolve(RACINE, source) === path.resolve(RACINE, fichierVerite) && pr.taux < minimum) {
+  console.error(`Précision ${pc(pr.taux)} sous le minimum de ${pc(minimum)} (REGLAGES.wikipedia.precisionMinimale dans src/regles.js). `
+    + 'Une modification des règles ou de l\'extraction a fait baisser la précision : regarde les « Cartes fausses » ci-dessus et corrige la règle ou annule-la. '
+    + 'Ne baisse le minimum que si la personne a changé un jugement de la référence ; il se relève à chaque amélioration, jusqu\'à 95 %.');
+  process.exit(1);
+}
