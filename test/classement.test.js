@@ -385,6 +385,13 @@ const CAS = [
   ['Artère (description)', 'artère systémique paire de la tête', ['Sciences'], 'classee'],
   ['Montréal (description)', 'artère principale de Montréal', [], 'inconnue'], // « artère » seul est aussi une rue
   ['Lemniscate (description)', 'lemniscate du plan euclidien', ['Sciences'], 'classee'],
+  // D2 (lot 4) : les mots ajoutés pour les phrases Wikipédia, lus comme descriptions de cartes
+  ['Muséum (description)', "Muséum national d'histoire naturelle", [], 'inconnue'], // « histoire naturelle » n'est pas de l'Histoire
+  ['Lois (description)', 'symétrie des lois physiques', ['Sciences'], 'classee'],
+  ['Finance (description)', 'concept en finance', ['Sciences', 'Économie'], 'classee'],
+  ['Ingénieure (description)', 'ingénieure commerciale', ['Économie'], 'classee'],
+  ['Records (description)', 'Livre Guinness des records', [], 'inconnue'],
+  ['Jeux (description)', 'développement de jeux vidéo', ['Fiction & Jeux'], 'classee'],
 ];
 
 for (const [t, d, attendu, statut] of CAS) {
@@ -474,6 +481,24 @@ const PHRASES = [
   // … et les pièges : « métal » (sans accent dans le moteur) n'est pas un genre musical, « Scorpions » est un groupe, pas un taxon
   ['Fer (reconstitué)', 'métal de transition', []],
   ['Scorpions', 'groupe de hard rock allemand', ['!À traiter']],
+  // D2 (lot 4, 2026-10-24) : MOTS_FAIBLES (jeu, jeux, histoire, concept, domaine) — cartes réelles de la revue du lot 3 (cartes neuves)
+  // (1) un mot faible cède devant un mot sûr d'un autre domaine, qui devient le sujet
+  ['Kickoff', 'méthode permettant de démarrer ou de redémarrer le jeu au football américain', ['Sport']], // « jeu » n'est pas Fiction & Jeux
+  ["Valeur temps de l'argent", "concept en finance qui veut qu'un montant d'argent reçu ou émis plus tôt vaut davantage qu'un même montant reçu ou émis plus tard", ['Économie']],
+  ["Fiscalité dans l'Égypte antique", 'domaine scientifique peu exploré', ['Sciences']], // « domaine » n'est pas un Patrimoine
+  ['Pamela Gidi Masías', 'ingénieure commerciale, consultante internationale et dirigeante d’entreprise chilienne', ['Économie']], // « ingénieure commerciale » : pas une ingénieure
+  ['Symétrie CPT', 'symétrie des lois physiques pour les transformations impliquant de manière simultanée la charge, la parité et le temps', ['Sciences']], // « lois physiques » ne sont pas du Droit
+  ['High Impact Games', "studio américain de développement de jeux vidéo basé à Los Angeles en Californie, fondé en 2003 par d'anciens membres des studios Insomniac Games", ['Fiction & Jeux']], // le pluriel « jeux vidéo » est un mot sûr
+  ["Musée de l'histoire de France (reconstitué)", "musée consacré à l'histoire de France", ['Patrimoine']], // « histoire » cède devant « musée »
+  // (2) loin dans la phrase, un mot faible ne range plus la carte
+  ['Hikaitaan', 'pluriel de Hikayat un mot arabe qui veut dire histoire et qui est souvent utilisé dans la tradition malaisienne', []],
+  ['Chandra Bahadur Dangi', "Népalais reconnu depuis février 2012 comme l'être humain adulte le plus petit du monde et de l'histoire par le Livre Guinness des records", []], // et le « Livre Guinness des records » n'est pas de la Littérature
+  ['Henri Frédéric Paul Gervais', "ichtyologiste français qui travaillait au Muséum national d'histoire naturelle", []], // « histoire naturelle » n'est pas de l'Histoire
+  ['Pilot chart', "carte marine employée dans le domaine maritime afin de déterminer une route en fonction des conditions climatiques moyennes pour chaque mois de l'année", ['Transports']], // « domaine » cède devant « route »
+  // … mais au début de la phrase, sans mot sûr d'un autre domaine, un mot faible garde son domaine
+  ['Go (reconstitué)', 'jeu de stratégie combinatoire abstrait pour deux joueurs', ['Fiction & Jeux']],
+  ['Histoire de France (reconstitué)', "histoire de la France depuis la préhistoire", ['Histoire']],
+  ['Théorie des cordes (reconstitué)', 'concept de la physique théorique', ['Sciences']],
   // le second domaine reste quand son mot est dans les premiers mots
   ['Johnny Hallyday', 'chanteur et acteur français', ['Musique', 'Cinéma & TV']],
   ['Antoine Bernheim', 'banquier et homme politique français', ['Économie', 'Politique & Droit']],
@@ -505,6 +530,26 @@ test('phrase Wikipédia : un lieu générique tardif ne compte pas, mais le mêm
   // « ville » (13e mot) ne range pas ; « ville portuaire » n'est pas un lieu générique à lui seul, « port » le range en Transports
   assert.deepEqual(phraseWiki('X', 'lieu fréquenté depuis longtemps par les touristes de la ville').etiquettes, []);
   assert.deepEqual(phraseWiki('X', 'lieu fréquenté depuis longtemps par les touristes du port').etiquettes, ['Transports']);
+});
+
+test('phrase Wikipédia : les mots faibles (MOTS_FAIBLES) ne touchent pas les descriptions de cartes, seulement les phrases', () => {
+  const d = 'méthode permettant de démarrer ou de redémarrer le jeu au football américain';
+  assert.deepEqual(classe('Kickoff', d).etiquettes, ['Fiction & Jeux', 'Sport']);
+  assert.deepEqual(phraseWiki('Kickoff', d).etiquettes, ['Sport']);
+  // une description garde aussi son « histoire » tardif
+  assert.deepEqual(classe('X', 'mot arabe qui veut dire histoire et qui est utilisé dans la tradition malaisienne').etiquettes, ['Histoire']);
+});
+
+test('MOTS_FAIBLES : chaque mot existe dans DOMAINES (sinon une faute de frappe le rend inutile)', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const vm = require('vm');
+  const { SRC } = require('./charger');
+  const regles = fs.readFileSync(path.join(SRC, 'regles.js'), 'utf8');
+  const { faibles, tous } = vm.runInContext(regles + '\n;({ faibles: [...MOTS_FAIBLES], tous: Object.values(DOMAINES).flat() });', vm.createContext({}));
+  assert.ok(faibles.length >= 5, `MOTS_FAIBLES ne compte que ${faibles.length} mots`);
+  const connus = new Set(tous.map(R.norm));
+  for (const m of faibles) assert.ok(connus.has(R.norm(m)), `« ${m} » (MOTS_FAIBLES) n'est dans aucun domaine de DOMAINES : faute de frappe ?`);
 });
 
 test('phrase Wikipédia : un seul mot tardif sans autre domaine reste le premier domaine', () => {

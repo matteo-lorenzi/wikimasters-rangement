@@ -1,6 +1,6 @@
 {
  "description": "Vérité pour npm run essai (scripts/essai-wikipedia.js) : cartes réelles, phrase Wikipédia lue par Ranger, domaines attendus. Juste = au moins un domaine de « attendu » proposé, et aucun domaine hors de « attendu » et « acceptables ». « attendu » vide : rien ne doit être proposé.",
- "source": "190 cartes (dont 20 de la phase 3, C2 : cartes classées en plus par le tour de vocabulaire, et 6 de C3 : genres musicaux et taxons) : 23 cartes classées de l'essai fait par la personne le 2026-10-23 (v1.9.9), 3 cas sans classement attendu, 60 cartes classées tirées au hasard (graine 24, tirage de scripts jetables) du rapport réel de la personne du 2026-10-24 (699 cartes, v1.9.12), 18 cartes de la phase 3 (P3 et P2), puis 60 cartes de la phase 3 (C1) : celles que l'extraction élargie (était / fut / sont / a été + article) classe en plus sur les extraits de 500 caractères relus dans l'API publique de Wikipédia. Un domaine tolérable mais pas idéal est dans « acceptables ».",
+ "source": "202 cartes (dont 20 de la phase 3, C2 : cartes classées en plus par le tour de vocabulaire, 6 de C3 : genres musicaux et taxons, et 12 de D2 : cartes neuves des deux témoins du lot 4, fausses comprises) : 23 cartes classées de l'essai fait par la personne le 2026-10-23 (v1.9.9), 3 cas sans classement attendu, 60 cartes classées tirées au hasard (graine 24, tirage de scripts jetables) du rapport réel de la personne du 2026-10-24 (699 cartes, v1.9.12), 18 cartes de la phase 3 (P3 et P2), puis 60 cartes de la phase 3 (C1) : celles que l'extraction élargie (était / fut / sont / a été + article) classe en plus sur les extraits de 500 caractères relus dans l'API publique de Wikipédia. Un domaine tolérable mais pas idéal est dans « acceptables ».",
  "statut": "« attendu » et « acceptables » = jugement de Claude, à valider par la personne (surtout les 60 cartes du 2026-10-24).",
  "cartes": [
   {"titre":"K-186 Omsk","phrase":"sous-marin nucléaire lanceur de missiles de croisière du Projet 949A « Anteï » (code OTAN : classe Oscar-II), appartenant à la Flotte du Pacifique de la Marine soviétique puis de la Marine russe","attendu":["Transports"]},
@@ -192,6 +192,18 @@
   {"titre":"EC8OR","phrase":"groupe allemand de digital hardcore, originaire de Berlin","attendu":["Musique"]},
   {"titre":"Broteochactas","phrase":"genre de scorpions de la famille des Chactidae","attendu":["Nature"]},
   {"titre":"Radiorama","phrase":"groupe italien d'Italo disco, actif entre 1984 et 2002","attendu":["Musique"]},
-  {"titre":"Terrorgruppe","phrase":"groupe allemand de punk rock, originaire de Berlin","attendu":["Musique"]}
+  {"titre":"Terrorgruppe","phrase":"groupe allemand de punk rock, originaire de Berlin","attendu":["Musique"]},
+  {"titre":"Kickoff","phrase":"méthode permettant de démarrer ou de redémarrer le jeu au football américain","attendu":["Sport"]},
+  {"titre":"Pamela Gidi Masías","phrase":"ingénieure commerciale, consultante internationale et dirigeante d’entreprise chilienne","attendu":["Économie"]},
+  {"titre":"Valeur temps de l'argent","phrase":"concept en finance qui veut qu'un montant d'argent reçu ou émis plus tôt vaut davantage qu'un même montant reçu ou émis plus tard","attendu":["Économie"]},
+  {"titre":"Fiscalité dans l'Égypte antique","phrase":"domaine scientifique peu exploré","attendu":["Sciences"],"acceptables":["Histoire"]},
+  {"titre":"Symétrie CPT","phrase":"symétrie des lois physiques pour les transformations impliquant de manière simultanée la charge, la parité et le temps","attendu":["Sciences"]},
+  {"titre":"High Impact Games","phrase":"studio américain de développement de jeux vidéo basé à Los Angeles en Californie, fondé en 2003 par d'anciens membres des studios Insomniac Games (dont le fondateur Roberto Rodriguez) et Naughty Dog","attendu":["Fiction & Jeux"],"acceptables":["Économie"]},
+  {"titre":"Hikaitaan","phrase":"pluriel de Hikayat un mot arabe qui veut dire histoire et qui est souvent utilisé dans la tradition malaisienne","attendu":[]},
+  {"titre":"Chandra Bahadur Dangi","phrase":"Népalais reconnu depuis février 2012 comme l'être humain adulte le plus petit du monde et de l'histoire par le Livre Guinness des records","attendu":[]},
+  {"titre":"Henri Frédéric Paul Gervais","phrase":"ichtyologiste français qui travaillait au Muséum national d'histoire naturelle","attendu":[]},
+  {"titre":"Opsites","phrase":"nom mentionné deux fois par l'historien byzantin du VIe siècle Procope dans son œuvre Histoires ou Discours sur les Guerres (De Bellis), alors qu'il aborde les évènements liés à la guerre lazique (541-562) entre l'Empire byzantin et la Perse","attendu":["Histoire"]},
+  {"titre":"ProQuartet","phrase":"association française de loi de 1901, créée en 1987 par Georges Zeisel, qui contribue au rayonnement du quatuor à cordes, au soutien de l’ensemble de la communauté de la musique de chambre et à l’élargissement des publics qui s’y intéressent","attendu":["Musique"]},
+  {"titre":"Controverse fabriquée","phrase":"technique utilisée par certains groupes de pression et leurs officines pour confondre l'opinion publique, en lui faisant croire qu'il existe une controverse sur un sujet, alors que celui-ci fait l'objet d'un consensus scientifique","attendu":["Politique & Droit"],"acceptables":["Médias"]}
  ]
 }

@@ -403,20 +403,23 @@ const precisionMinimale = () => {
   return require('vm').runInContext(fs.readFileSync(path.join(SRC, 'regles.js'), 'utf8') + '\n;REGLAGES.wikipedia.precisionMinimale;', require('vm').createContext({}));
 };
 
-test('essai : référence figée (moteur après C3), 174 justes sur 177 classées sur 190 cartes', () => {
+test('essai : référence figée (moteur après D2), 181 justes sur 186 classées sur 202 cartes', () => {
   const r = essai([path.join('test', 'reference-wikipedia.json')]);
   const x = r.resultat;
   const QUOI_FAIRE = 'moteur ou règles changés : relance npm run essai, mets à jour couverture, précision et les fausses ici et dans le nom du test, relève precisionMinimale (src/regles.js) si la précision monte, puis docs/tests.md et docs/suivi-wikipedia.md';
-  assert.deepEqual({ ...x.couverture }, { classees: 177, lues: 190, taux: 0.932 }, QUOI_FAIRE);
-  assert.deepEqual({ ...x.precision }, { verifiees: 177, justes: 174, taux: 0.983 }, QUOI_FAIRE);
+  assert.deepEqual({ ...x.couverture }, { classees: 186, lues: 202, taux: 0.921 }, QUOI_FAIRE);
+  assert.deepEqual({ ...x.precision }, { verifiees: 186, justes: 181, taux: 0.973 }, QUOI_FAIRE);
   // chacune a un domaine attendu PLUS un domaine en trop, ou un domaine hors attendu et acceptables
+  // (Opsites, ProQuartet et Controverse fabriquée : fausses relevées sur les témoins de cartes neuves du lot 4, gardées dans la référence)
   assert.deepEqual(x.fausses.map((f) => [f.titre, f.domaines, f.motsResponsables]), [
-    ['Pilot chart', ['Patrimoine'], ['domaine']],
     ['Téti (fils de Minhotep)', ['Politique & Droit'], ['fonctionnaire']],
     ['Ethnoprimatologie', ['Sciences'], ['sociétés humaines']],
+    ['Opsites', ['Sciences'], ['historien']],
+    ['ProQuartet', ['Politique & Droit'], ['loi']],
+    ['Controverse fabriquée', ['Sciences'], ['scientifique']],
   ], QUOI_FAIRE);
-  assert.match(r.stdout, /Couverture : 177 \/ 190 \(93 %\)/, QUOI_FAIRE);
-  assert.match(r.stdout, /Précision : 174 \/ 177 \(98 %\)/, QUOI_FAIRE);
+  assert.match(r.stdout, /Couverture : 186 \/ 202 \(92 %\)/, QUOI_FAIRE);
+  assert.match(r.stdout, /Précision : 181 \/ 186 \(97 %\)/, QUOI_FAIRE);
 });
 
 test('essai : garde-fou de précision, la référence ne passe pas sous REGLAGES.wikipedia.precisionMinimale', () => {
@@ -433,7 +436,7 @@ test('essai : garde-fou de précision, la référence ne passe pas sous REGLAGES
 test('essai : la référence sous le minimum de précision, l\'essai sort en code 1 avec un message qui dit quoi faire', () => {
   const r = essai([path.join('test', 'reference-wikipedia.json'), '--minimum', '0.99']);
   assert.equal(r.status, 1);
-  assert.match(r.stderr, /Précision 98 % sous le minimum de 99 %/);
+  assert.match(r.stderr, /Précision 97 % sous le minimum de 99 %/);
   assert.match(r.stderr, /REGLAGES\.wikipedia\.precisionMinimale/);
   // un rapport réel (autre fichier que la vérité) ne déclenche pas le garde-fou
   const exemple = essai([path.join('resultats', 'exemple.json'), '--minimum', '0.99']);
@@ -442,19 +445,19 @@ test('essai : la référence sous le minimum de précision, l\'essai sort en cod
 
 test('essai : sur la référence (test/reference-wikipedia.json), sans réseau, taux cohérents et cas sans classement jamais devinés', () => {
   const ref = JSON.parse(fs.readFileSync(path.join(RACINE, 'test', 'reference-wikipedia.json'), 'utf8'));
-  assert.equal(ref.cartes.length, 190, '23 cartes de l\'essai du 2026-10-23 + 3 cas sans classement + 60 cartes du rapport du 2026-10-24 + 11 cartes de la phase 3 (P3) + 7 cartes de la phase 3 (P2) + 60 cartes de la phase 3 (C1) + 20 cartes de la phase 3 (C2) + 6 cartes de la phase 3 (C3)');
-  assert.equal(ref.cartes.filter((c) => c.phrase).length, 187);
+  assert.equal(ref.cartes.length, 202, '23 cartes de l\'essai du 2026-10-23 + 3 cas sans classement + 60 cartes du rapport du 2026-10-24 + 11 cartes de la phase 3 (P3) + 7 cartes de la phase 3 (P2) + 60 cartes de la phase 3 (C1) + 20 cartes de la phase 3 (C2) + 6 cartes de la phase 3 (C3) + 12 cartes de la phase 3 (D2)');
+  assert.equal(ref.cartes.filter((c) => c.phrase).length, 199);
   const r = essai([path.join('test', 'reference-wikipedia.json')]);
   assert.equal(r.status, 0, r.stderr);
   const x = r.resultat;
-  assert.equal(x.cartes.length, 190);
-  assert.equal(Object.values(x.parCause).reduce((a, b) => a + b, 0), 190);
-  assert.equal(x.couverture.lues, 190);
+  assert.equal(x.cartes.length, 202);
+  assert.equal(Object.values(x.parCause).reduce((a, b) => a + b, 0), 202);
+  assert.equal(x.couverture.lues, 202);
   assert.equal(x.couverture.classees, x.parCause.classee);
   assert.ok(x.precision && x.precision.verifiees === x.couverture.classees, 'chaque carte classée de la référence est vérifiée');
   assert.equal(x.precision.justes + x.fausses.length, x.precision.verifiees);
   for (const t of ['Hanabie.']) assert.equal(x.cartes.find((c) => c.titre === t).cause, 'extrait-vide-ou-stub');
   assert.ok(x.cartes.some((c) => c.cause === 'homonymie') && x.cartes.some((c) => c.cause === 'titre-absent'));
-  assert.match(r.stdout, /Couverture : \d+ \/ 190/);
+  assert.match(r.stdout, /Couverture : \d+ \/ 202/);
   assert.match(r.stdout, /Précision : \d+ \/ \d+/);
 });
