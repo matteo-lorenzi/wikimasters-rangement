@@ -497,6 +497,8 @@ const PHRASES_NEUTRES = [
   // D2 (lot 4) : « Livre Guinness des records » n'est pas de la Littérature ; « histoire naturelle » est de la Nature, pas de l'Histoire
   'livre guinness des records', 'livre des records',
   'histoire naturelle',
+  // « ferme » verbe, pas une ferme : « toutes les géodésiques sont fermées » (Surface de Zoll)
+  'sont fermées',
   // … et « fonds / recherche documentaire » n'est pas un film
   'fonds documentaire', 'fonds documentaires', 'recherche documentaire', 'recherches documentaires', 'ressources documentaires',
 ];
