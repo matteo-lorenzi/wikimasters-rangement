@@ -497,6 +497,8 @@ const PHRASES_NEUTRES = [
   // D2 (lot 4) : « Livre Guinness des records » n'est pas de la Littérature ; « histoire naturelle » est de la Nature, pas de l'Histoire
   'livre guinness des records', 'livre des records',
   'histoire naturelle',
+  // « sous-secrétaire général » (Fondation Sergio Vieira de Mello) est un poste de l'ONU, pas un général de l'armée
+  'sous-secrétaire général',
   // … et « fonds / recherche documentaire » n'est pas un film
   'fonds documentaire', 'fonds documentaires', 'recherche documentaire', 'recherches documentaires', 'ressources documentaires',
 ];
