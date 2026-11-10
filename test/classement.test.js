@@ -333,6 +333,7 @@ const CAS = [
   ['Jean Girard (reconstitué)', "promu en général d'armée en 1914", ['Histoire'], 'classee'],
   // « sous-secrétaire général » (Fondation Sergio Vieira de Mello) n'est pas un grade militaire
   ['Fondation Sergio Vieira de Mello (reconstitué)', "titre de sous-secrétaire général", [], 'inconnue'],
+  ['Fondation sans tiret (reconstitué)', "titre de sous secrétaire général", [], 'inconnue'],
   ['Pierre Lenoir (reconstitué)', 'nommé général de brigade en 1915', ['Histoire'], 'classee'],
   ['Hypéronyme (reconstitué)', 'terme qui désigne, dans son sens général, une catégorie de choses', [], 'inconnue'],
   // R, lot 3 : descriptions classiques que le lot 2 avait fait perdre (la presse, le métier de la presse, un grade de marine)

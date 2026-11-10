@@ -497,16 +497,16 @@ const PHRASES_NEUTRES = [
   // D2 (lot 4) : « Livre Guinness des records » n'est pas de la Littérature ; « histoire naturelle » est de la Nature, pas de l'Histoire
   'livre guinness des records', 'livre des records',
   'histoire naturelle',
-  // audit v1.9.14 : « contrainte physique » (Chaîne de ventre) est un adjectif, pas la discipline Sciences
-  'contrainte physique',
-  // « gang de rue » n'est pas une voie : Black Disciples (audit 2026-11-10)
-  'gang de rue',
-  // « ferme » verbe, pas une ferme : « toutes les géodésiques sont fermées » (Surface de Zoll)
-  'sont fermées',
-  // « sous-secrétaire général » (Fondation Sergio Vieira de Mello) est un poste de l'ONU, pas un général de l'armée
-  'sous-secrétaire général',
   // … et « fonds / recherche documentaire » n'est pas un film
   'fonds documentaire', 'fonds documentaires', 'recherche documentaire', 'recherches documentaires', 'ressources documentaires',
+  // audit 2026-11-10 (v1.9.14) : Chaîne de ventre, « contrainte physique » est un adjectif, pas la discipline Sciences
+  'contrainte physique',
+  // audit 2026-11-10 (v1.9.14) : Black Disciples, « gang de rue » n'est pas une voie
+  'gang de rue',
+  // audit 2026-11-10 (v1.9.14) : Surface de Zoll, « sont fermées » est un verbe, pas une ferme
+  'sont fermées',
+  // audit 2026-11-10 (v1.9.14) : Fondation Sergio Vieira de Mello, « sous-secrétaire général » est un poste de l'ONU, pas un général
+  'sous-secrétaire général', 'sous secrétaire général',
 ];
 // …sauf quand l'expression est suivie de l'un de ces bouts : « promu en général de brigade » est bien un grade de l'armée
 // (R, lot 3, 2026-10-24).
