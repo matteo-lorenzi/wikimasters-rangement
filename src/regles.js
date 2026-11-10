@@ -499,6 +499,10 @@ const PHRASES_NEUTRES = [
   'histoire naturelle',
   // « gang de rue » n'est pas une voie : Black Disciples (audit 2026-11-10)
   'gang de rue',
+  // « ferme » verbe, pas une ferme : « toutes les géodésiques sont fermées » (Surface de Zoll)
+  'sont fermées',
+  // « sous-secrétaire général » (Fondation Sergio Vieira de Mello) est un poste de l'ONU, pas un général de l'armée
+  'sous-secrétaire général',
   // … et « fonds / recherche documentaire » n'est pas un film
   'fonds documentaire', 'fonds documentaires', 'recherche documentaire', 'recherches documentaires', 'ressources documentaires',
 ];
