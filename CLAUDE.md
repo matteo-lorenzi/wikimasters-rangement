@@ -32,6 +32,10 @@ Dépôt absent au démarrage → le cloner, puis `npm install`.
 
 Issues sur GitHub (`matteo-lorenzi/wikimasters-rangement`), via le CLI `gh`. Voir `docs/agents/issue-tracker.md`.
 
+### Triage labels
+
+Vocabulaire par d�faut : `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. Voir `docs/agents/triage-labels.md`.
+
 ### Domain docs
 
 Mono-contexte : `GLOSSARY.md` + `docs/adr/` à la racine. Voir `docs/agents/domain.md`.
