@@ -25,3 +25,13 @@ Userscript Tampermonkey (Chrome) qui étiquette par domaine les cartes de la pag
 Le disque de travail peut être effacé sans prévenir (c'est déjà arrivé). La copie durable est GitHub : `matteo-lorenzi/wikimasters-rangement`. Chaque commit est poussé tout de suite sur la branche de travail (`main` seulement après le oui de la personne) ; un travail qui n'existe qu'en local est un travail qu'on peut perdre.
 
 Dépôt absent au démarrage → le cloner, puis `npm install`.
+
+## Agent skills
+
+### Issue tracker
+
+Issues sur GitHub (`matteo-lorenzi/wikimasters-rangement`), via le CLI `gh`. Voir `docs/agents/issue-tracker.md`.
+
+### Domain docs
+
+Mono-contexte : `GLOSSARY.md` + `docs/adr/` à la racine. Voir `docs/agents/domain.md`.
