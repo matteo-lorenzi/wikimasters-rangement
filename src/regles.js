@@ -497,6 +497,8 @@ const PHRASES_NEUTRES = [
   // D2 (lot 4) : « Livre Guinness des records » n'est pas de la Littérature ; « histoire naturelle » est de la Nature, pas de l'Histoire
   'livre guinness des records', 'livre des records',
   'histoire naturelle',
+  // audit v1.9.14 : « contrainte physique » (Chaîne de ventre) est un adjectif, pas la discipline Sciences
+  'contrainte physique',
   // « ferme » verbe, pas une ferme : « toutes les géodésiques sont fermées » (Surface de Zoll)
   'sont fermées',
   // « sous-secrétaire général » (Fondation Sergio Vieira de Mello) est un poste de l'ONU, pas un général de l'armée

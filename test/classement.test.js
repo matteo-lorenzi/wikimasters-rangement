@@ -534,6 +534,9 @@ const PHRASES = [
   ['Go (reconstitué)', 'jeu de stratégie combinatoire abstrait pour deux joueurs', ['Fiction & Jeux']],
   ['Histoire de France (reconstitué)', "histoire de la France depuis la préhistoire", ['Histoire']],
   ['Théorie des cordes (reconstitué)', 'concept de la physique théorique', ['Sciences']],
+  // « physique » adjectif (audit v1.9.14) n'est pas la discipline ; la discipline reste en Sciences
+  ['Chaîne de ventre', 'contrainte physique portée par les prisonniers, consistant en une chaîne autour de la taille, à laquelle les mains du prisonnier peuvent être enchaînées ou menottées', []],
+  ['Mécanique quantique (reconstitué)', 'branche de la physique qui décrit les phénomènes à l’échelle atomique', ['Sciences']],
   // le second domaine reste quand son mot est dans les premiers mots
   ['Johnny Hallyday', 'chanteur et acteur français', ['Musique', 'Cinéma & TV']],
   ['Antoine Bernheim', 'banquier et homme politique français', ['Économie', 'Politique & Droit']],
