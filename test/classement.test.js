@@ -30,6 +30,8 @@ const CAS = [
   ['Rue Sartine', 'ancienne rue de Paris, en France', ['Géographie'], 'classee'],
   // Suggestions de la personne (2026-10-13) : « voie » = une rue ; « voie verte » = une piste, en Transports
   ['Grande rue de la Croix-Rousse', 'voie de Lyon, en France', ['Géographie'], 'classee'],
+  // « gang de rue » n'est pas une voie (audit 2026-11-10, v1.9.14) : plus rien ne ressort
+  ['Black Disciples', "gang de rue d'origine afro-américaine basé à Chicago dans l'Illinois", [], 'inconnue'],
   ['Villa Armand', 'voie parisienne', ['Géographie'], 'classee'],
   ['Voie verte Pierrefitte-Nestalas/Cauterets', 'voie verte en France', ['Transports'], 'classee'],
   ['Vallée du Haut Bréda', 'vallée en France', ['Géographie'], 'classee'],
