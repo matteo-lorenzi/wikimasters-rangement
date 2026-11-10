@@ -323,6 +323,9 @@ const CAS = [
   ['Denticité', "nombre d'atomes d'un ligand (ou coordinat) pouvant se lier à un atome central, en général un métal, dans un complexe", [], 'inconnue'],
   ['Oriundo', "nom italien qui désigne, dans son sens le plus général, un immigré d'origine italienne et vivant hors d'Italie, ainsi que ses descendants", [], 'inconnue'],
   ['Pierre Dupont', "général français de la Révolution et de l'Empire", ['Histoire'], 'classee'],
+  // « ferme » verbe (« les géodésiques sont fermées ») n'est pas une ferme ; une vraie ferme reste en Patrimoine (audit v1.9.14)
+  ['Surface de Zoll', "surface homéomorphe à la sphère de dimension 2, pourvue d'une métrique riemannienne dont toutes les géodésiques sont fermées et d'égale longueur", [], 'inconnue'],
+  ['Ferme du Quesnoy (reconstitué)', 'ancienne ferme fortifiée du XVIIe siècle', ['Patrimoine'], 'classee'],
   // … mais « général de brigade » reste un grade (R, lot 3) : « en général » n'est neutralisé que s'il n'est pas suivi de ce grade
   ['Louis Marchand (reconstitué)', 'promu en général de brigade en 1808', ['Histoire'], 'classee'],
   ['Jean Girard (reconstitué)', "promu en général d'armée en 1914", ['Histoire'], 'classee'],
