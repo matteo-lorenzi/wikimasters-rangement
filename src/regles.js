@@ -718,3 +718,16 @@ const classer = (carte, deWikipedia = false) => {
   if (hits.some((h) => h.kind === 'ambigu')) return { etiquettes: [...etiquettes, A_TRAITER], statut: 'a_traiter', source, mots };
   return { etiquettes, statut: 'inconnue', source, mots };
 };
+
+// Page Paquets : faut-il s'arrêter sur cette carte tirée ? Deux motifs indépendants (l'un OU l'autre) :
+// sa rareté est cochée, ou l'un des centres d'intérêt (sous-chaîne, sans casse ni accents) est dans son titre ou sa description.
+// carte = { t, d, rarete } ; reglages = { raretes: ['UR', …], interets: ['Gard', …] }.
+// Rend { type: 'rarete' | 'mot', valeur, texte } (texte = le motif dit à la personne), ou null s'il ne faut pas s'arrêter.
+const raisonArret = (carte, reglages) => {
+  const { raretes = [], interets = [] } = reglages || {};
+  if (carte.rarete && raretes.includes(carte.rarete)) return { type: 'rarete', valeur: carte.rarete, texte: `rareté ${carte.rarete}` };
+  const texte = norm(`${carte.t || ''} ${carte.d || ''}`);
+  // un mot vide (ou d'espaces) est écarté : il se retrouverait dans toutes les cartes
+  const mot = interets.find((m) => norm(m).trim() && texte.includes(norm(m).trim()));
+  return mot ? { type: 'mot', valeur: mot, texte: `mot « ${mot} »` } : null;
+};
