@@ -3,7 +3,7 @@
 // donc débordements, coupures et lisibilité ne se voient que là. Détails dans docs/tests.md, « Voir le rendu ».
 //
 //   node scripts/capture.js [dossier]     (défaut : le dossier temporaire du système)
-//   écrit paquets.html (page Paquets), paquets-confirmation.html et paquets-arret.html (ouverture d'un paquet), rangement.html, rangement-ouvert.html (Sections dépliées) et diagnostic.html
+//   écrit paquets.html (page Paquets), paquets-confirmation.html et paquets-arret.html (ouverture d'un paquet), paquets-journal.html (journal des arrêts et message de rechargement en plein paquet), rangement.html, rangement-ouvert.html (Sections dépliées) et diagnostic.html
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
@@ -55,6 +55,13 @@ const page = (root, ouvert, onglet) => {
   const finArret = Date.now() + 10000;
   while (Date.now() < finArret && rp.querySelector('.arret-paquet').hidden) await new Promise((r) => setTimeout(r, 20));
   fs.writeFileSync(path.join(dossier, 'paquets-arret.html'), page(rp, false, 'paquets'));
+  // Journal des arrêts : plusieurs lignes, puis la page rechargée en plein paquet (message d'avertissement)
+  rp.querySelector('[data-paquets=arreter]').click();
+  while (!/laissé ouvert/.test(rp.querySelector('.etat-paquet').textContent)) await new Promise((r) => setTimeout(r, 20));
+  pq.wmr.store.set('paquets_arrets', Array.from({ length: 6 }, (_, i) => ({ quand: `0${i + 1}/11/2026 14:0${i}:00`, n: i + 1, titre: ['Aigaliers', 'Lac Léman', 'Football', 'France', 'Uzès', 'Bruce Lee'][i], description: '', rarete: ['C', 'R', 'R', 'UR', 'C', 'L'][i], type: i % 2 ? 'rarete' : 'mot', motif: i % 2 ? 'rareté R' : 'mot « Gard »', suite: 'continuer' })));
+  pq.wmr.store.set('paquet_en_cours', { quand: '11/11/2026 14:12:00' });
+  await pq.recharger();
+  fs.writeFileSync(path.join(dossier, 'paquets-journal.html'), page(pq.document.getElementById('wmr-host').shadowRoot, false, 'paquets'));
   pq.fermer();
   console.log('Pages écrites dans ' + dossier);
 })();
