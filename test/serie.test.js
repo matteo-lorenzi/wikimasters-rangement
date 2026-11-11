@@ -22,13 +22,13 @@ test('série de 3 paquets sans arrêt : un seul clic Ouvrir par paquet, compteur
   site.fermer();
 });
 
-test('2 s entre deux paquets (échelle de test), aucune pause entre deux cartes', async () => {
-  const site = await creerSite({ page: 'pulls', paquets: 2, animation: 0 });
+test('0,5 s entre deux paquets (échelle de test), aucune pause entre deux cartes', async () => {
+  const site = await creerSite({ page: 'pulls', paquets: 2, animation: 0, echelle: 0.2 });
   await serie(site);
   const t = site.actions.map((a) => a.quand);
   const entreCartes = Math.max(...[2, 3, 4].map((i) => t[i] - t[i - 1])); // flèche -> flèche
   const entrePaquets = t[6] - t[5]; // Continuer du paquet 1 -> Ouvrir du paquet 2
-  assert.ok(entrePaquets >= 38, `pause entre paquets trop courte : ${entrePaquets} ms (attendu ~40 ms = 2 s × 0,02)`);
+  assert.ok(entrePaquets >= 95, `pause entre paquets trop courte : ${entrePaquets} ms (attendu ~100 ms = 0,5 s × 0,2)`);
   assert.ok(entreCartes < entrePaquets, `les cartes s'enchaînent sans pause (${entreCartes} ms contre ${entrePaquets} ms)`);
   site.fermer();
 });

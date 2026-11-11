@@ -267,6 +267,24 @@ test('carte sans description : la phrase Wikipédia est testée et le motif dit 
   site.fermer();
 });
 
+// Vitesse : Wikipédia n'est lue que si sa phrase peut changer le verdict.
+test('carte sans description mais aucun centre d intérêt réglé : aucun appel Wikipédia', async () => {
+  const site = await creerSite({ page: 'pulls', paquet: SANS_DESCRIPTION, wikipedia: { articles: ARTICLES } });
+  const r = await lancer(site, { reglages: { raretes: ['R'], interets: [] } });
+  assert.equal(r.etat, 'termine');
+  assert.deepEqual(site.wikipedia(), []);
+  site.fermer();
+});
+
+test('carte sans description déjà arrêtée par sa rareté : aucun appel Wikipédia', async () => {
+  const site = await creerSite({ page: 'pulls', paquet: SANS_DESCRIPTION, wikipedia: { articles: ARTICLES } });
+  const d = decisions('arreter');
+  await lancer(site, { reglages: { raretes: ['C'], interets: ['Gard'] }, surArret: d.surArret });
+  assert.equal(d.vues[0].raison.texte, 'rareté C');
+  assert.deepEqual(site.wikipedia(), []);
+  site.fermer();
+});
+
 test('mot déjà dans le titre : le motif ne parle pas de Wikipédia', async () => {
   const site = await creerSite({ page: 'pulls', paquet: SANS_DESCRIPTION, wikipedia: { articles: ARTICLES } });
   const d = decisions('arreter');
@@ -285,14 +303,14 @@ test('Wikipédia sans réponse (bloquée) : repli sur le titre, message en fran�
   site.fermer();
 });
 
-test('titre absent de Wikipédia : repli sur le titre, message en français, titre seul encore testé', async () => {
+test('titre absent de Wikipédia : repli sur le titre, message en français, le paquet continue', async () => {
   const site = await creerSite({ page: 'pulls', paquet: [{ t: 'Zorglub', d: '', r: 'C' }], wikipedia: { articles: {} } });
   const dits = [];
   const d = decisions('arreter');
-  const r = await lancer(site, { reglages: { raretes: [], interets: ['zorg'] }, surArret: d.surArret, dire: (t) => dits.push(t) });
+  const r = await lancer(site, { reglages: { raretes: [], interets: ['Gard'] }, surArret: d.surArret, dire: (t) => dits.push(t) });
   assert.ok(dits.some((t) => /pas de phrase exploitable pour « Zorglub »/.test(t)), dits.join('\n'));
-  assert.equal(r.etat, 'arret', 'le titre seul est testé');
-  assert.equal(d.vues[0].raison.texte, 'mot « zorg »');
+  assert.equal(r.etat, 'termine', 'le titre seul, sans « Gard », ne fait pas arrêter');
+  assert.deepEqual(d.vues, []);
   site.fermer();
 });
 

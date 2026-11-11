@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WikiMasters — Rangement des cartes
 // @namespace    wikimasters-rangement
-// @version      1.9.19
+// @version      1.9.20
 // @description  Étiquette tes cartes WikiMasters par domaine (aperçu avant application, jamais de défausse).
 // @match        https://www.wiki-masters.com/*
 // @match        https://wiki-masters.com/*
@@ -899,9 +899,9 @@ const PAR_PAGE = 50;
 const texte = () => document.body.innerText;
 const pageInfo = () => { const m = texte().match(/Page (\d+) \/ (\d+)/); return m ? [+m[1], +m[2]] : null; };
 const enChargement = () => /Chargement/.test(texte());
-const attendre = async (cond, ms) => {
+const attendre = async (cond, ms, pas = 200) => {
   const fin = Date.now() + ms * ECHELLE;
-  while (Date.now() < fin) { if (cond()) return true; await sleep(200); }
+  while (Date.now() < fin) { if (cond()) return true; await sleep(pas); }
   return cond();
 };
 // Une carte = un bloc « glow-<rareté> » contenant le titre (h3). Les cartes sans description n'ont pas de <p>.
@@ -1762,16 +1762,17 @@ const compteurCarte = () => { const m = texte().match(/Carte\s+(\d+)\s*\/\s*(\d+
 const carteAffichee = () => { const el = cartesDom()[0]; if (!el) return null; const c = lireCarte(el); return { t: c.t, d: c.d, rarete: c.r }; };
 const cleCarte = (c) => c.t + '|' + c.d + '|' + c.rarete;
 const ARRETS_GARDES = 20; // le journal du panneau (ticket #18) montre les 20 derniers arrêts
-// Attend la carte n (compteur « Carte n / N » ET contenu différent de la précédente : l'animation dure ~1 s), puis laisse l'animation finir.
+// Attend la carte n (compteur « Carte n / N » ET contenu différent de la précédente : l'animation dure ~1 s), puis la relit 0,1 s après pour écarter une carte qui bouge encore.
 const attendreCarteN = async (n, precedente) => {
   const prete = () => { const k = compteurCarte(), c = carteAffichee(); return !!k && k[0] === n && !!c && (!precedente || cleCarte(c) !== cleCarte(precedente)); };
   // La 1re carte suit l'animation d'ouverture du paquet : on lui laisse 15 s. Les suivantes, un retournement (~1 s) : 4 s.
-  if (!(await attendre(prete, n === 1 ? 15000 : 4000))) {
+  // Sondage toutes les 50 ms : la page Paquets est petite, et chaque carte est lue dès qu'elle est là.
+  if (!(await attendre(prete, n === 1 ? 15000 : 4000, 50))) {
     const k = compteurCarte(), c = carteAffichee();
     const vu = `${k ? `compteur « Carte ${k[0]} / ${k[1]} »` : 'aucun compteur « Carte n / N » lisible'}, ${c ? `carte « ${c.t} » affichée` : 'aucune carte affichée'}`;
     throw new Error(`La carte ${n}${k ? ` / ${k[1]}` : ''} n'est pas apparue : le site n'a pas répondu à temps (vu : ${vu}). Le paquet est resté ouvert, rien d'autre n'a été cliqué.`);
   }
-  await sleep(300);
+  await sleep(100);
   if (!prete()) throw new Error(`La carte ${n} a changé pendant la lecture : le site a bougé tout seul. Le paquet est resté ouvert, rien d'autre n'a été cliqué.`);
   return carteAffichee();
 };
@@ -1821,7 +1822,9 @@ const lirePaquet = async (ouvrir, { reglages, surCarte, surArret, dire = () => {
     total = compteurCarte()[1];
     precedente = carte;
     dire(`Carte ${n} / ${total} : ${carte.t} (${carte.rarete || '?'})`);
-    const jugee = (surCarte && await surCarte(carte, { n, total })) || await renfortWikipedia(carte, dire) || carte;
+    // Wikipédia seulement si sa phrase peut changer le verdict : un mot d'intérêt réglé et pas déjà d'arrêt sur la carte.
+    const utile = (reglages.interets || []).length && !raisonArret(carte, reglages);
+    const jugee = (surCarte && await surCarte(carte, { n, total })) || (utile && await renfortWikipedia(carte, dire)) || carte;
     if (annule()) return { etat: 'abandon', n, total };
     const raison = raisonArret(jugee, reglages);
     if (raison) {
@@ -1839,12 +1842,12 @@ const lirePaquet = async (ouvrir, { reglages, surCarte, surArret, dire = () => {
   if (!suite) throw new Error('Je ne trouve pas le bouton « Continuer » du site sur la dernière carte. Le paquet est resté ouvert : clique dessus toi-même.');
   suite.click();
   // Le bouton Ouvrir suffit : au dernier paquet le compteur peut ne plus s'afficher (hypothèse, voir ouvrirSerie).
-  if (!(await attendre(() => !!bouton(/^Ouvrir$/), 4000))) throw new Error('Le site n\'est pas revenu à la page Paquets après « Continuer ». Regarde la page : le paquet est peut-être déjà rangé.');
+  if (!(await attendre(() => !!bouton(/^Ouvrir$/), 4000, 50))) throw new Error('Le site n\'est pas revenu à la page Paquets après « Continuer ». Regarde la page : le paquet est peut-être déjà rangé.');
   return { etat: 'termine', n, total };
 };
 
 // ── Série de paquets (ticket #17) : tous les paquets restants, une seule confirmation ──
-const PAUSE_ENTRE_PAQUETS = 2000;
+const PAUSE_ENTRE_PAQUETS = 500; // le retour à la liste est déjà attendu (bouton Ouvrir) ; la pause laisse le compteur se mettre à jour
 const lireCompteur = () => { const m = texte().match(/(\d+)\s*\/\s*\d+\s+paquets disponibles/); return m ? +m[1] : null; };
 const paquetsDisponibles = () => {
   const n = lireCompteur();

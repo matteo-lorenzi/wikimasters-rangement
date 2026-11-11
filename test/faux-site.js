@@ -591,7 +591,7 @@ const creerPagePaquets = async (o) => {
     document.addEventListener('keydown', (e) => { if (e.key === 'ArrowRight') actions.push({ type: 'touche' }); }); // sans effet sur le vrai site
     afficherListe();
     window.__WMR_TEST__ = true;
-    window.__WMR_ECHELLE__ = 0.02;
+    window.__WMR_ECHELLE__ = o.echelle ?? 0.02; // echelle : plus large quand un test mesure des durées sous la granularité des minuteries (~15 ms sous Windows)
     window.__WMR_RECHARGER__ = () => setTimeout(rechargerPage, 0);
     window.eval(sourceScript());
     ouverte = { window, document };
