@@ -645,7 +645,6 @@ test('suppression : une confirmation inattendue est refusée', async () => {
 // ── Ranger et Wikipédia (v1.10) : les cartes sans description, d'après la première phrase de leur article ──
 // Lecture seule (fr.wikipedia.org, pas le site WikiMasters). Le faux Wikipédia est dans test/faux-site.js.
 
-const sansEssai = (site) => site.wmr.store.set('wiki_essai', false);
 const articleFoot = (t) => `${t}, né en 1980, est un joueur de football français.`;
 const articlesDe = (titres, f = articleFoot) => Object.fromEntries(titres.map((t) => [t, f(t)]));
 const cartesSansDescription = (titres, depart = 0) => titres.map((t, i) => ({ t, d: '', obtenu: date(depart + i) }));
@@ -663,7 +662,6 @@ const etiquettesCarte = (site, t) => site.cartes.find((c) => c.t === t).tags;
 test('Wikipédia : 45 titres lus par lots de 20, en série, et chacun une seule fois', async () => {
   const titres = serie(45, nom);
   const site = await creerSite({ cartes: cartesSansDescription(titres), wikipedia: { articles: articlesDe(titres) } });
-  sansEssai(site);
   await apercuWiki(site);
   assert.deepEqual(site.wikipedia().map((r) => r.titres.length), [20, 20, 5]);
   assert.ok(site.wikipedia().every((r) => r.simultanees === 1), 'une requête à la fois');
@@ -677,7 +675,6 @@ test('Wikipédia : 45 titres lus par lots de 20, en série, et chacun une seule 
 test('Wikipédia : un titre qui disparaît de la réponse (ni extract ni missing) est remis dans la file', async () => {
   const titres = serie(25, nom);
   const site = await creerSite({ cartes: cartesSansDescription(titres), wikipedia: { articles: articlesDe(titres), disparus: [titres[10]] } });
-  sansEssai(site);
   const p = await apercuWiki(site);
   assert.equal(site.titresWikipedia().filter((t) => t === titres[10]).length, 2, 'redemandé une fois');
   assert.deepEqual(site.wikipedia().map((r) => r.titres.length), [20, 6], 'le titre disparu repart dans le lot suivant');
@@ -690,7 +687,6 @@ test('Wikipédia : un titre qui disparaît de la réponse (ni extract ni missing
 test('Wikipédia : cache, un deuxième Ranger ne refait aucune requête', async () => {
   const titres = serie(30, nom);
   const site = await creerSite({ cartes: cartesSansDescription(titres), wikipedia: { articles: articlesDe(titres) } });
-  sansEssai(site);
   await apercuWiki(site);
   const avant = site.wikipedia().length;
   assert.equal(avant, 2);
@@ -703,7 +699,6 @@ test('Wikipédia : cache, un deuxième Ranger ne refait aucune requête', async 
 test('Wikipédia : rechargement de la page en plein milieu, la reprise repart du cache sans rien relire', async () => {
   const titres = serie(60, nom);
   const site = await creerSite({ cartes: cartesSansDescription(titres), wikipedia: { articles: articlesDe(titres), rechargerApres: 2 } });
-  sansEssai(site);
   // ce que `lancer` note avant de recharger la page après un raté du site
   site.wmr.store.set('ranger_reprise', { etape: 'lecture', tout: false, essais: 1, total: 1, poses: 0, at: Date.now() });
   const p = panneau(site); // relit la page ouverte à chaque fois : il suit le rechargement
@@ -721,7 +716,6 @@ test('Wikipédia : rechargement de la page en plein milieu, la reprise repart du
 test('Wikipédia : raté du site pendant l\'application, rechargement, les phrases sont gardées et rien n\'est relu', async () => {
   const titres = serie(120, nom);
   const site = await creerSite({ cartes: cartesSansDescription(titres), wikipedia: { articles: articlesDe(titres) }, chargementsEnEchec: [4] });
-  sansEssai(site);
   const p = await rangerTout(site);
   assert.equal(site.rechargements(), 1, 'un raté en pleine application');
   assert.match(p.statut(), /✅ 120 carte/);
@@ -731,49 +725,37 @@ test('Wikipédia : raté du site pendant l\'application, rechargement, les phras
   site.fermer();
 });
 
-test('Wikipédia : essai de 40 cartes (coché par défaut, choix mémorisé), puis tout est lu une fois la case décochée', async () => {
+test('Wikipédia : plus de plafond, ni case ni aide sur l essai, et les 100 cartes sont lues', async () => {
   const titres = serie(100, nom);
   const site = await creerSite({ cartes: cartesSansDescription(titres), wikipedia: { articles: articlesDe(titres) } });
   const p = panneau(site);
-  const case_ = p.root.querySelector('[data-essai]');
-  assert.ok(case_, 'la case est dans le panneau');
-  assert.equal(case_.checked, true, 'cochée par défaut');
-  assert.match(p.root.textContent, /Essai Wikipédia : 40 cartes/);
+  assert.equal(p.root.querySelector('[data-essai]'), null, 'plus de case');
+  assert.doesNotMatch(p.root.textContent, /Essai Wikipédia|40 cartes/);
   await apercuWiki(site);
-  assert.equal(site.titresWikipedia().length, 40, 'seulement 40 cartes lues');
-  assert.match(sortie(p), /Essai Wikipédia.*40.*100/s, 'l\'aperçu dit qu\'il reste des cartes à lire');
-  case_.checked = false;
-  case_.dispatchEvent(new site.window.Event('change', { bubbles: true }));
-  assert.equal(site.wmr.store.get('wiki_essai', true), false, 'le choix est mémorisé');
-  await apercuWiki(site);
-  assert.equal(site.titresWikipedia().length, 100, 'les 60 autres seulement : les 40 premières viennent du cache');
-  assert.equal(new Set(site.titresWikipedia()).size, 100);
+  assert.equal(site.titresWikipedia().length, 100, 'aucun plafond');
+  assert.doesNotMatch(sortie(p), /Essai Wikipédia/);
   assert.match(sortie(p), /Classées d'après Wikipédia \(100\)/);
   site.fermer();
 });
 
-test('Wikipédia : les cartes laissées de côté par l\'essai sont relues dès que la case est décochée (Ranger ne les oublie pas)', async () => {
-  const titres = serie(100, nom);
+test('Wikipédia : des cartes laissées de côté par un ancien essai sont relues au Ranger suivant', async () => {
+  const titres = serie(30, nom);
   const site = await creerSite({ cartes: cartesSansDescription(titres), wikipedia: { articles: articlesDe(titres) } });
-  const p = await rangerTout(site); // essai coché : 40 cartes rangées, 60 laissées de côté
-  assert.match(p.statut(), /✅ 40 carte/);
-  assert.equal(site.cartes.filter((c) => c.tags.length).length, 40);
-  p.ranger(); // essai toujours coché : rien de nouveau à lire
-  assert.ok(await attendreQue(() => /nouvelle/.test(p.statut())), p.statut());
-  assert.match(p.statut(), /^0 carte\(s\) nouvelle/);
-  site.wmr.store.set('wiki_essai', false);
+  const p = await rangerTout(site);
+  assert.match(p.statut(), /✅ 30 carte/);
+  for (const c of site.cartes.slice(0, 10)) c.tags = []; // ce qu'un ancien essai avait laissé de côté
   p.ranger();
-  assert.ok(await attendreQue(() => /^60 carte\(s\) sans étiquette/.test(p.statut()) && p.root.querySelector('[data-go]')), p.statut());
-  p.appliquer();
-  assert.ok(await attendreQue(() => BILAN.test(p.statut()), 60000), p.statut());
-  assert.match(p.statut(), /✅ 60 carte/);
-  assert.ok(site.cartes.every((c) => c.tags.length));
+  assert.ok(await attendreQue(() => /^\d+ carte/.test(p.statut())), p.statut());
+  assert.match(p.statut(), /^0 carte\(s\) nouvelle/, 'sans reste laissé par un ancien essai, rien n est relu');
+  site.wmr.store.set('wiki_reste', { raison: 'essai' });
+  p.ranger();
+  assert.ok(await attendreQue(() => /^10 carte\(s\) sans étiquette/.test(p.statut())), p.statut());
+  assert.equal(site.wmr.store.get('wiki_reste', null), null, 'plus rien de laissé de côté');
   site.fermer();
 });
 
 test('Wikipédia bloquée : Ranger relit tout dès que le script est mis à jour (version différente), pas avant', async () => {
   const site = await creerSite({ cartes: cartesSansDescription(serie(25, nom)), wikipedia: { bloque: true } });
-  sansEssai(site);
   const p = await apercuWiki(site);
   assert.deepEqual({ ...site.wmr.store.get('wiki_reste') }, { raison: 'erreur', version: '?' });
   p.ranger();
@@ -792,7 +774,6 @@ test('Wikipédia bloquée (réseau, CSP, CORS) : message qui dit quoi faire, jou
     ...cartesSansDescription(serie(60, (i) => nom(100 + i)), 100),
   ];
   const site = await creerSite({ cartes, wikipedia: { bloque: true } });
-  sansEssai(site);
   const p = await apercuWiki(site);
   assert.equal(site.wikipedia().length, 1, 'un seul essai : on n\'insiste pas');
   assert.match(sortie(p), /Wikipédia.*(bloqu|refus)/is);
@@ -811,7 +792,6 @@ test('Wikipédia bloquée (réseau, CSP, CORS) : message qui dit quoi faire, jou
 
 test('Wikipédia en erreur HTTP persistante (503) : 3 essais, puis Ranger continue sans Wikipédia', async () => {
   const site = await creerSite({ cartes: cartesSansDescription(serie(25, nom)), wikipedia: { statutHttp: 503 } });
-  sansEssai(site);
   const p = await apercuWiki(site);
   assert.equal(site.wikipedia().length, 3);
   assert.match(sortie(p), /continue sans Wikipédia/i);
@@ -890,7 +870,6 @@ test('Wikipédia : page d\'homonymie, titre absent, titre en minuscule, extrait 
     },
     homonymies: ['Tessier'], redirections: { 'Pierre F.': 'Pierre Fehlmann' },
   } });
-  sansEssai(site);
   await apercuWiki(site);
   const phrases = site.wmr.store.get('ranger_lecture').phrases;
   // seules les pages exploitables donnent une phrase ; la clé reste celle de la carte réelle (description vide)
@@ -911,7 +890,6 @@ test('Wikipédia : l\'aperçu liste les cartes classées d\'après Wikipédia av
     'Mary Butters': 'Mary Butters ( c. 1770 - c. 1850) est une chiffonnière irlandaise connue sous le surnom de la dame de Carnmoney.',
     'Hanabie.': 'Hanabie.',
   } } });
-  sansEssai(site);
   const p = await apercuWiki(site);
   const o = sortie(p);
   assert.match(o, /Classées d'après Wikipédia \(3\)/);
@@ -940,7 +918,6 @@ test('Wikipédia : un second domaine venu d\'un mot tardif de la phrase n\'est p
     'Monkiss': 'Le Monkiss est une danse lancée par Eddie Barclay au Bus Palladium, qui a eu un succès éphémère au début des années 1960.',
     'Johnny H': 'Johnny H. est un chanteur et acteur français, né en 1943.', // deux domaines, tous deux dans les premiers mots : les deux restent
   } } });
-  sansEssai(site);
   const p = await apercuWiki(site);
   assert.match(sortie(p), /Monkiss — danse lancée par Eddie Barclay[^→]*→ Arts(?!, )/, 'Transports (« Bus Palladium », 7e mot) n\'est pas proposé');
   p.appliquer();
@@ -966,7 +943,6 @@ test('Wikipédia : seules les cartes sans description sans règle ou à traiter 
     Bôa: 'Bôa est un groupe de rock britannique, formé à Londres en 1998.',
     'Zélie': 'Zélie est un groupe de rock britannique.',
   } } });
-  sansEssai(site);
   const p = await apercuWiki(site);
   assert.deepEqual([...site.titresWikipedia()].sort(), ['Bôa', 'Sans Description', 'Zélie']);
   p.appliquer();
@@ -985,7 +961,6 @@ test('Wikipédia : le cache garde { extrait, homonymie, absent, date } sous le t
   const nfd = nfc.normalize('NFD');
   assert.notEqual(nfd, nfc);
   const site = await creerSite({ cartes: cartesSansDescription([nfd]), wikipedia: { articles: { [nfc]: `${nfc} est un joueur de football français.` } } });
-  sansEssai(site);
   await apercuWiki(site);
   assert.deepEqual(site.titresWikipedia(), [nfc]);
   const e = site.wmr.store.get('wp:' + nfc);
@@ -999,7 +974,6 @@ test('Wikipédia : le cache garde { extrait, homonymie, absent, date } sous le t
 test('Wikipédia : cache gardé indéfiniment ; absent ou sans résumé exploitable retenté après 30 jours', async () => {
   const [bon, vieuxAbsent, recentAbsent, vieuxSans, recentSans] = serie(5, (i) => nom(900 + i));
   const site = await creerSite({ cartes: cartesSansDescription([bon, vieuxAbsent, recentAbsent, vieuxSans, recentSans]), wikipedia: { articles: articlesDe([vieuxAbsent, vieuxSans]) } });
-  sansEssai(site);
   const jours = (n) => Date.now() - n * 24 * 3600e3;
   const entree = (extrait, absent, quand) => ({ extrait, homonymie: false, absent, date: quand });
   const w = site.wmr.store;
@@ -1025,7 +999,6 @@ const lecture2Zoblix = (site, perimee = false) => {
 test('Wikipédia : « Mots manquants » dans l\'aperçu, avec « Copier pour Claude » ; le domaine vient de la lecture complète si elle est à jour', async () => {
   const titres = serie(4, (i) => nom(700 + i));
   const site = await creerSite({ cartes: cartesSansDescription(titres), wikipedia: { articles: articlesDe(titres, motInconnu) } });
-  sansEssai(site);
   lecture2Zoblix(site);
   const p = await apercuWiki(site);
   const o = sortie(p);
@@ -1041,7 +1014,6 @@ test('Wikipédia : « Mots manquants » dans l\'aperçu, avec « Copier pour Cla
 test('Wikipédia : mots manquants, lecture complète périmée ignorée ; sinon les cartes classées du lot', async () => {
   const titres = serie(4, (i) => nom(700 + i));
   const site = await creerSite({ cartes: cartesSansDescription(titres), wikipedia: { articles: articlesDe(titres, motInconnu) } });
-  sansEssai(site);
   lecture2Zoblix(site, true);
   const p = await apercuWiki(site);
   assert.match(sortie(p), /zoblix → \?/, 'périmée : pas utilisée');
@@ -1053,7 +1025,6 @@ test('Wikipédia : mots manquants, lecture complète périmée ignorée ; sinon 
     cartes: [...cartesSansDescription(classees), ...cartesSansDescription(inconnues, 50)],
     wikipedia: { articles: { ...articlesDe(classees, (t) => `${t} est un zoblix, espèce d'insectes.`), ...articlesDe(inconnues, motInconnu) } },
   });
-  sansEssai(site2);
   const p2 = await apercuWiki(site2);
   assert.match(sortie(p2), /zoblix → Nature \(100 %\)/, 'domaine d\'après les cartes classées du lot');
   site2.fermer();
@@ -1062,7 +1033,6 @@ test('Wikipédia : mots manquants, lecture complète périmée ignorée ; sinon 
 test('Wikipédia : 30 cartes et plus qu\'aucun domaine ne couvre → « nouvelle étiquette ? »', async () => {
   const titres = serie(30, (i) => nom(600 + i));
   const site = await creerSite({ cartes: cartesSansDescription(titres), wikipedia: { articles: articlesDe(titres, motInconnu) } });
-  sansEssai(site);
   const p = await apercuWiki(site);
   assert.match(sortie(p), /zoblix → nouvelle étiquette \?/);
   assert.deepEqual(site.poses(), []);
@@ -1072,7 +1042,6 @@ test('Wikipédia : 30 cartes et plus qu\'aucun domaine ne couvre → « nouvelle
 test('Wikipédia : lecture seule, aucune écriture avant « Appliquer » ni sur Wikipédia', async () => {
   const titres = serie(25, nom);
   const site = await creerSite({ cartes: [...cartesSansDescription(titres), { t: 'Zélie', d: 'groupe britannique', tags: ['!À traiter'], obtenu: date(99) }], wikipedia: { articles: { ...articlesDe(titres), Zélie: 'Zélie est un groupe de rock britannique.' } } });
-  sansEssai(site);
   await apercuWiki(site);
   assert.deepEqual(site.poses(), [], 'aucune pose');
   assert.deepEqual(site.actions.filter((a) => a.type === 'retrait' || a.type === 'suppression'), [], 'aucun retrait ni suppression');

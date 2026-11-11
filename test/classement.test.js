@@ -704,7 +704,7 @@ test("REGLAGES.wikipedia : valeurs d'origine, et app.js lit chaque réglage au l
   const app = fs.readFileSync(path.join(SRC, 'app.js'), 'utf8');
   const R = JSON.parse(JSON.stringify(vm.runInContext(regles + '\n;REGLAGES.wikipedia;', vm.createContext({}))));
   assert.deepEqual(R, {
-    lot: 20, extrait: 500, pauseMs: 1000, tentativesTitre: 3, essaisAppel: 3, delaiEssaisMs: 3000, retenteJours: 30, essai: 40,
+    lot: 20, extrait: 500, pauseMs: 1000, tentativesTitre: 3, essaisAppel: 3, delaiEssaisMs: 3000, retenteJours: 30,
     fenetreVerbe: 300, longueurPhrase: 250, repli: 150, secondDomaineMots: 3, lieuGeneriqueMots: 5, motFaibleMots: 5, precisionMinimale: R.precisionMinimale,
   });
   assert.ok(R.precisionMinimale > 0 && R.precisionMinimale <= 0.95, 'precisionMinimale entre 0 et 0,95');

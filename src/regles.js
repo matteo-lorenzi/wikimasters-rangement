@@ -568,7 +568,6 @@ const REGLAGES = {
     essaisAppel: 3,           // une requête en erreur 429 ou 5xx est refaite, 3 fois au plus
     delaiEssaisMs: 3000,      // attente entre deux essais d'une requête en erreur
     retenteJours: 30,         // un titre absent ou sans résumé exploitable est retenté après ce nombre de jours
-    essai: 40,                // « Essai Wikipédia » : les 40 premières cartes concernées seulement
     fenetreVerbe: 300,        // « est un / une / le / la » est cherché dans les 300 premiers caractères de l'extrait
     longueurPhrase: 250,      // longueur au plus du morceau de phrase gardé
     repli: 150,               // coupe au dernier espace avant 250, sans descendre sous ce nombre de caractères

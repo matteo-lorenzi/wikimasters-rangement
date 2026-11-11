@@ -46,7 +46,6 @@ const siteCauses = (o = {}) => creerSite({ cartes: cartesSansDescription(TITRES)
 
 test('rapport Wikipédia : écrit dans le stockage après l\'aperçu de Ranger, une ligne par carte concernée, la bonne cause pour chacune', async () => {
   const site = await siteCauses();
-  site.wmr.store.set('wiki_essai', false);
   await apercu(site);
   const r = rapport(site);
   assert.ok(r, 'wmr_wp_rapport écrit');
@@ -90,7 +89,6 @@ test('rapport Wikipédia : écrit dans le stockage après l\'aperçu de Ranger, 
 
 test('rapport Wikipédia : bouton « Copier le rapport Wikipédia (JSON) » et tableau des causes dans l\'aperçu', async () => {
   const site = await siteCauses();
-  site.wmr.store.set('wiki_essai', false);
   const p = await apercu(site);
   const bouton = p.root.querySelector('[data-copier-wp]');
   assert.ok(bouton, 'le bouton existe');
@@ -116,7 +114,6 @@ test('rapport Wikipédia : bouton « Copier le rapport Wikipédia (JSON) » et t
 
 test('rapport Wikipédia : 2e Ranger, les cartes viennent du cache (étape « cache », aucune requête)', async () => {
   const site = await siteCauses();
-  site.wmr.store.set('wiki_essai', false);
   await apercu(site);
   await apercu(site);
   const r = rapport(site);
@@ -127,25 +124,23 @@ test('rapport Wikipédia : 2e Ranger, les cartes viennent du cache (étape « ca
   site.fermer();
 });
 
-test('rapport Wikipédia : essai de 40 cartes, les autres sont « non-lue-essai » et sortent du calcul de la couverture', async () => {
+test('rapport Wikipédia : plus de plafond, les 45 cartes sont lues, format 1 et essai: false', async () => {
   const titres = Array.from({ length: 45 }, (_, i) => `Joueur Numéro ${String.fromCharCode(65 + (i % 26))}${String.fromCharCode(65 + Math.floor(i / 26))}`);
   const site = await creerSite({ cartes: cartesSansDescription(titres), wikipedia: { articles: Object.fromEntries(titres.map((t) => [t, `${t} est un joueur de football français.`])) } });
   await apercu(site);
   const r = rapport(site);
-  assert.equal(r.essai, true);
+  assert.equal(r.format, 1);
+  assert.equal(r.essai, false);
   assert.equal(r.cartes.length, 45);
-  const non = r.cartes.filter((c) => c.cause === 'non-lue-essai');
-  assert.equal(non.length, 5);
-  for (const c of non) assert.equal(c.etape, 'non-lue-essai');
-  assert.equal(r.bilan.parCause.classee, 40);
-  assert.deepEqual({ ...r.bilan.couverture }, { classees: 40, lues: 40, taux: 1 });
-  assert.deepEqual(r.lots.map((l) => l.titres), [20, 20]);
+  assert.equal(r.cartes.filter((c) => c.cause === 'non-lue-essai').length, 0);
+  assert.equal(r.bilan.parCause.classee, 45);
+  assert.deepEqual({ ...r.bilan.couverture }, { classees: 45, lues: 45, taux: 1 });
+  assert.deepEqual(r.lots.map((l) => l.titres), [20, 20, 5]);
   site.fermer();
 });
 
 test('rapport Wikipédia : appel bloqué, chaque carte « appel-bloque » et le message d\'erreur noté', async () => {
   const site = await siteCauses({ bloque: true });
-  site.wmr.store.set('wiki_essai', false);
   await apercu(site);
   const r = rapport(site);
   assert.equal(r.erreurs.length, 1);
@@ -168,7 +163,6 @@ test('rapport Wikipédia : Ranger sans carte concernée n\'écrase pas le rappor
 test('rapport Wikipédia : l\'extrait d\'une carte sans phrase est gardé sur 500 caractères (pas 250), pour rejouer l\'extraction hors navigateur', async () => {
   const long = 'Alpha '.repeat(75).trim(); // 449 caractères, aucun « est un »
   const site = await creerSite({ cartes: cartesSansDescription(['Long Texte']), wikipedia: { articles: { 'Long Texte': long } } });
-  site.wmr.store.set('wiki_essai', false);
   await apercu(site);
   const c = parTitre(rapport(site))['Long Texte'];
   assert.equal(c.cause, 'pas-de-est-un');
@@ -179,7 +173,6 @@ test('rapport Wikipédia : l\'extrait d\'une carte sans phrase est gardé sur 50
 // La mesure est un diagnostic : si elle plante, Ranger continue (aperçu, bouton Appliquer) et le journal des bugs le dit.
 test('rapport Wikipédia : la construction du rapport lève une exception, l\'aperçu arrive quand même avec « Appliquer »', async () => {
   const site = await siteCauses();
-  site.wmr.store.set('wiki_essai', false);
   // seul le rapport date ses résultats avec toISOString : il lève, rien d'autre n'est touché
   const iso = site.window.Date.prototype.toISOString;
   site.window.Date.prototype.toISOString = () => { throw new Error('date du rapport impossible'); };
@@ -200,7 +193,6 @@ test('rapport Wikipédia : la construction du rapport lève une exception, l\'ap
 
 test('rapport Wikipédia : l\'affichage du rapport lève une exception, l\'aperçu arrive quand même avec « Appliquer »', async () => {
   const site = await siteCauses();
-  site.wmr.store.set('wiki_essai', false);
   // le stockage rend un rapport illisible (« cartes » n'est pas une liste) : son affichage lève
   const proto = site.window.Storage.prototype, setItem = proto.setItem;
   proto.setItem = function (k, v) { return setItem.call(this, k, k === 'wmr_wp_rapport' ? '{"cartes":5}' : v); };
@@ -216,7 +208,6 @@ test('rapport Wikipédia : l\'affichage du rapport lève une exception, l\'aper�
 
 test('rapport Wikipédia : la mesure plante en pleine lecture, la lecture et Ranger continuent (journal des bugs)', async () => {
   const site = await siteCauses();
-  site.wmr.store.set('wiki_essai', false);
   // seule la mesure écrit « redirections['Pierre F.'] = … » : ce titre-là la fait lever, rien d'autre n'est touché
   Object.defineProperty(site.window.Object.prototype, 'Pierre F.', { set() { throw new Error('mesure impossible'); }, configurable: true });
   const p = await apercu(site);

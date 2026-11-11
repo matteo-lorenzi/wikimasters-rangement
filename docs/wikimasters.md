@@ -46,7 +46,7 @@ Observé le 2026-10-23 (curl avec un User-Agent identifié) :
 
 **Cache** (`localStorage`, une clé `wmr_wp:<titre NFC>`) : `{extrait, homonymie, absent, date}`, enregistré après chaque lot. Gardé indéfiniment ; un titre absent ou sans résumé exploitable est retenté après 30 jours. Un rechargement de la page repart du cache.
 
-**Essai** : la case « Essai Wikipédia : 40 cartes » (cochée par défaut, choix mémorisé) limite la lecture aux 40 premières cartes concernées. Les cartes laissées de côté (essai, ou appel en échec) font relire toutes les cartes sans étiquette au Ranger suivant (case décochée, ou nouvelle version du script), sinon Ranger les oublierait : il ne relit d'ordinaire que les cartes obtenues depuis le dernier rangement.
+**Plus d'essai** : la case « Essai Wikipédia : 40 cartes » et son plafond ont disparu (v1.9.16) : toutes les cartes concernées sont lues. Un appel en échec fait relire toutes les cartes sans étiquette au Ranger suivant (nouvelle version du script), sinon Ranger les oublierait : il ne relit d'ordinaire que les cartes obtenues depuis le dernier rangement. Un `wiki_reste` `{raison: 'essai'}` laissé par une ancienne version déclenche aussi cette relecture. Le rapport JSON garde `essai: false`.
 
 ## Pièges de l'interface
 

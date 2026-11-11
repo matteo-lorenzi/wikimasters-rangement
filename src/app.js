@@ -874,8 +874,6 @@ const monterUI = () => {
         <button class="b d" data-a="stop" disabled>Arrêter</button>
         <button class="b" data-a="bugs">Journal des bugs</button>
       </div>
-      <label class="opt"><input type="checkbox" data-essai> Essai Wikipédia : 40 cartes</label>
-      <p class="hint">Les cartes sans description utile sont classées d'après la première phrase de leur article Wikipédia (lecture seule). Décoche l'essai quand tu as validé les premiers résultats.</p>
       <div class="st"></div>
       <div class="out"></div>
       <div class="log" hidden style="display:none"></div>
@@ -897,9 +895,6 @@ const monterUI = () => {
   root.querySelector('[data-a=doublons]').onclick = () => lancer(modeDoublons);
   root.querySelector('[data-a=migration]').onclick = () => lancer(modeMigration);
   root.querySelector('[data-a=bugs]').onclick = afficherBugs;
-  const essai = $('[data-essai]');
-  essai.checked = !!store.get('wiki_essai', true);
-  essai.onchange = () => store.set('wiki_essai', essai.checked);
   majBoutonBugs();
   proposerReprise();
 };
@@ -1018,7 +1013,6 @@ const WIKI_LOT = WIKI.lot; // Wikipédia accepte 50 titres mais ne renvoie que 2
 const WIKI_PAUSE = WIKI.pauseMs; // environ une requête par seconde, en série
 const WIKI_TENTATIVES = WIKI.tentativesTitre; // un titre qui disparaît de la réponse est redemandé, 3 fois au plus
 const WIKI_RETENTE = WIKI.retenteJours * 24 * 3600e3; // un titre absent ou sans résumé exploitable est retenté après 30 jours
-const WIKI_ESSAI = WIKI.essai; // « Essai Wikipédia » : les 40 premières cartes concernées seulement
 const WIKI_EST = /(?<![\p{L}\p{N}'’-])est\s+(?:un|une|le|la)\s+/iu;
 // À défaut de « est un/une/le/la » : un autre verbe de définition (« étaient », « fut », « sont », « a été », « forment »,
 // « constituent », « désigne ») SUIVI D'UN ARTICLE (obligatoire : « est né », « fut brièvement comte », « a été fondée » ne
@@ -1132,17 +1126,16 @@ const lireWikipedia = async (cartes) => {
 
 // Pour Ranger : lit (ou retrouve dans le cache) la phrase de chaque carte concernée. L'état des cartes garde leur vraie
 // description (vide) : la phrase est conservée à part, sous la clé de la carte réelle.
-// Renvoie { phrases: { clé de carte → phrase }, wiki: { erreur, essai, concernees, lues } }.
+// Renvoie { phrases: { clé de carte → phrase }, wiki: { erreur, concernees, lues } }.
 const lectureWikipedia = async (cartes, complete) => {
   const concernees = cartes.filter(concerneeWiki);
-  const essai = !!store.get('wiki_essai', true);
-  const lues = essai ? concernees.slice(0, WIKI_ESSAI) : concernees;
+  const lues = concernees;
   let erreur = null, echec = null;
   const debutMesure = Date.now();
   wikiMesure = lues.length ? { requetes: 0, lots: [], reseau: new Set(), redirections: {}, aLire: new Set() } : null;
   try { // la mesure est oubliée dans tous les cas, même sur « Stop » pendant la lecture
     if (lues.length) {
-      ui.journal(`Wikipédia : ${lues.length} carte(s) sur ${concernees.length} concernée(s)${essai ? ' (essai)' : ''}.`);
+      ui.journal(`Wikipédia : ${lues.length} carte(s) sur ${concernees.length} concernée(s).`);
       const e = await lireWikipedia(lues);
       echec = e;
       if (e) {
@@ -1154,18 +1147,17 @@ const lectureWikipedia = async (cartes, complete) => {
     }
     const phrases = {};
     for (const c of lues) { const m = wikiPhrase(wikiEntree(c.t)); if (m) phrases[cle(c)] = m; }
-    // des cartes laissées de côté (essai) ou sans réponse (appel en échec) : Ranger les relira quand ce sera réglé
+    // des cartes sans réponse (appel en échec) : Ranger les relira quand ce sera réglé
     if (erreur) store.set('wiki_reste', { raison: 'erreur', version: VERSION });
-    else if (lues.length < concernees.length) store.set('wiki_reste', { raison: 'essai' });
     else if (complete) store.set('wiki_reste', null); // une lecture partielle ne dit rien des cartes déjà laissées de côté
     // mesure (diagnostic seulement) : le rapport est écrit à chaque Ranger où Wikipédia a tourné, rien d'autre n'en dépend
     let rapport = false;
     try {
-      if (wikiMesure) { store.set('wp_rapport', rapportWikipedia(concernees, lues, wikiMesure, echec, essai, debutMesure)); rapport = true; }
+      if (wikiMesure) { store.set('wp_rapport', rapportWikipedia(concernees, lues, wikiMesure, echec, debutMesure)); rapport = true; }
     } catch (e) {
       noterBug(e, 'rapport Wikipédia impossible à construire : Ranger continue sans lui');
     }
-    return { phrases, wiki: { erreur, essai, concernees: concernees.length, lues: lues.length, rapport } };
+    return { phrases, wiki: { erreur, concernees: concernees.length, lues: lues.length, rapport } };
   } finally {
     wikiMesure = null;
   }
@@ -1243,7 +1235,7 @@ const bilanWikipedia = (cartes, verite = null) => {
   const justes = verifiees.filter((c) => jugerWikipedia(c.domaines, verite[nfc(c.titre)]) === 'juste').length;
   return { parCause, couverture, pagesIgnorees, precision: verifiees.length ? { verifiees: verifiees.length, justes, taux: taux(justes, verifiees.length) } : null };
 };
-const rapportWikipedia = (concernees, lues, m, echec, essai, debut) => {
+const rapportWikipedia = (concernees, lues, m, echec, debut) => {
   const lus = new Set(lues.map(cle)), vus = new Set(), cartes = [];
   for (const c of concernees) {
     if (vus.has(cle(c))) continue; // un exemplaire en double : une seule ligne
@@ -1258,7 +1250,7 @@ const rapportWikipedia = (concernees, lues, m, echec, essai, debut) => {
   }
   const fin = Date.now();
   return {
-    outil: 'wmr-rapport-wikipedia', format: 1, version: VERSION, date: new Date(fin).toISOString(), essai,
+    outil: 'wmr-rapport-wikipedia', format: 1, version: VERSION, date: new Date(fin).toISOString(), essai: false, // champ gardé pour le format 1
     dureeMs: fin - debut, requetes: m.requetes,
     lots: m.lots.map((l) => ({ titres: l.titres, ms: l.ms ?? fin - l.debut, ok: l.ok })),
     erreurs: echec ? [echec.message] : [], concernees: concernees.length, lues: lues.length,
@@ -1283,11 +1275,11 @@ const apercuRapportWikipedia = (r) => {
     <textarea readonly rows="4" data-wp-rapport>${esc(jsonRapport(r))}</textarea>
     <div class="row"><button class="b" data-copier-wp>Copier le rapport Wikipédia (JSON)</button></div>`;
 };
-// Les cartes laissées de côté par l'essai (case décochée depuis) ou par un appel en échec (nouvelle version du script)
-// sont-elles à relire ?
+// Les cartes laissées de côté par l'ancien essai (stockage d'une version précédente) ou par un appel en échec
+// (nouvelle version du script) sont-elles à relire ?
 const wikiAReprendre = () => {
   const r = store.get('wiki_reste', null);
-  return !!r && (r.raison === 'essai' ? !store.get('wiki_essai', true) : r.version !== VERSION);
+  return !!r && r.version !== VERSION; // un reste de l'ancien essai n'a pas de version : il est relu aussi
 };
 
 // Le plan d'une carte avec sa phrase Wikipédia (voir preparerRanger plus bas). Défini ici, avant EMPREINTE_REGLES qui le lit.
@@ -1392,8 +1384,8 @@ const appliquerLecture = async (l) => {
   oublierFait();
 };
 
-// L'aperçu de Ranger, côté Wikipédia : l'erreur éventuelle, l'essai, les cartes classées d'après leur phrase, puis les mots manquants.
-// wiki : { phrases, erreur, essai, concernees, lues }
+// L'aperçu de Ranger, côté Wikipédia : l'erreur éventuelle, les cartes classées d'après leur phrase, puis les mots manquants.
+// wiki : { phrases, erreur, concernees, lues }
 const apercuWikipedia = (cartes, plans, wiki) => {
   const phrases = wiki.phrases || {};
   const classees = cartes.filter((c) => plans.get(cle(c)).phrase);
@@ -1406,7 +1398,6 @@ const apercuWikipedia = (cartes, plans, wiki) => {
   const reference = lecture && lectureComplete(lecture) && !store.get('lecture2_perimee', false) ? Object.values(lecture.cartes) : [];
   const { candidats } = suggestions(lot, reference);
   return (wiki.erreur ? `<p class="hint ko">⚠️ ${esc(wiki.erreur)}</p>` : '')
-    + (wiki.essai && wiki.concernees > wiki.lues ? `<p class="hint">Essai Wikipédia : ${wiki.lues} carte(s) lue(s) sur ${wiki.concernees} concernée(s). Décoche « Essai Wikipédia » dans le panneau pour lire les autres.</p>` : '')
     + (classees.length ? `<h4>D'après Wikipédia</h4><details><summary>Classées d'après Wikipédia (${classees.length})</summary>${
       classees.slice(0, 300).map((c) => `<div class="li">${esc(c.t)} — <i>${esc(plans.get(cle(c)).phrase)}</i> → ${esc(plans.get(cle(c)).tags.join(', '))}</div>`).join('')}${classees.length > 300 ? '<div class="li">…</div>' : ''}</details>` : '')
     + (candidats.length ? `<h4>Mots manquants</h4>
