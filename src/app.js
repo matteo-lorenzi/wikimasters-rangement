@@ -124,7 +124,8 @@ const ECHELLE = window.__WMR_ECHELLE__ || 1;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms * ECHELLE));
 const store = {
   get(k, def) { try { const v = localStorage.getItem('wmr_' + k); return v == null ? def : JSON.parse(v); } catch (e) { return def; } },
-  set(k, v) { try { localStorage.setItem('wmr_' + k, JSON.stringify(v)); } catch (e) { /* stockage plein ou bloqué */ } },
+  // false = stockage plein ou bloqué (l'appelant décide s'il faut le dire à la personne)
+  set(k, v) { try { localStorage.setItem('wmr_' + k, JSON.stringify(v)); return true; } catch (e) { return false; } },
 };
 const cle = (c) => c.t + '|' + c.d + '|' + c.r;
 let STOP = false;
@@ -867,6 +868,12 @@ details{margin:4px 0}summary{cursor:pointer;color:#cfd4d1}
 .pastille{display:inline-block;margin-left:6px;min-width:18px;padding:0 5px;border-radius:9px;background:#fbbf24;color:#1a1300;font-size:11px;text-align:center}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 [role=tabpanel]{display:flex;flex-direction:column;flex:1;min-height:0}
+.mots{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0;padding:0;list-style:none}
+.mot{display:inline-flex;align-items:center;gap:4px;background:#1c1f1e;border:1px solid #2a2e2c;border-radius:14px;padding:2px 4px 2px 10px;font-size:14px;color:#e8ebe9}
+.mot button{background:none;border:0;color:#9aa19d;cursor:pointer;min-width:24px;min-height:24px;font-size:16px}
+.msg-paquets{font-size:13px;color:#fbbf24;min-height:1.4em;margin:4px 0}
+.rar{display:flex;flex-wrap:wrap;gap:4px 14px}
+input[type=text]{background:#0e100f;color:#cfd4d1;border:1px solid #2a2e2c;border-radius:6px;padding:6px;font-size:14px;min-height:32px}
 textarea{width:100%;background:#0e100f;color:#cfd4d1;border:1px solid #2a2e2c;border-radius:6px;padding:6px;font-family:ui-monospace,monospace;font-size:12px;margin-bottom:8px}
 `;
 
@@ -876,6 +883,7 @@ let ui;
 const montrer = (el, oui) => { el.hidden = !oui; el.style.display = oui ? '' : 'none'; };
 const monterUI = () => {
   if (document.getElementById('wmr-host')) return;
+  if (/^\/pulls/.test(location.pathname)) return monterPaquets();
   const host = document.createElement('div'); host.id = 'wmr-host';
   document.body.appendChild(host);
   const root = host.attachShadow({ mode: 'open' });
@@ -958,6 +966,94 @@ const monterUI = () => {
   afficherBugs();
   afficherRapportWikipedia({ rapport: true }, false); // le rapport déjà stocké : affiché, mais pas « nouveau »
   proposerReprise();
+};
+
+// ── Page Paquets : un panneau à part, avec le seul onglet « Paquets » (centres d'intérêt et raretés d'arrêt) ──
+const RARETES_PAQUETS = ['C', 'PC', 'R', 'SR', 'UR', 'L'];
+const RARETES_PAR_DEFAUT = ['R', 'UR', 'L'];
+const MOTS_VIDES_INTERET = new Set(['a', 'au', 'aux', 'de', 'des', 'du', 'en', 'et', 'la', 'le', 'les', 'un', 'une', 'ou', 'sur', 'dans', 'par', 'pour']);
+// Le réglage vit en mémoire le temps de la page ; le stockage le garde d'une page à l'autre (et peut refuser).
+let reglagesMemoire = null;
+// Les réglages tels que l'ouverture des paquets (ticket #16) les relit : { interets: [mots], raretes: [raretés cochées, de C à L] }
+const reglagesPaquets = () => {
+  if (!reglagesMemoire) {
+    const interets = store.get('paquets_interets', []);
+    const raretes = store.get('paquets_raretes', RARETES_PAR_DEFAUT);
+    reglagesMemoire = { interets: Array.isArray(interets) ? interets : [], raretes: Array.isArray(raretes) ? raretes : RARETES_PAR_DEFAUT };
+  }
+  return { interets: [...reglagesMemoire.interets], raretes: RARETES_PAQUETS.filter((r) => reglagesMemoire.raretes.includes(r)) };
+};
+// true si le navigateur a bien enregistré
+const enregistrerPaquets = (r) => {
+  reglagesMemoire = r;
+  return store.set('paquets_interets', r.interets) && store.set('paquets_raretes', r.raretes);
+};
+const MSG_STOCKAGE = 'Ton navigateur ne peut pas enregistrer ce réglage : il sera perdu au rechargement de la page.';
+const refusCentreInteret = (mot, liste) => {
+  const n = norm(mot).trim();
+  if (!n) return "Tape un mot avant d'ajouter.";
+  if (n.length < 2 || MOTS_VIDES_INTERET.has(n)) return `« ${mot} » est trop courant ou trop court : il ferait arrêter l'ouverture sans cesse.`;
+  if (liste.some((x) => norm(x) === n)) return `« ${mot} » est déjà dans ta liste.`;
+  return '';
+};
+
+const monterPaquets = () => {
+  const host = document.createElement('div'); host.id = 'wmr-host';
+  document.body.appendChild(host);
+  const root = host.attachShadow({ mode: 'open' });
+  root.innerHTML = `<style>${CSS}</style>
+  <button class="fab">🏷 Paquets</button>
+  <div class="pan" hidden style="display:none">
+    <div class="hd"><b>Ouverture des paquets</b><button class="x" title="Fermer">×</button></div>
+    <div role="tablist" aria-label="Sections du panneau">
+      <button role="tab" id="wmr-t-paquets" data-onglet="paquets" aria-selected="true" aria-controls="wmr-c-paquets" tabindex="0">Paquets</button>
+    </div>
+    <div class="bd" role="tabpanel" id="wmr-c-paquets" data-cadre="paquets" aria-labelledby="wmr-t-paquets">
+      <h4>Centres d'intérêt</h4>
+      <p class="hint">Un lieu, une personne, un sujet : une carte qui le contient fait arrêter l'ouverture, quelle que soit sa rareté.</p>
+      <form data-paquets="form"><input type="text" data-paquets="champ" aria-label="Nouveau centre d'intérêt" placeholder="Un mot à la fois"> <button class="b p" type="submit" data-paquets="ajouter">Ajouter</button></form>
+      <div class="msg-paquets" role="status"></div>
+      <ul class="mots" aria-label="Tes centres d'intérêt"></ul>
+      <h4>Raretés d'arrêt</h4>
+      <p class="hint">L'ouverture s'arrête sur une carte de l'une de ces raretés.</p>
+      <div class="rar">${RARETES_PAQUETS.map((r) => `<label class="opt"><input type="checkbox" data-rarete="${r}"> ${r}</label>`).join('')}</div>
+    </div>
+  </div>`;
+  const $ = (s) => root.querySelector(s);
+  const dire = (t) => { $('.msg-paquets').textContent = t; };
+  const dessiner = () => {
+    const r = reglagesPaquets();
+    const ul = $('.mots'); ul.replaceChildren();
+    for (const mot of r.interets) {
+      const li = document.createElement('li'); li.className = 'mot'; li.dataset.mot = mot;
+      const t = document.createElement('span'); t.textContent = mot;
+      const x = document.createElement('button'); x.type = 'button'; x.textContent = '×'; x.setAttribute('aria-label', `Retirer ${mot}`);
+      x.onclick = () => { const s = reglagesPaquets(); dire(enregistrerPaquets({ ...s, interets: s.interets.filter((m) => m !== mot) }) ? '' : MSG_STOCKAGE); dessiner(); };
+      li.append(t, x); ul.appendChild(li);
+    }
+    for (const c of root.querySelectorAll('[data-rarete]')) c.checked = r.raretes.includes(c.dataset.rarete);
+  };
+  const ajouter = () => {
+    const champ = $('[data-paquets=champ]');
+    const mot = champ.value.trim().replace(/\s+/g, ' ');
+    const s = reglagesPaquets();
+    const refus = refusCentreInteret(mot, s.interets);
+    if (refus) { dire(refus); return; }
+    champ.value = '';
+    dire(enregistrerPaquets({ ...s, interets: [...s.interets, mot] }) ? '' : MSG_STOCKAGE);
+    dessiner();
+  };
+  $('[data-paquets=form]').onsubmit = (e) => { e.preventDefault(); ajouter(); };
+  root.querySelectorAll('[data-rarete]').forEach((c) => {
+    c.onchange = () => {
+      const s = reglagesPaquets();
+      const cochees = new Set(s.raretes); c.checked ? cochees.add(c.dataset.rarete) : cochees.delete(c.dataset.rarete);
+      dire(enregistrerPaquets({ ...s, raretes: RARETES_PAQUETS.filter((x) => cochees.has(x)) }) ? '' : MSG_STOCKAGE);
+    };
+  });
+  $('.fab').onclick = () => montrer($('.pan'), $('.pan').hidden);
+  $('.x').onclick = () => montrer($('.pan'), false);
+  dessiner();
 };
 
 // Lance un mode. reprise ({ etape, tout }) : en cas de raté du site (PanneSite), la page est rechargée
@@ -1945,7 +2041,7 @@ if (window.__WMR_TEST__ || store.get('debug', false)) {
     classer, planCarte, norm, cle, store, cartesDom, lireCarte, pageInfo,
     lireVue, lireApi, parcourirVue, changerPage, choisirFiltre, choisirTri, listerEtiquettes,
     modeSelection, poserEtiquette, appliquerSurPage, appliquerRanger, modeRanger, modeMigration, motsGroupes, rechercher,
-    supprimerEtiquette, rapportSuppression, suggestions, morceauWikipedia, pageDeDate, monterUI, noterBug, ui: () => ui, stop: () => { STOP = true; },
+    supprimerEtiquette, rapportSuppression, suggestions, morceauWikipedia, pageDeDate, monterUI, reglagesPaquets, noterBug, ui: () => ui, stop: () => { STOP = true; },
     // mesure Wikipédia, aussi pour scripts/essai-wikipedia.js
     CAUSES_WIKIPEDIA, causeWikipedia, classerPhrase, jugerWikipedia, bilanWikipedia, jsonRapport, VERSION,
   };
@@ -1954,9 +2050,12 @@ if (window.__WMR_TEST__ || store.get('debug', false)) {
 // La page est une application : on surveille les changements d'URL.
 if (!window.__WMR_TEST__) {
   setInterval(() => {
-    const ici = /^\/collection/.test(location.pathname);
-    const host = document.getElementById('wmr-host');
-    if (ici && !host) monterUI();
+    const page = /^\/pulls/.test(location.pathname) ? 'pulls' : /^\/collection/.test(location.pathname) ? 'collection' : '';
+    let host = document.getElementById('wmr-host');
+    // le site change de page sans recharger : le panneau d'une page ne sert pas sur l'autre
+    if (host && host.dataset.page !== page) { host.remove(); host = null; }
+    if (page && !host) { monterUI(); host = document.getElementById('wmr-host'); host.dataset.page = page; }
+    const ici = !!page;
     if (host) host.style.display = ici ? '' : 'none';
   }, 1000);
 }

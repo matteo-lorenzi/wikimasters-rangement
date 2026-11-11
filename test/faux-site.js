@@ -59,6 +59,9 @@ const installerInnerText = (window) => {
  *     rechargerApres (0)            : la page est rechargée (comme un F5) après cette requête Wikipédia
  */
 const creerSite = async (config = {}) => {
+  // Page Paquets (`/pulls`, docs/wikimasters.md) : { page: 'pulls', paquets: 7 }. Compteur et bouton Ouvrir, rien de plus
+  // pour l'instant (l'ouverture d'un paquet viendra avec le ticket #16).
+  if (config.page === 'pulls') return creerPagePaquets(config);
   const o = {
     paginationTardive: 40, pagesFantomes: 2, chargement: 15, pose: 20,
     fermetureAuto: true, retourPage1: true, echecsPose: 0, chargementsEnEchec: [], echecsRecherche: 0, recherchesImpossibles: [], menuTardif: 0, apiEchecs: 0, apiEnPanne: false, ...config,
@@ -472,6 +475,43 @@ const creerSite = async (config = {}) => {
     // requêtes faites au faux Wikipédia : [{ titres, simultanees, methode, options }]
     wikipedia: () => wikiRequetes,
     titresWikipedia: () => wikiRequetes.flatMap((r) => r.titres),
+    fermer: () => ouverte.window.close(),
+  };
+};
+
+// La page Paquets seule : le userscript s'y monte avec son seul onglet « Paquets » ; même rechargement (même localStorage) que la Collection.
+const creerPagePaquets = async (o) => {
+  const actions = [];
+  let ouverte = null;
+  const ouvrirPage = async (stockage = {}) => {
+    const dom = new JSDOM('<!doctype html><html><body></body></html>', { url: 'https://www.wiki-masters.com/pulls', runScripts: 'outside-only', pretendToBeVisual: true });
+    const { window } = dom;
+    installerInnerText(window);
+    for (const [k, v] of Object.entries(stockage)) window.localStorage.setItem(k, v);
+    window.document.body.innerHTML = `<div id="site"><h1>Paquets</h1><div>${o.paquets ?? 10} / 10 paquets disponibles</div><button>Ouvrir</button></div>`;
+    window.document.querySelector('button').addEventListener('click', () => actions.push({ type: 'ouvrir' }));
+    window.__WMR_TEST__ = true;
+    window.__WMR_ECHELLE__ = 0.02;
+    window.__WMR_RECHARGER__ = () => setTimeout(rechargerPage, 0);
+    window.eval(sourceScript());
+    ouverte = { window, document: window.document };
+  };
+  const rechargerPage = async () => {
+    const ancienne = ouverte.window;
+    const stockage = {};
+    for (let i = 0; i < ancienne.localStorage.length; i++) { const k = ancienne.localStorage.key(i); stockage[k] = ancienne.localStorage.getItem(k); }
+    actions.push({ type: 'rechargement' });
+    ancienne.close();
+    await ouvrirPage(stockage);
+    ouverte.window.__WMR.monterUI();
+  };
+  await ouvrirPage();
+  return {
+    get window() { return ouverte.window; },
+    get document() { return ouverte.document; },
+    get wmr() { return ouverte.window.__WMR; },
+    actions, attente,
+    recharger: rechargerPage,
     fermer: () => ouverte.window.close(),
   };
 };

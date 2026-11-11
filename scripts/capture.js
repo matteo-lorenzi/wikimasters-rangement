@@ -3,7 +3,7 @@
 // donc débordements, coupures et lisibilité ne se voient que là. Détails dans docs/tests.md, « Voir le rendu ».
 //
 //   node scripts/capture.js [dossier]     (défaut : le dossier temporaire du système)
-//   écrit rangement.html, rangement-ouvert.html (Sections dépliées) et diagnostic.html
+//   écrit paquets.html (page Paquets), rangement.html, rangement-ouvert.html (Sections dépliées) et diagnostic.html
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
@@ -41,5 +41,14 @@ const page = (root, ouvert, onglet) => {
   fs.writeFileSync(path.join(dossier, 'rangement-ouvert.html'), page(racine(), true, 'rangement'));
   fs.writeFileSync(path.join(dossier, 'diagnostic.html'), page(racine(), false, 'diagnostic'));
   site.fermer();
+  // Page Paquets : l'onglet seul, avec quelques centres d'intérêt et une case changée
+  const pq = await creerSite({ page: 'pulls' });
+  pq.wmr.monterUI();
+  const rp = pq.document.getElementById('wmr-host').shadowRoot;
+  for (const m of ['Poitiers', 'Bruce Lee', 'Saint-Étienne']) { rp.querySelector('[data-paquets=champ]').value = m; rp.querySelector('[data-paquets=ajouter]').click(); }
+  rp.querySelector('[data-paquets=champ]').value = 'de'; rp.querySelector('[data-paquets=ajouter]').click();
+  rp.querySelectorAll('[data-rarete]').forEach((c) => c.checked && c.setAttribute('checked', '')); // le HTML écrit ne garde que les attributs
+  fs.writeFileSync(path.join(dossier, 'paquets.html'), page(rp, false, 'paquets'));
+  pq.fermer();
   console.log('Pages écrites dans ' + dossier);
 })();
