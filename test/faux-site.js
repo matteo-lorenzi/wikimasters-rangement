@@ -59,7 +59,8 @@ const installerInnerText = (window) => {
  *     rechargerApres (0)            : la page est rechargée (comme un F5) après cette requête Wikipédia
  */
 const creerSite = async (config = {}) => {
-  // Page Paquets (`/pulls`, docs/wikimasters.md) : { page: 'pulls', paquets: 7, paquet: [{ t, d, r }, …], animation: 1000, animationBloquee: false, erreurAuPaquet: 2 }.
+  // Page Paquets (`/pulls`, docs/wikimasters.md) : { page: 'pulls', paquets: 7, paquet: [{ t, d, r }, …], animation: 1000, animationBloquee: false, erreurAuPaquet: 2, compteurAbsentA0: false }.
+  // compteurAbsentA0 : à 0 paquet le compteur n'est plus affiché (hypothèse non observée sur le vrai site).
   // erreurAuPaquet: n = le n-ième paquet de la page échoue à l'ouverture (message du site, aucune carte, compteur inchangé) ; chaque action porte `quand` (Date.now()).
   // Compteur, bouton Ouvrir, puis le déroulé du site (voir creerPagePaquets).
   if (config.page === 'pulls') return creerPagePaquets(config);
@@ -521,7 +522,7 @@ const creerPagePaquets = async (o) => {
     const afficherListe = () => {
       site.replaceChildren();
       const h = document.createElement('h1'); h.textContent = 'Paquets';
-      const c = document.createElement('div'); c.textContent = `${etat.paquets} / 10 paquets disponibles`;
+      const c = document.createElement('div'); c.textContent = etat.paquets <= 0 && o.compteurAbsentA0 ? '' : `${etat.paquets} / 10 paquets disponibles`;
       const ouvrir = bouton('Ouvrir', 'ouvrir');
       ouvrir.addEventListener('click', () => {
         if (etat.paquets <= 0) return;

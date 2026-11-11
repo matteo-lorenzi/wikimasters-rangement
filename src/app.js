@@ -1040,15 +1040,18 @@ const renfortWikipedia = async (carte, dire) => {
  *  surCarte(carte, { n, total }) : appelé une fois par carte lue, avant la règle d'arrêt ; peut rendre une carte à juger à la place (ex. description Wikipédia, #17)
  *  surArret(carte, raison, { n, total }) : rend 'continuer' ou 'arreter' (la personne décide dans le panneau)
  *  dire(texte) : avancement
+ *  annule() : vrai quand le panneau a été démonté ; le paquet s'arrête alors sans plus rien cliquer (etat 'abandon')
+ *  dansSerie : le drapeau « paquet en cours » est géré par ouvrirSerie, pas ici
  */
 const ouvrirPaquet = async (opts) => {
   const ouvrir = bouton(/^Ouvrir$/);
   if (!ouvrir) throw new Error('Je ne trouve pas le bouton « Ouvrir » : va sur la page Paquets (wiki-masters.com/pulls) et relance.');
   // « Paquet en cours » : si la page est rechargée avant la fin, le panneau le dit (aucune reprise automatique). Levé à toute sortie normale.
+  if (opts.dansSerie) return lirePaquet(ouvrir, opts);
   store.set('paquet_en_cours', { quand: new Date().toLocaleString() });
   try { return await lirePaquet(ouvrir, opts); } finally { store.set('paquet_en_cours', null); }
 };
-const lirePaquet = async (ouvrir, { reglages, surCarte, surArret, dire = () => {} }) => {
+const lirePaquet = async (ouvrir, { reglages, surCarte, surArret, dire = () => {}, annule = () => false }) => {
   ouvrir.click();
   let precedente = null, total = 0, n = 0;
   for (n = 1; ; n++) {
@@ -1057,6 +1060,7 @@ const lirePaquet = async (ouvrir, { reglages, surCarte, surArret, dire = () => {
     precedente = carte;
     dire(`Carte ${n} / ${total} : ${carte.t} (${carte.rarete || '?'})`);
     const jugee = (surCarte && await surCarte(carte, { n, total })) || await renfortWikipedia(carte, dire) || carte;
+    if (annule()) return { etat: 'abandon', n, total };
     const raison = raisonArret(jugee, reglages);
     if (raison) {
       const noter = noterArret(n, carte, raison);
@@ -1070,41 +1074,49 @@ const lirePaquet = async (ouvrir, { reglages, surCarte, surArret, dire = () => {
   const suite = bouton(/^Continuer$/);
   if (!suite) throw new Error('Je ne trouve pas le bouton « Continuer » du site sur la dernière carte. Le paquet est resté ouvert : clique dessus toi-même.');
   suite.click();
-  if (!(await attendre(() => /paquets disponibles/.test(texte()) && !!bouton(/^Ouvrir$/), 4000))) throw new Error('Le site n\'est pas revenu à la page Paquets après « Continuer ». Regarde la page : le paquet est peut-être déjà rangé.');
+  // Le bouton Ouvrir suffit : au dernier paquet le compteur peut ne plus s'afficher (hypothèse, voir ouvrirSerie).
+  if (!(await attendre(() => !!bouton(/^Ouvrir$/), 4000))) throw new Error('Le site n\'est pas revenu à la page Paquets après « Continuer ». Regarde la page : le paquet est peut-être déjà rangé.');
   return { etat: 'termine', n, total };
 };
 
 // ── Série de paquets (ticket #17) : tous les paquets restants, une seule confirmation ──
 const PAUSE_ENTRE_PAQUETS = 2000;
+const lireCompteur = () => { const m = texte().match(/(\d+) \/ \d+ paquets disponibles/); return m ? +m[1] : null; };
 const paquetsDisponibles = () => {
-  const m = texte().match(/(\d+) \/ \d+ paquets disponibles/);
-  if (!m) throw new Error('Je ne lis pas le compteur de paquets disponibles sur la page : va sur la page Paquets (wiki-masters.com/pulls) et relance.');
-  return +m[1];
+  const n = lireCompteur();
+  if (n === null) throw new Error('Je ne lis pas le compteur de paquets disponibles sur la page : va sur la page Paquets (wiki-masters.com/pulls) et relance.');
+  return n;
 };
 const nbPaquets = (n, mot) => `${n} paquet${n > 1 ? 's' : ''} ${mot}${n > 1 ? 's' : ''}`;
 // Enchaîne les paquets, au plus le nombre lu au départ (la régénération d'un paquet toutes les 10 minutes n'est pas attendue).
 // Mêmes réglages que ouvrirPaquet. Rend { etat: 'termine' | 'epuise' | 'arret', ouverts (jusqu'au bout), restants, carte?, raison? } ; une erreur du site est relancée avec le bilan.
-// Sur un arrêt le paquet reste ouvert, la page n'affiche plus le compteur : « restants » est celui lu juste avant de l'ouvrir (il compte ce paquet).
-const ouvrirSerie = async ({ dire = () => {}, ...opts }) => {
+// Sur un arrêt le paquet reste ouvert, la page n'affiche plus le compteur : « restants » est celui lu avant l'ouverture, moins ce paquet laissé ouvert.
+// annule() (panneau démonté) : plus aucun clic, on rend { etat: 'abandon', ouverts }. Le drapeau « paquet en cours » reste posé toute la série, pauses comprises.
+// Après un paquet ouvert, un compteur absent veut dire « 0 » (hypothèse : à 0 le site n'affiche plus « N / 10 paquets disponibles », jamais observé) ; absent dès le départ = échec bruyant.
+const ouvrirSerie = async ({ dire = () => {}, annule = () => false, ...opts }) => {
   const total = paquetsDisponibles();
   let ouverts = 0;
+  store.set('paquet_en_cours', { quand: new Date().toLocaleString() });
   try {
     for (; ouverts < total; ouverts++) {
       if (ouverts) await sleep(PAUSE_ENTRE_PAQUETS);
-      const dispo = paquetsDisponibles();
+      if (annule()) return { etat: 'abandon', ouverts };
+      const dispo = ouverts ? (lireCompteur() ?? 0) : total;
       if (dispo < 1) break;
-      const r = await ouvrirPaquet({ ...opts, dire: (t) => dire(`Paquet ${ouverts + 1} sur ${total} · ${t}`) });
-      if (r.etat === 'arret') return { etat: 'arret', ouverts, restants: dispo, carte: r.carte, raison: r.raison };
+      const r = await ouvrirPaquet({ ...opts, annule, dansSerie: true, dire: (t) => dire(`Paquet ${ouverts + 1} sur ${total} · ${t}`) });
+      if (r.etat === 'abandon') return { etat: 'abandon', ouverts };
+      if (r.etat === 'arret') return { etat: 'arret', ouverts, restants: dispo - 1, carte: r.carte, raison: r.raison };
     }
   } catch (e) {
     e.message += ` (${nbPaquets(ouverts, 'ouvert')} jusqu'au bout avant cette erreur.)`;
     throw e;
-  }
-  const restants = paquetsDisponibles();
+  } finally { store.set('paquet_en_cours', null); }
+  const restants = lireCompteur() ?? 0;
   return { etat: restants ? 'termine' : 'epuise', ouverts, restants };
 };
 const bilanSerie = (r) => `${nbPaquets(r.ouverts, 'ouvert')} jusqu'au bout, ${r.restants} restant${r.restants > 1 ? 's' : ''}.`;
 
+const demonterUI = (host) => { host.dispatchEvent(new Event('wmr-demonte')); host.remove(); };
 const monterPaquets = () => {
   const host = document.createElement('div'); host.id = 'wmr-host';
   document.body.appendChild(host);
@@ -1150,6 +1162,9 @@ const monterPaquets = () => {
   const lancerBtn = $('[data-paquets=lancer]');
   let decider = null; // résout 'continuer' ou 'arreter'
   const choisir = (c) => { if (decider) decider(c); };
+  // Panneau démonté (changement de page) : la série en cours s'arrête, y compris suspendue sur un arrêt.
+  let demonte = false;
+  host.addEventListener('wmr-demonte', () => { demonte = true; choisir('arreter'); });
   lancerBtn.onclick = () => {
     const r = reglagesPaquets();
     const motifs = [r.raretes.length ? `les raretés ${r.raretes.join(', ')}` : '', r.interets.length ? `les mots ${r.interets.map((m) => `« ${m} »`).join(', ')}` : ''].filter(Boolean);
@@ -1166,6 +1181,7 @@ const monterPaquets = () => {
     montrer($('.conf-paquets'), false);
     try {
       const r = await ouvrirSerie({
+        annule: () => demonte,
         reglages: reglagesPaquets(),
         dire: etat,
         surArret: (carte, raison, { n, total }) => new Promise((fin) => {
@@ -1174,6 +1190,7 @@ const monterPaquets = () => {
           decider = (c) => { decider = null; montrer($('.arret-paquet'), false); fin(c); };
         }),
       });
+      if (r.etat === 'abandon') return;
       etat(r.etat === 'arret' ? `Arrêté sur « ${r.carte.t} » : le paquet est laissé ouvert sur le site, je ne clique plus rien. ${bilanSerie(r)}`
         : `${r.etat === 'epuise' ? "Il n'y a plus de paquet disponible (le site en régénère un toutes les 10 minutes). " : 'Série terminée. '}${bilanSerie(r)}`);
     } catch (e) { etat('⚠️ ' + e.message); } finally { lancerBtn.disabled = false; journal(); }
@@ -2219,7 +2236,7 @@ if (window.__WMR_TEST__ || store.get('debug', false)) {
     classer, planCarte, norm, cle, store, cartesDom, lireCarte, pageInfo,
     lireVue, lireApi, parcourirVue, changerPage, choisirFiltre, choisirTri, listerEtiquettes,
     modeSelection, poserEtiquette, appliquerSurPage, appliquerRanger, modeRanger, modeMigration, motsGroupes, rechercher,
-    supprimerEtiquette, rapportSuppression, suggestions, morceauWikipedia, pageDeDate, monterUI, reglagesPaquets, ouvrirPaquet, ouvrirSerie, noterBug, ui: () => ui, stop: () => { STOP = true; },
+    supprimerEtiquette, rapportSuppression, suggestions, morceauWikipedia, pageDeDate, monterUI, demonterUI, reglagesPaquets, ouvrirPaquet, ouvrirSerie, noterBug, ui: () => ui, stop: () => { STOP = true; },
     // mesure Wikipédia, aussi pour scripts/essai-wikipedia.js
     CAUSES_WIKIPEDIA, causeWikipedia, classerPhrase, jugerWikipedia, bilanWikipedia, jsonRapport, VERSION,
   };
@@ -2231,7 +2248,7 @@ if (!window.__WMR_TEST__) {
     const page = /^\/pulls/.test(location.pathname) ? 'pulls' : /^\/collection/.test(location.pathname) ? 'collection' : '';
     let host = document.getElementById('wmr-host');
     // le site change de page sans recharger : le panneau d'une page ne sert pas sur l'autre
-    if (host && host.dataset.page !== page) { host.remove(); host = null; }
+    if (host && host.dataset.page !== page) { demonterUI(host); host = null; }
     if (page && !host) { monterUI(); host = document.getElementById('wmr-host'); host.dataset.page = page; }
     const ici = !!page;
     if (host) host.style.display = ici ? '' : 'none';

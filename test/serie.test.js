@@ -38,7 +38,7 @@ test('arrêt de la personne au 1er paquet : la série ne continue pas, le paquet
   const r = await serie(site, { reglages: { raretes: ['R'], interets: [] } });
   assert.equal(r.etat, 'arret');
   assert.equal(r.carte.t, 'Football');
-  assert.deepEqual([r.ouverts, r.restants], [0, 5], 'ouvert mais pas terminé : le compteur du site n\'a pas bougé');
+  assert.deepEqual([r.ouverts, r.restants], [0, 4], 'le paquet laissé ouvert n est pas compté dans les restants');
   await site.attente(200);
   assert.deepEqual(types(site), ['ouvrir', 'fleche', 'fleche', 'fleche']);
   site.fermer();
@@ -90,6 +90,46 @@ test('compteur illisible sur la page : échec bruyant, rien de cliqué', async (
   site.fermer();
 });
 
+test('compteur absent après un paquet ouvert (site à 0) : fin de série, pas d erreur', async () => {
+  // Hypothèse non observée sur le vrai site (docs/wikimasters.md) : à 0, la page n'affiche plus « N / 10 paquets disponibles ».
+  const site = await creerSite({ page: 'pulls', paquets: 2, animation: 0, compteurAbsentA0: true });
+  const r = await serie(site);
+  assert.deepEqual([r.etat, r.ouverts, r.restants], ['epuise', 2, 0]);
+  assert.deepEqual(types(site), [...UN_PAQUET, ...UN_PAQUET]);
+  site.fermer();
+});
+
+
+test('démontage demandé pendant la pause entre deux paquets : plus aucun clic, drapeau levé', async () => {
+  const site = await creerSite({ page: 'pulls', paquets: 3, animation: 0 });
+  const r = await serie(site, { annule: () => types(site).includes('continuer') });
+  assert.equal(r.etat, 'abandon');
+  assert.equal(r.ouverts, 1);
+  await site.attente(150);
+  assert.deepEqual(types(site), UN_PAQUET, 'pas de 2e Ouvrir');
+  assert.equal(site.wmr.store.get('paquet_en_cours', null), null);
+  site.fermer();
+});
+
+test('démontage demandé en pleine lecture d un paquet : pas une flèche de plus, drapeau levé', async () => {
+  const site = await creerSite({ page: 'pulls', paquets: 2, animation: 0 });
+  const r = await serie(site, { annule: () => types(site).includes('ouvrir') });
+  assert.equal(r.etat, 'abandon');
+  await site.attente(150);
+  assert.deepEqual(types(site), ['ouvrir']);
+  assert.equal(site.wmr.store.get('paquet_en_cours', null), null);
+  site.fermer();
+});
+
+test('« paquet en cours » reste posé pendant toute la série, pause entre deux paquets comprise', async () => {
+  const site = await creerSite({ page: 'pulls', paquets: 2, animation: 0 });
+  const vu = [];
+  await serie(site, { annule: () => { if (types(site).includes('continuer')) vu.push(site.wmr.store.get('paquet_en_cours', null)); return false; } });
+  assert.ok(vu.length >= 1 && vu.every((v) => v), 'drapeau posé à la fin de la pause');
+  assert.equal(site.wmr.store.get('paquet_en_cours', null), null, 'levé à la fin de la série');
+  site.fermer();
+});
+
 // ── par le panneau ──
 const panneau = async (opts = {}) => {
   const site = await creerSite({ page: 'pulls', animation: 0, ...opts });
@@ -126,7 +166,7 @@ test('panneau : le statut en cours dit où en est la série', async () => {
   p.clic('arreter');
   assert.ok(await attendreQue(() => /laissé ouvert/.test(p.etat())));
   assert.match(p.etat(), /0 paquet ouvert/);
-  assert.match(p.etat(), /3 restants/);
+  assert.match(p.etat(), /2 restants/);
   p.site.fermer();
 });
 
@@ -145,5 +185,17 @@ test('panneau : une erreur du site s\'affiche avec le nombre de paquets déjà o
   p.clic('lancer'); p.clic('confirmer');
   assert.ok(await attendreQue(() => /⚠️/.test(p.etat())), p.etat());
   assert.match(p.etat(), /1 paquet ouvert/);
+  p.site.fermer();
+});
+
+test('panneau démonté (changement de page) sur un arrêt : la série s arrête, aucun clic, drapeau levé', async () => {
+  const p = await panneau({ paquets: 3 });
+  p.clic('lancer'); p.clic('confirmer');
+  assert.ok(await attendreQue(() => p.visible('.arret-paquet')));
+  const avant = types(p.site);
+  p.site.wmr.demonterUI(p.site.document.getElementById('wmr-host'));
+  await p.site.attente(300);
+  assert.deepEqual(types(p.site), avant, 'ni flèche ni Ouvrir après le démontage');
+  assert.equal(p.site.wmr.store.get('paquet_en_cours', null), null);
   p.site.fermer();
 });
