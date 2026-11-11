@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WikiMasters — Rangement des cartes
 // @namespace    wikimasters-rangement
-// @version      1.9.15
+// @version      1.9.16
 // @description  Étiquette tes cartes WikiMasters par domaine (aperçu avant application, jamais de défausse).
 // @match        https://www.wiki-masters.com/*
 // @match        https://wiki-masters.com/*
@@ -1574,10 +1574,11 @@ const CSS = `
 .haut{padding:10px 14px;border-bottom:1px solid #2a2e2c;display:flex;flex-wrap:wrap;gap:8px 14px}
 .groupe{display:flex;gap:6px;flex-wrap:wrap}.groupe+.groupe{padding-left:14px;border-left:1px solid #2a2e2c}
 .stl{flex-basis:100%;display:flex;align-items:center;gap:8px}
-.stl .st{flex:1;margin:0;min-height:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stl .st{flex:1;margin:0;min-height:0;max-height:4.4em;overflow:auto;overflow-wrap:anywhere}
+.haut,.bas,.pied{flex:none}
 .out{flex:1;min-height:0;overflow:auto;padding:12px 14px}
 .bas:empty{display:none}.bas{display:flex;padding:10px 14px;border-top:1px solid #2a2e2c;gap:6px;flex-wrap:wrap}
-.pied{padding:6px 14px;border-top:1px solid #2a2e2c;font-size:13px;color:#9aa19d;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pied{padding:6px 14px;border-top:1px solid #2a2e2c;font-size:13px;color:#9aa19d}
 .row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
 button.b{background:#22262a;color:#e8ebe9;border:1px solid #343a37;border-radius:8px;padding:7px 12px;min-height:32px;font-size:13px;font-weight:600;cursor:pointer}
 button.b:hover{border-color:#10b981}button.b.p{background:#10b981;color:#04130d;border-color:#10b981}
@@ -1585,6 +1586,8 @@ button.b.d{border-color:#7f1d1d;color:#fca5a5}button.b:disabled{opacity:.4;curso
 .st{color:#9aa19d;margin:6px 0 10px;min-height:16px;white-space:pre-wrap}
 h4{margin:14px 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:#9aa19d}
 .sec{border-top:1px solid #2a2e2c;padding-top:16px;margin-top:16px}.sec:first-child{border-top:0;padding-top:0;margin-top:0}
+.sec summary{color:#e8ebe9}.sec summary h4{display:inline-flex;width:calc(100% - 20px);vertical-align:top}.sec details{margin:0}.sec details>summary{padding:4px 0}
+.li.w{display:flex;gap:8px;align-items:flex-start}.ph{flex:1;min-width:0;color:#9aa19d;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.dm{flex:none;max-width:40%;color:#e8ebe9}.li b{color:#e8ebe9;font-style:normal}
 .sec h4{display:flex;justify-content:space-between;margin:0 0 8px;font-size:13px;font-weight:700;text-transform:none;letter-spacing:0;color:#e8ebe9}.cpt{color:#9aa19d;font-weight:600}
 table{width:100%;border-collapse:collapse}td{padding:3px 4px;border-bottom:1px solid #222;vertical-align:top}td.n{text-align:right;color:#9aa19d;width:48px}
 details{margin:4px 0}summary{cursor:pointer;color:#cfd4d1}
@@ -1592,9 +1595,9 @@ details{margin:4px 0}summary{cursor:pointer;color:#cfd4d1}
 .ok{color:#34d399}.ko{color:#fbbf24}.log{font-family:ui-monospace,monospace;font-size:12px;color:#9aa19d;white-space:pre-wrap;max-height:140px;overflow:auto;background:#0e100f;border-radius:6px;padding:6px;margin-top:8px}
 .hint{font-size:13px;color:#9aa19d;margin:0 0 10px}
 .opt{display:block;margin:0 0 4px;font-size:13px;color:#cfd4d1;cursor:pointer}
-[role=tablist]{display:flex;gap:4px;padding:0 14px;border-bottom:1px solid #2a2e2c}
-[role=tab]{background:none;border:0;border-bottom:2px solid transparent;color:#9aa19d;padding:7px 12px;min-height:32px;font-size:14px;font-weight:600;cursor:pointer}
-[role=tab][aria-selected=true]{color:#e8ebe9;border-bottom-color:#10b981}
+[role=tablist]{display:flex;gap:2px;padding:6px 14px 0;background:#0e100f;border-bottom:1px solid #2a2e2c}
+[role=tab]{background:none;border:1px solid transparent;border-bottom:0;border-radius:8px 8px 0 0;color:#9aa19d;padding:8px 16px;min-height:36px;font-size:14px;font-weight:600;cursor:pointer}
+[role=tab][aria-selected=true]{background:#141615;color:#e8ebe9;border-color:#2a2e2c;margin-bottom:-1px}
 :focus-visible{outline:2px solid #34d399;outline-offset:2px}
 .pastille{display:inline-block;margin-left:6px;min-width:18px;padding:0 5px;border-radius:9px;background:#fbbf24;color:#1a1300;font-size:11px;text-align:center}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
@@ -1782,21 +1785,18 @@ const listeCartes = (titre, cartes, max = 300) => cartes.length ? `<details><sum
   cartes.slice(0, max).map((c) => `<div class="li">${esc(c.t)}${c.d ? ' — <i>' + esc(c.d) + '</i>' : ''}</div>`).join('')}${cartes.length > max ? '<div class="li">…</div>' : ''}</details>` : '';
 
 // Une Section de l'Aperçu : titre (13 px, gras), compteur à droite, filet fin ; ni carte ni fond.
-const section = (titre, n, corps) => `<section class="sec"><h4><span>${esc(titre)}</span><span class="cpt">${n}</span></h4>${corps}</section>`;
+// Pliée par défaut (plie = true) : on ouvre seulement la Section dont on veut le détail.
+const section = (titre, n, corps, plie = true) => {
+  const h = `<h4><span>${esc(titre)}</span><span class="cpt">${n}</span></h4>`;
+  return `<section class="sec">${plie ? `<details><summary>${h}</summary>${corps}</details>` : h + corps}</section>`;
+};
 const pluriel = (n, mot) => `${n} ${mot}${n > 1 ? 's' : ''}`;
 
-// Section « Résultat prévu » : la synthèse d'une ligne, puis le tableau par domaine.
+// Section « Résultat prévu » : la synthèse d'une ligne, sans détail par domaine, jamais pliée.
 const resultatPrevu = (cartes, plans) => {
-  const parTag = {}, nb = { classee: 0, a_traiter: 0, ignoree: 0, inconnue: 0 };
-  for (const c of cartes) {
-    const p = plans.get(cle(c));
-    for (const t of p.tags) (parTag[t] = parTag[t] || []).push(c);
-    nb[p.statut]++;
-  }
-  const lignes = Object.entries(parTag).sort((a, b) => b[1].length - a[1].length)
-    .map(([t, l]) => `<tr><td><details><summary>${esc(t)}</summary>${l.slice(0, 200).map((c) => `<div class="li">${esc(c.t)}</div>`).join('')}</details></td><td class="n">${l.length}</td></tr>`).join('');
-  return section('Résultat prévu', cartes.length, `<div>${pluriel(nb.classee, 'classée')} · ${nb.a_traiter} à traiter · ${pluriel(nb.ignoree, 'ignorée')} · ${nb.inconnue} sans règle</div>
-    <table>${lignes}</table>`);
+  const nb = { classee: 0, a_traiter: 0, ignoree: 0, inconnue: 0 };
+  for (const c of cartes) nb[plans.get(cle(c)).statut]++;
+  return section('Résultat prévu', cartes.length, `<div>${pluriel(nb.classee, 'classée')} · ${nb.a_traiter} à traiter · ${pluriel(nb.ignoree, 'ignorée')} · ${nb.inconnue} sans règle</div>`, false);
 };
 // Section « À revoir » : cartes à traiter, sans règle, ignorées.
 const aRevoir = (cartes, plans) => {
@@ -2206,11 +2206,10 @@ const apercuWikipedia = (cartes, plans, wiki) => {
   const reference = lecture && lectureComplete(lecture) && !store.get('lecture2_perimee', false) ? Object.values(lecture.cartes) : [];
   const { candidats } = suggestions(lot, reference);
   return (wiki.erreur ? `<p class="hint ko">⚠️ ${esc(wiki.erreur)}</p>` : '')
-    + (classees.length ? section("D'après Wikipédia", classees.length, classees.slice(0, 300).map((c) => `<div class="li">${esc(c.t)} — <i>${esc(plans.get(cle(c)).phrase)}</i> → ${esc(plans.get(cle(c)).tags.join(', '))}</div>`).join('')
+    + (classees.length ? section("D'après Wikipédia", classees.length, classees.slice(0, 300).map((c) => `<div class="li w" title="${esc(plans.get(cle(c)).phrase)}"><span class="ph"><b>${esc(c.t)}</b> — <i>${esc(plans.get(cle(c)).phrase)}</i></span> <span class="dm">→ ${esc(plans.get(cle(c)).tags.join(', '))}</span></div>`).join('')
       + (classees.length > 300 ? '<div class="li">…</div>' : '')) : '')
-    + (candidats.length ? section('Mots manquants', candidats.length, `<p class="hint">Mots que les règles ne connaissent pas, sur ${SUGG_MIN_CARTES} cartes ou plus de ce lot (les phrases Wikipédia comme descriptions). Copie la liste pour Claude : il écrit la règle, le script ne crée jamais de domaine tout seul.</p>
-      ${lignesMots(candidats)}
-      <div class="row"><button class="b p" data-copier>Copier pour Claude</button></div>
+    + (candidats.length ? section('Mots manquants', candidats.length, `<div class="row"><button class="b p" data-copier>Copier pour Claude</button><span class="hint">Mots inconnus des règles, sur ${SUGG_MIN_CARTES} cartes ou plus.</span></div>
+      <details><summary>Voir les ${candidats.length} mots</summary>${lignesMots(candidats)}</details>
       <details><summary>Texte à copier</summary><textarea readonly rows="6">${esc(texteMots(`Mots manquants WikiMasters v${VERSION}, lot de ${cartes.length} cartes (Ranger)`, candidats))}</textarea></details>`) : '');
 };
 // La « Mesure Wikipédia » vit dans Diagnostic ; si elle ne s'affiche pas, l'aperçu arrive sans elle (journal des bugs).
