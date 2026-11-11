@@ -582,7 +582,6 @@ const REGLAGES = {
     essaisAppel: 3,           // une requête en erreur 429 ou 5xx est refaite, 3 fois au plus
     delaiEssaisMs: 3000,      // attente entre deux essais d'une requête en erreur
     retenteJours: 30,         // un titre absent ou sans résumé exploitable est retenté après ce nombre de jours
-    essai: 40,                // « Essai Wikipédia » : les 40 premières cartes concernées seulement
     fenetreVerbe: 300,        // « est un / une / le / la » est cherché dans les 300 premiers caractères de l'extrait
     longueurPhrase: 250,      // longueur au plus du morceau de phrase gardé
     repli: 150,               // coupe au dernier espace avant 250, sans descendre sous ce nombre de caractères
@@ -1567,23 +1566,40 @@ const CSS = `
 [hidden]{display:none!important}
 *{box-sizing:border-box;font-family:Inter,system-ui,sans-serif}
 .fab{position:fixed;right:18px;bottom:18px;z-index:2147483000;background:#10b981;color:#04130d;border:0;border-radius:999px;padding:10px 16px;font-weight:700;font-size:13px;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.4)}
-.pan{position:fixed;right:18px;bottom:66px;z-index:2147483000;width:min(420px,calc(100vw - 36px));max-height:72vh;display:flex;flex-direction:column;background:#141615;color:#e8ebe9;border:1px solid #2a2e2c;border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.55);font-size:13px}
+.pan{position:fixed;right:18px;bottom:66px;z-index:2147483000;width:min(560px,calc(100vw - 36px));max-height:80vh;display:flex;flex-direction:column;background:#141615;color:#e8ebe9;border:1px solid #2a2e2c;border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.55);font-size:14px;line-height:1.45}
 .hd{padding:12px 14px;border-bottom:1px solid #2a2e2c;display:flex;justify-content:space-between;align-items:center}
-.hd b{font-size:14px}.x{background:none;border:0;color:#9aa19d;font-size:18px;cursor:pointer}
+.hd b{font-size:14px}.x{background:none;border:0;color:#9aa19d;font-size:18px;cursor:pointer;min-width:32px;min-height:32px}
 .bd{padding:12px 14px;overflow:auto;flex:1}
+[data-cadre=rangement]{padding:0;overflow:hidden}
+.haut{padding:10px 14px;border-bottom:1px solid #2a2e2c;display:flex;flex-wrap:wrap;gap:8px 14px}
+.groupe{display:flex;gap:6px;flex-wrap:wrap}.groupe+.groupe{padding-left:14px;border-left:1px solid #2a2e2c}
+.stl{flex-basis:100%;display:flex;align-items:center;gap:8px}
+.stl .st{flex:1;margin:0;min-height:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.out{flex:1;min-height:0;overflow:auto;padding:12px 14px}
+.bas:empty{display:none}.bas{display:flex;padding:10px 14px;border-top:1px solid #2a2e2c;gap:6px;flex-wrap:wrap}
+.pied{padding:6px 14px;border-top:1px solid #2a2e2c;font-size:13px;color:#9aa19d;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
-button.b{background:#22262a;color:#e8ebe9;border:1px solid #343a37;border-radius:8px;padding:7px 10px;font-size:12px;font-weight:600;cursor:pointer}
+button.b{background:#22262a;color:#e8ebe9;border:1px solid #343a37;border-radius:8px;padding:7px 12px;min-height:32px;font-size:13px;font-weight:600;cursor:pointer}
 button.b:hover{border-color:#10b981}button.b.p{background:#10b981;color:#04130d;border-color:#10b981}
 button.b.d{border-color:#7f1d1d;color:#fca5a5}button.b:disabled{opacity:.4;cursor:default}
 .st{color:#9aa19d;margin:6px 0 10px;min-height:16px;white-space:pre-wrap}
 h4{margin:14px 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:#9aa19d}
+.sec{border-top:1px solid #2a2e2c;padding-top:16px;margin-top:16px}.sec:first-child{border-top:0;padding-top:0;margin-top:0}
+.sec h4{display:flex;justify-content:space-between;margin:0 0 8px;font-size:13px;font-weight:700;text-transform:none;letter-spacing:0;color:#e8ebe9}.cpt{color:#9aa19d;font-weight:600}
 table{width:100%;border-collapse:collapse}td{padding:3px 4px;border-bottom:1px solid #222;vertical-align:top}td.n{text-align:right;color:#9aa19d;width:48px}
 details{margin:4px 0}summary{cursor:pointer;color:#cfd4d1}
-.li{color:#b9bfbb;font-size:12px;padding:2px 0 2px 10px}
-.ok{color:#34d399}.ko{color:#fbbf24}.log{font-family:ui-monospace,monospace;font-size:11px;color:#9aa19d;white-space:pre-wrap;max-height:140px;overflow:auto;background:#0e100f;border-radius:6px;padding:6px;margin-top:8px}
-.hint{font-size:12px;color:#9aa19d;margin:0 0 10px}
-.opt{display:block;margin:0 0 4px;font-size:12px;color:#cfd4d1;cursor:pointer}
-textarea{width:100%;background:#0e100f;color:#cfd4d1;border:1px solid #2a2e2c;border-radius:6px;padding:6px;font-family:ui-monospace,monospace;font-size:11px;margin-bottom:8px}
+.li{color:#b9bfbb;font-size:13px;padding:2px 0 2px 10px}
+.ok{color:#34d399}.ko{color:#fbbf24}.log{font-family:ui-monospace,monospace;font-size:12px;color:#9aa19d;white-space:pre-wrap;max-height:140px;overflow:auto;background:#0e100f;border-radius:6px;padding:6px;margin-top:8px}
+.hint{font-size:13px;color:#9aa19d;margin:0 0 10px}
+.opt{display:block;margin:0 0 4px;font-size:13px;color:#cfd4d1;cursor:pointer}
+[role=tablist]{display:flex;gap:4px;padding:0 14px;border-bottom:1px solid #2a2e2c}
+[role=tab]{background:none;border:0;border-bottom:2px solid transparent;color:#9aa19d;padding:7px 12px;min-height:32px;font-size:14px;font-weight:600;cursor:pointer}
+[role=tab][aria-selected=true]{color:#e8ebe9;border-bottom-color:#10b981}
+:focus-visible{outline:2px solid #34d399;outline-offset:2px}
+.pastille{display:inline-block;margin-left:6px;min-width:18px;padding:0 5px;border-radius:9px;background:#fbbf24;color:#1a1300;font-size:11px;text-align:center}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+[role=tabpanel]{display:flex;flex-direction:column;flex:1;min-height:0}
+textarea{width:100%;background:#0e100f;color:#cfd4d1;border:1px solid #2a2e2c;border-radius:6px;padding:6px;font-family:ui-monospace,monospace;font-size:12px;margin-bottom:8px}
 `;
 
 let ui;
@@ -1599,30 +1615,49 @@ const monterUI = () => {
   <button class="fab">🏷 Rangement</button>
   <div class="pan" hidden style="display:none">
     <div class="hd"><b>Rangement des cartes</b><button class="x" title="Fermer">×</button></div>
-    <div class="bd">
-      <p class="hint">Rien n'est modifié sans que tu cliques sur « Appliquer ». Le script ne touche jamais à Défausser ni aux enchères.</p>
-      <div class="row">
-        <button class="b p" data-a="ranger">Ranger les nouvelles cartes</button>
-        <button class="b" data-a="suggestions">Suggestions</button>
-        <button class="b" data-a="completer">Compléter les cartes rangées</button>
-        <button class="b" data-a="doublons">Doublons</button>
-        <button class="b" data-a="migration">Migration (une fois)</button>
-        <button class="b d" data-a="stop" disabled>Arrêter</button>
-        <button class="b" data-a="bugs">Journal des bugs</button>
+    <div role="tablist" aria-label="Sections du panneau">
+      <button role="tab" id="wmr-t-rangement" data-onglet="rangement" aria-selected="true" aria-controls="wmr-c-rangement" tabindex="0">Rangement</button>
+      <button role="tab" id="wmr-t-diagnostic" data-onglet="diagnostic" aria-selected="false" aria-controls="wmr-c-diagnostic" tabindex="-1">Diagnostic<span class="pastille" style="display:none" hidden></span></button>
+    </div>
+    <div class="bd" role="tabpanel" id="wmr-c-rangement" data-cadre="rangement" aria-labelledby="wmr-t-rangement">
+      <div class="haut">
+        <div class="groupe" data-groupe="ranger">
+          <button class="b p" data-a="ranger">Ranger les nouvelles cartes</button>
+          <button class="b" data-a="completer">Compléter les cartes rangées</button>
+        </div>
+        <div class="groupe" data-groupe="analyser">
+          <button class="b" data-a="suggestions">Suggestions</button>
+          <button class="b" data-a="doublons">Doublons</button>
+        </div>
+        <div class="groupe" data-groupe="maintenance">
+          <button class="b" data-a="migration">Migration (une fois)</button>
+        </div>
+        <div class="stl"><div class="st"></div><button class="b d" data-a="stop" hidden style="display:none">Arrêter</button></div>
       </div>
-      <label class="opt"><input type="checkbox" data-essai> Essai Wikipédia : 40 cartes</label>
-      <p class="hint">Les cartes sans description utile sont classées d'après la première phrase de leur article Wikipédia (lecture seule). Décoche l'essai quand tu as validé les premiers résultats.</p>
-      <div class="st"></div>
       <div class="out"></div>
+      <div class="bas" hidden style="display:none"></div>
+      <div class="pied">Rien n'est modifié sans ton clic sur Appliquer.</div>
+    </div>
+    <div class="bd" role="tabpanel" id="wmr-c-diagnostic" data-cadre="diagnostic" aria-labelledby="wmr-t-diagnostic" hidden style="display:none">
+      <div class="diag-wp"></div>
+      <div class="diag-bugs"></div>
+      <h4>Journal technique</h4>
       <div class="log" hidden style="display:none"></div>
     </div>
   </div>`;
   const $ = (s) => root.querySelector(s);
   ui = {
-    root, $, st: $('.st'), out: $('.out'), log: $('.log'),
-    statut(t) { this.st.textContent = t; },
+    root, $, st: $('.st'), out: $('.out'), bas: $('.bas'), wp: $('.diag-wp'), bugs: $('.diag-bugs'), log: $('.log'), nouveau: 0, onglet: 'rangement',
+    statut(t) { this.st.textContent = t; this.st.title = t; },
+    // L'Aperçu défile ; ses boutons d'action (.actions : Appliquer…) passent dans la barre fixe du bas.
+    set apercu(html) {
+      this.out.innerHTML = html;
+      this.bas.replaceChildren(...this.out.querySelectorAll('.actions button'));
+      this.out.querySelectorAll('.actions').forEach((a) => a.remove());
+      montrer(this.bas, this.bas.children.length > 0);
+    },
     journal(t) { montrer(this.log, true); this.log.textContent += t + '\n'; this.log.scrollTop = 1e9; },
-    occupe(o) { root.querySelectorAll('button.b').forEach((b) => { b.disabled = b.dataset.a === 'stop' ? !o : o; }); },
+    occupe(o) { root.querySelectorAll('button.b').forEach((b) => { b.disabled = o; }); montrer($('[data-a=stop]'), o); $('[data-a=stop]').disabled = !o; },
   };
   $('.fab').onclick = () => montrer($('.pan'), $('.pan').hidden);
   $('.x').onclick = () => montrer($('.pan'), false);
@@ -1632,11 +1667,28 @@ const monterUI = () => {
   root.querySelector('[data-a=completer]').onclick = () => lancer(modeCompleter, { etape: 'completer-lecture' });
   root.querySelector('[data-a=doublons]').onclick = () => lancer(modeDoublons);
   root.querySelector('[data-a=migration]').onclick = () => lancer(modeMigration);
-  root.querySelector('[data-a=bugs]').onclick = afficherBugs;
-  const essai = $('[data-essai]');
-  essai.checked = !!store.get('wiki_essai', true);
-  essai.onchange = () => store.set('wiki_essai', essai.checked);
-  majBoutonBugs();
+  const onglets = [...root.querySelectorAll('[role=tab]')];
+  const choisirOnglet = (nom, focus = false) => {
+    ui.onglet = nom;
+    for (const t of onglets) {
+      const actif = t.dataset.onglet === nom;
+      t.setAttribute('aria-selected', String(actif)); t.tabIndex = actif ? 0 : -1;
+      montrer($(`[data-cadre=${t.dataset.onglet}]`), actif);
+      if (actif && focus) t.focus();
+    }
+    if (nom === 'diagnostic') { ui.nouveau = 0; majPastille(); }
+  };
+  onglets.forEach((t) => {
+    t.onclick = () => choisirOnglet(t.dataset.onglet);
+    t.onkeydown = (e) => {
+      const pas = { ArrowRight: 1, ArrowLeft: -1 }[e.key];
+      if (!pas) return;
+      e.preventDefault();
+      choisirOnglet(onglets[(onglets.indexOf(t) + pas + onglets.length) % onglets.length].dataset.onglet, true);
+    };
+  });
+  afficherBugs();
+  afficherRapportWikipedia({ rapport: true }, false); // le rapport déjà stocké : affiché, mais pas « nouveau »
   proposerReprise();
 };
 
@@ -1687,7 +1739,7 @@ const noterBug = (e, contexte) => {
     journal: ui ? ui.log.textContent.trim().split('\n').filter(Boolean).slice(-25) : [],
   });
   store.set('bugs', bugs.slice(-30));
-  majBoutonBugs();
+  if (ui) { signaler(); afficherBugs(); }
 };
 const texteBugs = () => store.get('bugs', []).map((b, i) => [
   `#${i + 1} — ${b.quand} — ${b.contexte}`,
@@ -1697,15 +1749,18 @@ const texteBugs = () => store.get('bugs', []).map((b, i) => [
   `Code : ${b.code}`,
   'Journal :', ...b.journal.map((l) => '  ' + l),
 ].join('\n')).join('\n\n');
-const majBoutonBugs = () => {
-  const b = ui && ui.root.querySelector('[data-a=bugs]');
-  const n = store.get('bugs', []).length;
-  if (b) b.textContent = 'Journal des bugs' + (n ? ` (${n})` : '');
+// Pastille de l'onglet Diagnostic : le nombre de bugs et de rapports arrivés depuis la dernière consultation.
+// Le panneau ne change jamais d'onglet seul ; sur Diagnostic, rien n'est « nouveau ».
+const signaler = () => { if (ui.onglet !== 'diagnostic') ui.nouveau++; majPastille(); };
+const majPastille = () => {
+  const p = ui.root.querySelector('.pastille');
+  montrer(p, ui.nouveau > 0);
+  p.innerHTML = `${ui.nouveau}<span class="sr"> nouveau${ui.nouveau > 1 ? 'x' : ''} dans Diagnostic</span>`;
 };
 // Le bouton du panneau ([data-copier]) copie le texte de sa zone (le premier textarea) ; sinon le texte est sélectionné pour Ctrl+C.
-const brancherCopie = (t, ok, zone = 'textarea', bouton = '[data-copier]') => {
-  const ta = ui.out.querySelector(zone);
-  const copier = ui.out.querySelector(bouton);
+const brancherCopie = (t, ok, zone = 'textarea', bouton = '[data-copier]', ou = ui.out) => {
+  const ta = ou.querySelector(zone);
+  const copier = ou.querySelector(bouton);
   if (copier) copier.onclick = () => {
     const echec = () => { ta.select(); ui.statut('Copie impossible ici : le texte est sélectionné, fais Ctrl+C.'); };
     try { navigator.clipboard.writeText(t).then(() => ui.statut(ok), echec); } catch (e) { echec(); }
@@ -1713,34 +1768,46 @@ const brancherCopie = (t, ok, zone = 'textarea', bouton = '[data-copier]') => {
 };
 const afficherBugs = () => {
   const t = texteBugs();
-  ui.out.innerHTML = '<h4>Journal des bugs</h4>' + (t ? `<p class="hint">Copie ce texte et colle-le dans la conversation avec Claude.</p>
+  ui.bugs.innerHTML = '<h4>Journal des bugs</h4>' + (t ? `<p class="hint">Copie ce texte et colle-le dans la conversation avec Claude.</p>
     <textarea readonly rows="12">${esc(t)}</textarea>
     <div class="row"><button class="b p" data-copier>Copier</button><button class="b d" data-vider>Vider le journal</button></div>`
     : '<p class="hint">Aucun bug noté.</p>');
-  brancherCopie(t, 'Journal copié : colle-le dans la conversation avec Claude.');
-  const vider = ui.out.querySelector('[data-vider]');
-  if (vider) vider.onclick = () => { store.set('bugs', []); majBoutonBugs(); afficherBugs(); };
+  brancherCopie(t, 'Journal copié : colle-le dans la conversation avec Claude.', 'textarea', '[data-copier]', ui.bugs);
+  const vider = ui.bugs.querySelector('[data-vider]');
+  if (vider) vider.onclick = () => { store.set('bugs', []); afficherBugs(); };
 };
 
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const listeCartes = (titre, cartes, max = 300) => cartes.length ? `<details><summary>${esc(titre)} (${cartes.length})</summary>${
   cartes.slice(0, max).map((c) => `<div class="li">${esc(c.t)}${c.d ? ' — <i>' + esc(c.d) + '</i>' : ''}</div>`).join('')}${cartes.length > max ? '<div class="li">…</div>' : ''}</details>` : '';
 
-const resumePlan = (cartes, plans) => {
-  const parTag = {}, groupes = { classee: [], a_traiter: [], ignoree: [], inconnue: [] };
+// Une Section de l'Aperçu : titre (13 px, gras), compteur à droite, filet fin ; ni carte ni fond.
+const section = (titre, n, corps) => `<section class="sec"><h4><span>${esc(titre)}</span><span class="cpt">${n}</span></h4>${corps}</section>`;
+const pluriel = (n, mot) => `${n} ${mot}${n > 1 ? 's' : ''}`;
+
+// Section « Résultat prévu » : la synthèse d'une ligne, puis le tableau par domaine.
+const resultatPrevu = (cartes, plans) => {
+  const parTag = {}, nb = { classee: 0, a_traiter: 0, ignoree: 0, inconnue: 0 };
   for (const c of cartes) {
     const p = plans.get(cle(c));
     for (const t of p.tags) (parTag[t] = parTag[t] || []).push(c);
-    groupes[p.statut].push(c);
+    nb[p.statut]++;
   }
   const lignes = Object.entries(parTag).sort((a, b) => b[1].length - a[1].length)
     .map(([t, l]) => `<tr><td><details><summary>${esc(t)}</summary>${l.slice(0, 200).map((c) => `<div class="li">${esc(c.t)}</div>`).join('')}</details></td><td class="n">${l.length}</td></tr>`).join('');
-  return `<h4>Résultat prévu</h4>
-    <div>${groupes.classee.length} classée(s) · ${groupes.a_traiter.length} à traiter · ${groupes.ignoree.length} ignorée(s) · ${groupes.inconnue.length} sans règle</div>
-    <table>${lignes}</table>
-    ${listeCartes('Sans règle (restent « Sans étiquette »)', groupes.inconnue)}
-    ${listeCartes('Ignorées volontairement (homonymies, listes…)', groupes.ignoree)}`;
+  return section('Résultat prévu', cartes.length, `<div>${pluriel(nb.classee, 'classée')} · ${nb.a_traiter} à traiter · ${pluriel(nb.ignoree, 'ignorée')} · ${nb.inconnue} sans règle</div>
+    <table>${lignes}</table>`);
 };
+// Section « À revoir » : cartes à traiter, sans règle, ignorées.
+const aRevoir = (cartes, plans) => {
+  const g = { a_traiter: [], inconnue: [], ignoree: [] };
+  for (const c of cartes) { const p = plans.get(cle(c)); if (g[p.statut]) g[p.statut].push(c); }
+  const n = g.a_traiter.length + g.inconnue.length + g.ignoree.length;
+  return n ? section('À revoir', n, listeCartes('À traiter (mot ambigu seul)', g.a_traiter)
+    + listeCartes('Sans règle (restent « Sans étiquette »)', g.inconnue)
+    + listeCartes('Ignorées volontairement (homonymies, listes…)', g.ignoree)) : '';
+};
+const resumePlan = (cartes, plans) => resultatPrevu(cartes, plans) + aRevoir(cartes, plans);
 
 // ═══════════════════════════════════════════════════════════════════
 //  WIKIPÉDIA — la première phrase de l'article, pour les cartes sans description utile
@@ -1754,7 +1821,6 @@ const WIKI_LOT = WIKI.lot; // Wikipédia accepte 50 titres mais ne renvoie que 2
 const WIKI_PAUSE = WIKI.pauseMs; // environ une requête par seconde, en série
 const WIKI_TENTATIVES = WIKI.tentativesTitre; // un titre qui disparaît de la réponse est redemandé, 3 fois au plus
 const WIKI_RETENTE = WIKI.retenteJours * 24 * 3600e3; // un titre absent ou sans résumé exploitable est retenté après 30 jours
-const WIKI_ESSAI = WIKI.essai; // « Essai Wikipédia » : les 40 premières cartes concernées seulement
 const WIKI_EST = /(?<![\p{L}\p{N}'’-])est\s+(?:un|une|le|la)\s+/iu;
 // À défaut de « est un/une/le/la » : un autre verbe de définition (« étaient », « fut », « sont », « a été », « forment »,
 // « constituent », « désigne ») SUIVI D'UN ARTICLE (obligatoire : « est né », « fut brièvement comte », « a été fondée » ne
@@ -1868,17 +1934,16 @@ const lireWikipedia = async (cartes) => {
 
 // Pour Ranger : lit (ou retrouve dans le cache) la phrase de chaque carte concernée. L'état des cartes garde leur vraie
 // description (vide) : la phrase est conservée à part, sous la clé de la carte réelle.
-// Renvoie { phrases: { clé de carte → phrase }, wiki: { erreur, essai, concernees, lues } }.
+// Renvoie { phrases: { clé de carte → phrase }, wiki: { erreur, concernees, lues } }.
 const lectureWikipedia = async (cartes, complete) => {
   const concernees = cartes.filter(concerneeWiki);
-  const essai = !!store.get('wiki_essai', true);
-  const lues = essai ? concernees.slice(0, WIKI_ESSAI) : concernees;
+  const lues = concernees;
   let erreur = null, echec = null;
   const debutMesure = Date.now();
   wikiMesure = lues.length ? { requetes: 0, lots: [], reseau: new Set(), redirections: {}, aLire: new Set() } : null;
   try { // la mesure est oubliée dans tous les cas, même sur « Stop » pendant la lecture
     if (lues.length) {
-      ui.journal(`Wikipédia : ${lues.length} carte(s) sur ${concernees.length} concernée(s)${essai ? ' (essai)' : ''}.`);
+      ui.journal(`Wikipédia : ${lues.length} carte(s) sur ${concernees.length} concernée(s).`);
       const e = await lireWikipedia(lues);
       echec = e;
       if (e) {
@@ -1890,18 +1955,17 @@ const lectureWikipedia = async (cartes, complete) => {
     }
     const phrases = {};
     for (const c of lues) { const m = wikiPhrase(wikiEntree(c.t)); if (m) phrases[cle(c)] = m; }
-    // des cartes laissées de côté (essai) ou sans réponse (appel en échec) : Ranger les relira quand ce sera réglé
+    // des cartes sans réponse (appel en échec) : Ranger les relira quand ce sera réglé
     if (erreur) store.set('wiki_reste', { raison: 'erreur', version: VERSION });
-    else if (lues.length < concernees.length) store.set('wiki_reste', { raison: 'essai' });
     else if (complete) store.set('wiki_reste', null); // une lecture partielle ne dit rien des cartes déjà laissées de côté
     // mesure (diagnostic seulement) : le rapport est écrit à chaque Ranger où Wikipédia a tourné, rien d'autre n'en dépend
     let rapport = false;
     try {
-      if (wikiMesure) { store.set('wp_rapport', rapportWikipedia(concernees, lues, wikiMesure, echec, essai, debutMesure)); rapport = true; }
+      if (wikiMesure) { store.set('wp_rapport', rapportWikipedia(concernees, lues, wikiMesure, echec, debutMesure)); rapport = true; }
     } catch (e) {
       noterBug(e, 'rapport Wikipédia impossible à construire : Ranger continue sans lui');
     }
-    return { phrases, wiki: { erreur, essai, concernees: concernees.length, lues: lues.length, rapport } };
+    return { phrases, wiki: { erreur, concernees: concernees.length, lues: lues.length, rapport } };
   } finally {
     wikiMesure = null;
   }
@@ -1979,7 +2043,7 @@ const bilanWikipedia = (cartes, verite = null) => {
   const justes = verifiees.filter((c) => jugerWikipedia(c.domaines, verite[nfc(c.titre)]) === 'juste').length;
   return { parCause, couverture, pagesIgnorees, precision: verifiees.length ? { verifiees: verifiees.length, justes, taux: taux(justes, verifiees.length) } : null };
 };
-const rapportWikipedia = (concernees, lues, m, echec, essai, debut) => {
+const rapportWikipedia = (concernees, lues, m, echec, debut) => {
   const lus = new Set(lues.map(cle)), vus = new Set(), cartes = [];
   for (const c of concernees) {
     if (vus.has(cle(c))) continue; // un exemplaire en double : une seule ligne
@@ -1994,7 +2058,7 @@ const rapportWikipedia = (concernees, lues, m, echec, essai, debut) => {
   }
   const fin = Date.now();
   return {
-    outil: 'wmr-rapport-wikipedia', format: 1, version: VERSION, date: new Date(fin).toISOString(), essai,
+    outil: 'wmr-rapport-wikipedia', format: 1, version: VERSION, date: new Date(fin).toISOString(), essai: false, // champ gardé pour le format 1
     dureeMs: fin - debut, requetes: m.requetes,
     lots: m.lots.map((l) => ({ titres: l.titres, ms: l.ms ?? fin - l.debut, ok: l.ok })),
     erreurs: echec ? [echec.message] : [], concernees: concernees.length, lues: lues.length,
@@ -2019,11 +2083,11 @@ const apercuRapportWikipedia = (r) => {
     <textarea readonly rows="4" data-wp-rapport>${esc(jsonRapport(r))}</textarea>
     <div class="row"><button class="b" data-copier-wp>Copier le rapport Wikipédia (JSON)</button></div>`;
 };
-// Les cartes laissées de côté par l'essai (case décochée depuis) ou par un appel en échec (nouvelle version du script)
-// sont-elles à relire ?
+// Les cartes laissées de côté par l'ancien essai (stockage d'une version précédente) ou par un appel en échec
+// (nouvelle version du script) sont-elles à relire ?
 const wikiAReprendre = () => {
   const r = store.get('wiki_reste', null);
-  return !!r && (r.raison === 'essai' ? !store.get('wiki_essai', true) : r.version !== VERSION);
+  return !!r && r.version !== VERSION; // un reste de l'ancien essai n'a pas de version : il est relu aussi
 };
 
 // Le plan d'une carte avec sa phrase Wikipédia (voir preparerRanger plus bas). Défini ici, avant EMPREINTE_REGLES qui le lit.
@@ -2128,8 +2192,8 @@ const appliquerLecture = async (l) => {
   oublierFait();
 };
 
-// L'aperçu de Ranger, côté Wikipédia : l'erreur éventuelle, l'essai, les cartes classées d'après leur phrase, puis les mots manquants.
-// wiki : { phrases, erreur, essai, concernees, lues }
+// L'aperçu de Ranger, côté Wikipédia : l'erreur éventuelle, les cartes classées d'après leur phrase, puis les mots manquants.
+// wiki : { phrases, erreur, concernees, lues }
 const apercuWikipedia = (cartes, plans, wiki) => {
   const phrases = wiki.phrases || {};
   const classees = cartes.filter((c) => plans.get(cle(c)).phrase);
@@ -2142,57 +2206,50 @@ const apercuWikipedia = (cartes, plans, wiki) => {
   const reference = lecture && lectureComplete(lecture) && !store.get('lecture2_perimee', false) ? Object.values(lecture.cartes) : [];
   const { candidats } = suggestions(lot, reference);
   return (wiki.erreur ? `<p class="hint ko">⚠️ ${esc(wiki.erreur)}</p>` : '')
-    + (wiki.essai && wiki.concernees > wiki.lues ? `<p class="hint">Essai Wikipédia : ${wiki.lues} carte(s) lue(s) sur ${wiki.concernees} concernée(s). Décoche « Essai Wikipédia » dans le panneau pour lire les autres.</p>` : '')
-    + (classees.length ? `<h4>D'après Wikipédia</h4><details><summary>Classées d'après Wikipédia (${classees.length})</summary>${
-      classees.slice(0, 300).map((c) => `<div class="li">${esc(c.t)} — <i>${esc(plans.get(cle(c)).phrase)}</i> → ${esc(plans.get(cle(c)).tags.join(', '))}</div>`).join('')}${classees.length > 300 ? '<div class="li">…</div>' : ''}</details>` : '')
-    + (candidats.length ? `<h4>Mots manquants</h4>
-      <p class="hint">Mots que les règles ne connaissent pas, sur ${SUGG_MIN_CARTES} cartes ou plus de ce lot (les phrases Wikipédia comme descriptions). Copie la liste pour Claude : il écrit la règle, le script ne crée jamais de domaine tout seul.</p>
+    + (classees.length ? section("D'après Wikipédia", classees.length, classees.slice(0, 300).map((c) => `<div class="li">${esc(c.t)} — <i>${esc(plans.get(cle(c)).phrase)}</i> → ${esc(plans.get(cle(c)).tags.join(', '))}</div>`).join('')
+      + (classees.length > 300 ? '<div class="li">…</div>' : '')) : '')
+    + (candidats.length ? section('Mots manquants', candidats.length, `<p class="hint">Mots que les règles ne connaissent pas, sur ${SUGG_MIN_CARTES} cartes ou plus de ce lot (les phrases Wikipédia comme descriptions). Copie la liste pour Claude : il écrit la règle, le script ne crée jamais de domaine tout seul.</p>
       ${lignesMots(candidats)}
-      <textarea readonly rows="6">${esc(texteMots(`Mots manquants WikiMasters v${VERSION}, lot de ${cartes.length} cartes (Ranger)`, candidats))}</textarea>
-      <div class="row"><button class="b p" data-copier>Copier pour Claude</button></div>` : '')
-    + blocRapportWikipedia(wiki);
+      <div class="row"><button class="b p" data-copier>Copier pour Claude</button></div>
+      <details><summary>Texte à copier</summary><textarea readonly rows="6">${esc(texteMots(`Mots manquants WikiMasters v${VERSION}, lot de ${cartes.length} cartes (Ranger)`, candidats))}</textarea></details>`) : '');
 };
-// Le groupe « Mesure Wikipédia » de l'aperçu ; s'il ne s'affiche pas, l'aperçu arrive sans lui (journal des bugs).
-const blocRapportWikipedia = (wiki) => {
+// La « Mesure Wikipédia » vit dans Diagnostic ; si elle ne s'affiche pas, l'aperçu arrive sans elle (journal des bugs).
+// Un Ranger sans rapport neuf laisse celui qui est déjà affiché.
+const afficherRapportWikipedia = (wiki, nouveau = true) => {
   try {
     const r = wiki.rapport && store.get('wp_rapport', null);
-    return r ? apercuRapportWikipedia(r) : '';
+    if (!r) return;
+    ui.wp.innerHTML = apercuRapportWikipedia(r);
+    brancherCopie(jsonRapport(r), 'Rapport copié : colle-le dans la conversation avec Claude.', '[data-wp-rapport]', '[data-copier-wp]', ui.wp);
+    if (nouveau) signaler();
   } catch (e) {
     noterBug(e, 'rapport Wikipédia impossible à afficher : aperçu sans lui');
-    return '';
   }
 };
 const afficherRanger = (cartes, depuis, viaApi, wiki = {}) => {
   const { plans, cibles, neuves, marquees, plusRecente, groupes } = preparerRanger(cartes, depuis, wiki.phrases);
-  const groupees = groupes.reduce((s, g) => s + g.n, 0);
   const nbMarquees = cartes.filter(estMarquee).length;
   ui.statut(`${cartes.length - nbMarquees} carte(s) ${depuis ? 'nouvelle(s)' : 'sans étiquette'}, dont ${neuves.length} à ranger.`
     + (nbMarquees ? ` Et ${nbMarquees} marquée(s) « ${A_TRAITER} », dont ${marquees.length} que les règles rangent maintenant.` : ''));
-  ui.out.innerHTML = (groupes.length ? `<h4>Rangement groupé</h4>
-      <p class="hint">Beaucoup de cartes à ranger : ${groupes.length} recherche(s) en rangent d'abord ${groupees} par groupes, puis le reste page par page.</p>
-      ${listeCartes('Recherches prévues', groupes.map((g) => ({ t: `« ${g.mot} » → #${g.dom}`, d: `${g.n} carte(s)` })))}` : '')
-    + (marquees.length ? `<h4>Cartes « ${A_TRAITER} » rangées</h4>
-      <div>${marquees.length} carte(s) : leur domaine, puis retrait de ${A_TRAITER} (et seulement elle)</div>
-      ${listeCartes('Cartes concernées', marquees)}` : '')
+  ui.apercu = resultatPrevu(cartes, plans) + aRevoir(cartes, plans)
     + apercuWikipedia(cartes, plans, wiki)
-    + resumePlan(cartes, plans) + `<div class="row" style="margin-top:12px">
+    + `<div class="actions">
       ${cibles.length ? '<button class="b p" data-go>Appliquer</button>' : ''}
       ${depuis ? '<button class="b" data-tout>Revoir toutes les cartes sans étiquette</button>' : ''}</div>`;
   const motsManquants = ui.out.querySelector('textarea');
   if (motsManquants) brancherCopie(motsManquants.value, 'Liste copiée : colle-la dans la conversation avec Claude.');
-  const rapportWp = ui.out.querySelector('[data-wp-rapport]');
-  if (rapportWp) brancherCopie(rapportWp.value, 'Rapport copié : colle-le dans la conversation avec Claude.', '[data-wp-rapport]', '[data-copier-wp]');
+  afficherRapportWikipedia(wiki);
   if (!cibles.length) { // rien à poser : ces cartes ne seront plus relues
     if (viaApi && plusRecente) retenirDepuis(plusRecente);
     store.set('ranger_lecture', null);
   }
-  const go = ui.out.querySelector('[data-go]');
+  const go = ui.bas.querySelector('[data-go]');
   if (go) go.onclick = () => {
     go.remove();
     oublierFait();
     lancer(() => appliquerLecture({ cartes, depuis, viaApi, phrases: wiki.phrases }), { etape: 'application' });
   };
-  const tt = ui.out.querySelector('[data-tout]');
+  const tt = ui.bas.querySelector('[data-tout]');
   if (tt) tt.onclick = () => lancer(() => modeRanger(true), { etape: 'lecture', tout: true });
 };
 
@@ -2220,7 +2277,7 @@ const proposerReprise = () => {
   }
   const l = lu;
   if (!l || !l.cartes || Date.now() - l.at > 6 * 3600e3) return;
-  ui.out.innerHTML = `<p class="hint">Une lecture de ${l.cartes.length} carte(s) faite à ${new Date(l.at).toLocaleTimeString()} n'a pas encore été appliquée.</p>
+  ui.apercu = `<p class="hint">Une lecture de ${l.cartes.length} carte(s) faite à ${new Date(l.at).toLocaleTimeString()} n'a pas encore été appliquée.</p>
     <div class="row"><button class="b p" data-reprise>Reprendre cette lecture</button></div>`;
   ui.out.querySelector('[data-reprise]').onclick = () => lancer(async () => { afficherRanger(l.cartes, l.depuis, l.viaApi, { phrases: l.phrases, ...l.wiki }); });
 };
@@ -2360,7 +2417,7 @@ const modeSuggestions = async () => {
   if (!lecture || !lectureComplete(lecture)) return afficherSuggestions(await lireCollection());
   const perimee = store.get('lecture2_perimee', false);
   ui.statut('');
-  ui.out.innerHTML = `<h4>Suggestions</h4>
+  ui.apercu = `<h4>Suggestions</h4>
     <p class="hint">Lecture de la collection du ${new Date(lecture.at).toLocaleString()}${perimee ? ' : des étiquettes ont été posées depuis, mieux vaut la relire' : ''}.</p>
     <div class="row"><button class="b${perimee ? '' : ' p'}" data-reutiliser>Réutiliser cette lecture</button>
       <button class="b${perimee ? ' p' : ''}" data-relire>Relire${perimee ? ' (recommandé)' : ''} (≈ 2 min)</button></div>`;
@@ -2384,7 +2441,7 @@ const afficherSuggestions = (lecture) => {
   const cartes = [`Cartes sans règle (${sansRegle.length}) :`, ...sansRegle.map(exemple), '',
     `Cartes avec un mot ambigu seul (${ambigues.length}) :`, ...ambigues.map(exemple)].join('\n');
   ui.statut(`${Object.keys(lecture.cartes).length} cartes lues, ${candidats.length} mot(s) à proposer.`);
-  ui.out.innerHTML = `<h4>Cartes sans domaine</h4><div>${esc(resume)}</div>
+  ui.apercu = `<h4>Cartes sans domaine</h4><div>${esc(resume)}</div>
     <h4>Mots que les règles ne connaissent pas</h4>
     <p class="hint">Domaine proposé : celui de tes cartes déjà étiquetées qui contiennent ce mot (70 % au moins). Copie la liste pour Claude : il ajoutera aux règles les mots que tu choisis.</p>
     ${candidats.length ? lignesMots(candidats) : `<p class="hint">Aucun mot inconnu ne revient sur ${SUGG_MIN_CARTES} cartes ou plus.</p>`}
@@ -2437,9 +2494,9 @@ const afficherCompleter = (l, rangees) => {
       cs.slice(0, 200).map((c) => `<div class="li">${esc(c.t)}</div>`).join('')}</details></td></tr>`).join('');
   ui.statut(cibles.length ? `${cibles.length} carte(s) rangée(s) gagnent un domaine${rangees ? ` (sur ${rangees} qui en ont déjà un)` : ''}.`
     : 'Rien à compléter : toutes tes cartes rangées ont déjà les domaines que les règles leur trouvent.');
-  ui.out.innerHTML = (cibles.length ? `<h4>Domaines ajoutés</h4><p class="hint">Rien n'est retiré, et seuls des domaines sont ajoutés (5 au plus par carte).</p><table>${lignes}</table>
-    <div class="row" style="margin-top:12px"><button class="b p" data-go>Appliquer</button></div>` : '');
-  const go = ui.out.querySelector('[data-go]');
+  ui.apercu = (cibles.length ? `<h4>Domaines ajoutés</h4><p class="hint">Rien n'est retiré, et seuls des domaines sont ajoutés (5 au plus par carte).</p><table>${lignes}</table>
+    <div class="actions"><button class="b p" data-go>Appliquer</button></div>` : '');
+  const go = ui.bas.querySelector('[data-go]');
   if (go) go.onclick = () => {
     go.remove();
     store.set('completer_fait', null);
@@ -2480,9 +2537,9 @@ const modeDoublons = async () => {
   }
   const liste = doublons(toutes);
   ui.statut(`${toutes.length} cartes lues, ${liste.length} carte(s) en double sans « ${DOUBLON} ».`);
-  ui.out.innerHTML = listeCartes('Cartes en double', liste.map((c) => ({ t: `${c.t} (×${c.n})`, d: c.d })))
-    + (liste.length ? '<div class="row" style="margin-top:12px"><button class="b p" data-go>Appliquer</button></div>' : '');
-  const go = ui.out.querySelector('[data-go]');
+  ui.apercu = listeCartes('Cartes en double', liste.map((c) => ({ t: `${c.t} (×${c.n})`, d: c.d })))
+    + (liste.length ? '<div class="actions"><button class="b p" data-go>Appliquer</button></div>' : '');
+  const go = ui.bas.querySelector('[data-go]');
   if (go) go.onclick = () => { go.remove(); lancer(() => appliquerDoublons(liste)); };
 };
 const appliquerDoublons = async (liste) => {
@@ -2559,15 +2616,15 @@ const modeMigration = async () => {
   const afficher = () => {
     const sup = rapportSuppression(lecture, plans);
     const applique = store.get('migration_ok2', false);
-    ui.out.innerHTML = resumePlan(cartes, plans) + `
-      <div class="row" style="margin-top:12px"><button class="b p" data-go>${applique ? 'Réappliquer' : 'Appliquer les étiquettes'}</button></div>
+    ui.apercu = resumePlan(cartes, plans) + `
+      <div class="actions"><button class="b p" data-go>${applique ? 'Réappliquer' : 'Appliquer les étiquettes'}</button></div>
       <h4>Anciennes étiquettes</h4>
       <p class="hint">${applique ? 'Supprimable = toutes ses cartes ont le domaine de l\'étiquette ; pour une nationalité, le mot doit aussi être dans leur titre ou leur description.' : 'La suppression se débloque une fois les étiquettes appliquées.'}</p>
       <table>${sup.map((l) => `<tr><td>${l.ok ? '<span class="ok">✔</span>' : '<span class="ko">●</span>'} #${esc(l.nom)}${l.connu ? '' : ' <i>(non prévue)</i>'}
         ${l.bloque.length ? `<details><summary>${l.bloque.length} carte(s) à garder</summary>${l.bloque.slice(0, 50).map((x) => `<div class="li">${esc(x.c.t)} — ${x.pourquoi}</div>`).join('')}</details>` : ''}</td>
         <td class="n">${l.n}</td><td class="n">${l.ok && applique ? `<button class="b d" data-del="${esc(l.nom)}">Suppr.</button>` : ''}</td></tr>`).join('')}</table>
       ${applique && sup.some((l) => l.ok) ? `<div class="row" style="margin-top:10px"><button class="b d" data-delall>Supprimer les ${sup.filter((l) => l.ok).length} sûres</button></div>` : ''}`;
-    ui.out.querySelector('[data-go]').onclick = () => lancer(async () => {
+    ui.bas.querySelector('[data-go]').onclick = () => lancer(async () => {
       ui.out.querySelectorAll('button').forEach((b) => { b.disabled = true; });
       const plan = new Map([...plans].filter(([, p]) => p.tags.length).map(([k, p]) => [k, p.tags]));
       const fait = new Set(store.get('fait2', []));
@@ -2624,7 +2681,7 @@ if (window.__WMR_TEST__ || store.get('debug', false)) {
     classer, planCarte, norm, cle, store, cartesDom, lireCarte, pageInfo,
     lireVue, lireApi, parcourirVue, changerPage, choisirFiltre, choisirTri, listerEtiquettes,
     modeSelection, poserEtiquette, appliquerSurPage, appliquerRanger, modeRanger, modeMigration, motsGroupes, rechercher,
-    supprimerEtiquette, rapportSuppression, suggestions, morceauWikipedia, pageDeDate, monterUI, ui: () => ui, stop: () => { STOP = true; },
+    supprimerEtiquette, rapportSuppression, suggestions, morceauWikipedia, pageDeDate, monterUI, noterBug, ui: () => ui, stop: () => { STOP = true; },
     // mesure Wikipédia, aussi pour scripts/essai-wikipedia.js
     CAUSES_WIKIPEDIA, causeWikipedia, classerPhrase, jugerWikipedia, bilanWikipedia, jsonRapport, VERSION,
   };

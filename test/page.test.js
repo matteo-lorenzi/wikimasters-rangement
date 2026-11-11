@@ -1173,7 +1173,8 @@ test("Aperçu de Ranger : Résultat prévu, À revoir, D'après Wikipédia, dans
   assert.deepEqual(sections(p), [['Résultat prévu', '5'], ['À revoir', '3'], ["D'après Wikipédia", '3']]);
   const resultat = p.root.querySelector('.out section');
   assert.match(resultat.children[1].textContent, /^2 classées · 1 à traiter · 0 ignorée · 2 sans règle$/);
-  assert.ok(resultat.querySelector('table td.n'), 'le tableau par domaine suit la synthèse');
+  assert.ok(!resultat.querySelector('table, details'), 'ni tableau par domaine ni pli : la synthèse suffit');
+  assert.ok([...p.root.querySelectorAll('.out section')].slice(1).every((s) => s.querySelector(':scope > details:not([open])')), 'les autres Sections sont pliées');
   assert.ok(!/Rangement groupé|rangées/.test(sortie(p)), 'pas de Section « Rangement groupé » ni « !À traiter rangées »');
   site.fermer();
 });
