@@ -59,6 +59,11 @@ const installerInnerText = (window) => {
  *     rechargerApres (0)            : la page est rechargée (comme un F5) après cette requête Wikipédia
  */
 const creerSite = async (config = {}) => {
+  // Page Paquets (`/pulls`, docs/wikimasters.md) : { page: 'pulls', paquets: 7, paquet: [{ t, d, r }, …], animation: 1000, animationBloquee: false, erreurAuPaquet: 2, compteurAbsentA0: false }.
+  // compteurAbsentA0 : à 0 paquet le compteur n'est plus affiché (hypothèse non observée sur le vrai site).
+  // erreurAuPaquet: n = le n-ième paquet de la page échoue à l'ouverture (message du site, aucune carte, compteur inchangé) ; chaque action porte `quand` (Date.now()).
+  // Compteur, bouton Ouvrir, puis le déroulé du site (voir creerPagePaquets).
+  if (config.page === 'pulls') return creerPagePaquets(config);
   const o = {
     paginationTardive: 40, pagesFantomes: 2, chargement: 15, pose: 20,
     fermetureAuto: true, retourPage1: true, echecsPose: 0, chargementsEnEchec: [], echecsRecherche: 0, recherchesImpossibles: [], menuTardif: 0, apiEchecs: 0, apiEnPanne: false, ...config,
@@ -369,48 +374,7 @@ const creerSite = async (config = {}) => {
       }
     };
 
-    // ── faux fr.wikipedia.org (docs/wikimasters.md, « API de Wikipédia ») ──
-    // Pièges rejoués : 20 extraits au plus par requête (au-delà, la page est renvoyée sans `extract` et sans erreur : ni extract ni missing ;
-    // l'option `disparus` fait disparaître le titre de la réponse tout à fait),
-    // première lettre mise en majuscule (« normalized »), redirections, pages d'homonymie (pageprops), titres absents
-    // (`missing`), extrait coupé à 500 caractères (exchars), « Hanabie. » réduit au titre.
-    const wp = { articles: {}, homonymies: [], redirections: {}, disparus: [], bloque: false, statutHttp: 0, rechargerApres: 0, ...(o.wikipedia || {}) };
-    const disparus = new Set(wp.disparus);
-    let wikiEnCours = 0;
-    const reponseWikipedia = async (url, init) => {
-      const u = new URL(url);
-      const titres = (u.searchParams.get('titles') || '').split('|').filter(Boolean);
-      const demande = { type: 'wikipedia', titres, url: String(url), methode: (init && init.method) || 'GET', options: init || null, simultanees: ++wikiEnCours };
-      wikiRequetes.push(demande);
-      actions.push(demande);
-      try {
-        if (wp.bloque) throw new TypeError('Failed to fetch');
-        await attente(3);
-        if (wp.statutHttp) return { ok: false, status: wp.statutHttp, json: async () => ({}) };
-        const p = u.searchParams;
-        const normalized = [], redirects = [], pages = {};
-        let manquant = -1;
-        titres.forEach((t, i) => {
-          const norm = t.replace(/_/g, ' ').replace(/^./u, (c) => c.toUpperCase());
-          if (norm !== t) normalized.push({ from: t, to: norm });
-          const cible = wp.redirections[norm] || norm;
-          if (cible !== norm) redirects.push({ from: norm, to: cible });
-          if (disparus.delete(cible)) return; // le titre disparaît de la réponse
-          let texte = wp.articles[cible];
-          if (texte === undefined) { pages[manquant--] = { ns: 0, title: cible, missing: '' }; return; }
-          if (i >= 20) { pages[1000 + i] = { pageid: 1000 + i, ns: 0, title: cible }; return; } // au-delà de 20 : la page est là, sans extract
-          const exchars = +p.get('exchars') || 500;
-          if (texte.length > exchars) texte = texte.slice(0, texte.lastIndexOf(' ', exchars)) + '...';
-          pages[1000 + i] = { pageid: 1000 + i, ns: 0, title: cible, extract: texte, ...(wp.homonymies.includes(cible) ? { pageprops: { disambiguation: '' } } : {}) };
-        });
-        // dans la vraie réponse, `normalized` et `redirects` n'apparaissent que s'ils ne sont pas vides
-        const query = { ...(normalized.length ? { normalized } : {}), ...(redirects.length ? { redirects } : {}), pages };
-        return { ok: true, status: 200, json: async () => ({ batchcomplete: '', query }) };
-      } finally {
-        wikiEnCours--;
-        if (wp.rechargerApres && wikiRequetes.length === wp.rechargerApres) setTimeout(rechargerPage, 0);
-      }
-    };
+    const reponseWikipedia = creerFauxWikipedia(o.wikipedia, actions, wikiRequetes, () => rechargerPage());
 
     // ── API de lecture ──
     window.fetch = async (url, init) => {
@@ -472,6 +436,163 @@ const creerSite = async (config = {}) => {
     // requêtes faites au faux Wikipédia : [{ titres, simultanees, methode, options }]
     wikipedia: () => wikiRequetes,
     titresWikipedia: () => wikiRequetes.flatMap((r) => r.titres),
+    fermer: () => ouverte.window.close(),
+  };
+};
+
+// La page Paquets seule : le userscript s'y monte avec son seul onglet « Paquets » ; même rechargement (même localStorage) que la Collection.
+// Déroulé rejoué (docs/wikimasters.md) : Ouvrir → « Carte 1 / N » → flèche droite (le compteur change tout de suite,
+// la carte ~1 s plus tard) → « Encore N cartes » sans effet → « Continuer » sur la dernière → retour à /pulls, compteur - 1.
+// site.actions : { type: 'ouvrir' | 'fleche' | 'continuer' | 'encore' | 'favori' | 'defausser' | 'clic' (autre bouton) }. Seuls les trois premiers sont permis.
+const CARTES_PAQUET = [
+  { t: 'Aigaliers', d: 'commune française du département du Gard', r: 'C' },
+  { t: 'Uzès', d: 'commune française du département du Gard', r: 'C' },
+  { t: 'Lac Léman', d: 'lac alpin', r: 'PC' },
+  { t: 'Football', d: 'sport collectif', r: 'R' },
+  { t: 'France', d: 'pays d\'Europe de l\'Ouest', r: 'UR' },
+];
+// Le faux fr.wikipedia.org, partagé par la Collection et la page Paquets. Rend fetch(url, init) pour l'API de Wikipédia.
+const creerFauxWikipedia = (options, actions, wikiRequetes, recharger) => {
+  // ── faux fr.wikipedia.org (docs/wikimasters.md, « API de Wikipédia ») ──
+  // Pièges rejoués : 20 extraits au plus par requête (au-delà, la page est renvoyée sans `extract` et sans erreur : ni extract ni missing ;
+  // l'option `disparus` fait disparaître le titre de la réponse tout à fait),
+  // première lettre mise en majuscule (« normalized »), redirections, pages d'homonymie (pageprops), titres absents
+  // (`missing`), extrait coupé à 500 caractères (exchars), « Hanabie. » réduit au titre.
+  const wp = { articles: {}, homonymies: [], redirections: {}, disparus: [], bloque: false, statutHttp: 0, rechargerApres: 0, ...(options || {}) };
+  const disparus = new Set(wp.disparus);
+  let wikiEnCours = 0;
+  return async (url, init) => {
+    const u = new URL(url);
+    const titres = (u.searchParams.get('titles') || '').split('|').filter(Boolean);
+    const demande = { type: 'wikipedia', titres, url: String(url), methode: (init && init.method) || 'GET', options: init || null, simultanees: ++wikiEnCours };
+    wikiRequetes.push(demande);
+    actions.push(demande);
+    try {
+      if (wp.bloque) throw new TypeError('Failed to fetch');
+      await attente(3);
+      if (wp.statutHttp) return { ok: false, status: wp.statutHttp, json: async () => ({}) };
+      const p = u.searchParams;
+      const normalized = [], redirects = [], pages = {};
+      let manquant = -1;
+      titres.forEach((t, i) => {
+        const norm = t.replace(/_/g, ' ').replace(/^./u, (c) => c.toUpperCase());
+        if (norm !== t) normalized.push({ from: t, to: norm });
+        const cible = wp.redirections[norm] || norm;
+        if (cible !== norm) redirects.push({ from: norm, to: cible });
+        if (disparus.delete(cible)) return; // le titre disparaît de la réponse
+        let texte = wp.articles[cible];
+        if (texte === undefined) { pages[manquant--] = { ns: 0, title: cible, missing: '' }; return; }
+        if (i >= 20) { pages[1000 + i] = { pageid: 1000 + i, ns: 0, title: cible }; return; } // au-delà de 20 : la page est là, sans extract
+        const exchars = +p.get('exchars') || 500;
+        if (texte.length > exchars) texte = texte.slice(0, texte.lastIndexOf(' ', exchars)) + '...';
+        pages[1000 + i] = { pageid: 1000 + i, ns: 0, title: cible, extract: texte, ...(wp.homonymies.includes(cible) ? { pageprops: { disambiguation: '' } } : {}) };
+      });
+      // dans la vraie réponse, `normalized` et `redirects` n'apparaissent que s'ils ne sont pas vides
+      const query = { ...(normalized.length ? { normalized } : {}), ...(redirects.length ? { redirects } : {}), pages };
+      return { ok: true, status: 200, json: async () => ({ batchcomplete: '', query }) };
+    } finally {
+      wikiEnCours--;
+      if (wp.rechargerApres && wikiRequetes.length === wp.rechargerApres) setTimeout(recharger, 0);
+    }
+  };
+};
+
+const creerPagePaquets = async (o) => {
+  const actions = [];
+  const paquet = o.paquet || CARTES_PAQUET;
+  const etat = { paquets: o.paquets ?? 10, ouverts: 0 };
+  const wikiRequetes = [];
+  const reponseWikipedia = creerFauxWikipedia(o.wikipedia, actions, wikiRequetes, () => {});
+  const delai = (o.animation ?? 1000) * 0.02; // même échelle que le script en test
+  let ouverte = null;
+  const ouvrirPage = async (stockage = {}) => {
+    const dom = new JSDOM('<!doctype html><html><body></body></html>', { url: 'https://www.wiki-masters.com/pulls', runScripts: 'outside-only', pretendToBeVisual: true });
+    const { window } = dom;
+    const { document } = window;
+    installerInnerText(window);
+    for (const [k, v] of Object.entries(stockage)) window.localStorage.setItem(k, v);
+    const site = document.createElement('div'); site.id = 'site'; document.body.appendChild(site);
+    const bouton = (texte, type, aria) => {
+      const b = document.createElement('button'); b.textContent = texte;
+      if (aria) b.setAttribute('aria-label', aria);
+      b.addEventListener('click', () => actions.push({ type: type || 'clic', nom: aria || texte, quand: Date.now() }));
+      return b;
+    };
+    let i = 0, fige = false, carteDom = null, compteur = null, bas = null;
+    const afficherListe = () => {
+      site.replaceChildren();
+      const h = document.createElement('h1'); h.textContent = 'Paquets';
+      const c = document.createElement('div'); c.textContent = etat.paquets <= 0 && o.compteurAbsentA0 ? '' : `${etat.paquets} / 10 paquets disponibles`;
+      const ouvrir = bouton('Ouvrir', 'ouvrir');
+      ouvrir.addEventListener('click', () => {
+        if (etat.paquets <= 0) return;
+        if (o.erreurAuPaquet === etat.ouverts + 1) { const e = document.createElement('div'); e.textContent = "Erreur : impossible d'ouvrir le paquet."; site.appendChild(e); return; }
+        i = 0; afficherPaquet();
+      });
+      site.append(h, c, ouvrir);
+    };
+    const remplir = () => {
+      const c = paquet[i];
+      carteDom.replaceChildren();
+      const badge = document.createElement('div'); badge.className = 'absolute top-2 left-2'; badge.textContent = c.r;
+      const h3 = document.createElement('h3'); h3.textContent = c.t;
+      carteDom.append(badge, bouton('★', 'favori', 'Ajouter aux favoris (verrouille la carte : ni défausse, ni vente, ni échange)'), h3);
+      if (c.d) { const p = document.createElement('p'); p.textContent = c.d; carteDom.appendChild(p); }
+      carteDom.appendChild(bouton('Défausser', 'defausser'));
+    };
+    const majBas = () => {
+      bas.replaceChildren();
+      const dernier = i === paquet.length - 1;
+      const b = bouton(dernier ? 'Continuer' : `Encore ${paquet.length - 1 - i} cartes`, dernier ? 'continuer' : 'encore');
+      if (dernier) b.addEventListener('click', () => { etat.paquets--; etat.ouverts++; afficherListe(); });
+      bas.appendChild(b);
+    };
+    const afficherPaquet = () => {
+      site.replaceChildren();
+      compteur = document.createElement('div'); compteur.textContent = `Carte 1 / ${paquet.length}`;
+      carteDom = document.createElement('div'); carteDom.className = `glow-${paquet[0].r}`;
+      bas = document.createElement('div');
+      site.append(compteur, carteDom, bas);
+      remplir(); majBas();
+    };
+    window.fetch = async (url, init) => {
+      if (/wikipedia\.org\/w\/api\.php/.test(String(url))) return reponseWikipedia(url, init);
+      throw new TypeError('Failed to fetch');
+    };
+    document.addEventListener('keydown', (e) => {
+      if (e.key !== 'ArrowRight' || fige || !carteDom || i >= paquet.length - 1) return;
+      actions.push({ type: 'fleche', quand: Date.now() });
+      i++; fige = true;
+      compteur.textContent = `Carte ${i + 1} / ${paquet.length}`; majBas();
+      if (o.animationBloquee) return; // la carte attendue n'apparaît jamais
+      setTimeout(() => { carteDom.className = `glow-${paquet[i].r}`; remplir(); fige = false; }, delai);
+    });
+    afficherListe();
+    window.__WMR_TEST__ = true;
+    window.__WMR_ECHELLE__ = 0.02;
+    window.__WMR_RECHARGER__ = () => setTimeout(rechargerPage, 0);
+    window.eval(sourceScript());
+    ouverte = { window, document };
+  };
+  const rechargerPage = async () => {
+    const ancienne = ouverte.window;
+    const stockage = {};
+    for (let i = 0; i < ancienne.localStorage.length; i++) { const k = ancienne.localStorage.key(i); stockage[k] = ancienne.localStorage.getItem(k); }
+    actions.push({ type: 'rechargement' });
+    ancienne.close();
+    await ouvrirPage(stockage);
+    ouverte.window.__WMR.monterUI();
+  };
+  await ouvrirPage();
+  return {
+    get window() { return ouverte.window; },
+    get document() { return ouverte.document; },
+    get wmr() { return ouverte.window.__WMR; },
+    actions, attente,
+    paquets: () => etat.paquets,
+    regenerer: () => { etat.paquets++; }, // la régénération du site (1 paquet / 10 min), visible au prochain retour à la liste
+    wikipedia: () => wikiRequetes, titresWikipedia: () => wikiRequetes.flatMap((r) => r.titres),
+    recharger: rechargerPage,
     fermer: () => ouverte.window.close(),
   };
 };

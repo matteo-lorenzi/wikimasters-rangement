@@ -48,6 +48,17 @@ Observé le 2026-10-23 (curl avec un User-Agent identifié) :
 
 **Plus d'essai** : la case « Essai Wikipédia : 40 cartes » et son plafond ont disparu (v1.9.16) : toutes les cartes concernées sont lues. Un appel en échec fait relire toutes les cartes sans étiquette au Ranger suivant (nouvelle version du script), sinon Ranger les oublierait : il ne relit d'ordinaire que les cartes obtenues depuis le dernier rangement. Un `wiki_reste` `{raison: 'essai'}` laissé par une ancienne version déclenche aussi cette relecture. Le rapport JSON garde `essai: false`.
 
+## Page Paquets (`/pulls`)
+
+Observé le 2026-11-11 dans le Chrome de la personne (un seul paquet ouvert, avec son accord).
+
+- Un seul bouton **Ouvrir** (un seul type de paquet, 5 cartes). Compteur « N / 10 paquets disponibles » ; sous 10, « Prochain dans m:ss ». **10 paquets au plus, un de régénéré toutes les 10 minutes.**
+- Rareté selon les vues mensuelles de l'article : C < 50, PC ≥ 50, R ≥ 250, SR ≥ 1 000, UR ≥ 5 000, L ≥ 20 000 (aide « Comment ça marche ? »). Une commune peu connue est donc presque toujours C. Les 5 cartes sont **triées par rareté croissante**.
+- Déroulé : **Ouvrir** → un seul clic ouvre tout le paquet côté site, mais les cartes se révèlent **une par une** (« Carte N / 5 ») → flèche droite pour avancer (animation de retournement ~1 s) → sur la 5ᵉ carte, **Continuer** → retour à `/pulls`, compteur décrémenté.
+- « Encore N cartes » (bouton vert sous la carte, N = cartes restantes) **ne fait pas avancer** : un clic dessus est resté sans effet. Seule la flèche avance, et le libellé passe à N-1 ; sur la dernière carte il devient « Continuer ».
+- Carte affichée : `h3` = titre, description = bloc de texte sous le titre (peut être longue), badge de rareté en haut à gauche (« C », « PC »…), étoile « Ajouter aux favoris (verrouille la carte : ni défausse, ni vente, ni échange) » en haut à droite : **ne jamais la cliquer**, deux scores en bas. Les boutons de navigation (flèche gauche, 5 points, flèche droite) n'ont pas de nom accessible.
+- Pas vu : ce qui s'affiche si le compteur est à 0, ni si une erreur serveur peut survenir à l'ouverture. La série (`ouvrirSerie`) lit donc le compteur « N / 10 paquets disponibles » dans le texte de la page et ne clique « Ouvrir » que s'il vaut au moins 1 ; une erreur à l'ouverture est reconnue seulement parce que la carte 1 n'apparaît pas (le faux site la rejoue avec `erreurAuPaquet`). Sur un arrêt, le paquet reste ouvert et la page n'affiche plus le compteur : le bilan reprend celui lu avant l'ouverture, moins ce paquet. Hypothèse (faux site `compteurAbsentA0`) : à 0 le compteur disparaît ; après un paquet ouvert, un compteur absent veut donc dire « plus de paquet », et le retour à la liste se reconnaît au bouton Ouvrir seul. Absent dès le départ = échec bruyant. Changement de page : le démontage du panneau arrête la série sans clic (`demonterUI`).
+
 ## Pièges de l'interface
 
 **Pagination**

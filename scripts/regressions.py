@@ -428,6 +428,18 @@ MUTATIONS = [
     ('Mots décidés : « seigneur de! » absent (Histoire)', 'regles.js',
      "    'escadron', 'puissant seigneur', 'seigneur de!', 'forces spéciales',\n", "    'escadron', 'puissant seigneur', 'forces spéciales',\n",
      "Hugues de Lusignan"),
+    ('série : le démontage ne stoppe pas la lecture', 'app.js',
+     "    if (annule()) return { etat: 'abandon', n, total };\n", "",
+     "démontage demandé en pleine lecture"),
+    ('série : restants compte le paquet laissé ouvert', 'app.js',
+     "restants: dispo - 1,", "restants: dispo,",
+     "arrêt de la personne au 1er paquet"),
+    ('série : compteur absent en fin de série = erreur', 'app.js',
+     "const restants = lireCompteur() ?? 0;", "const restants = paquetsDisponibles();",
+     "compteur absent après un paquet ouvert"),
+    ('série : « paquet en cours » levé entre deux paquets', 'app.js',
+     "      const r = await ouvrirPaquet({ ...opts, annule, dansSerie: true,", "      const r = await ouvrirPaquet({ ...opts, annule,",
+     "« paquet en cours » reste posé"),
 ]
 
 

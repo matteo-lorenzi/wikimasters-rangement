@@ -12,6 +12,12 @@ Les mots que la personne et Claude emploient pour parler des cartes.
 
 **Carte ignorée** : une page d'homonymie, une liste, un nom de famille ou un prénom. Elle reste volontairement sans étiquette, et n'est jamais envoyée à Wikipédia.
 
+**Paquet** : 5 cartes tirées d'un coup sur la page Paquets, triées par rareté croissante et révélées une par une. Il s'en régénère un toutes les 10 minutes, 10 au plus en réserve.
+
+**Centre d'intérêt** : un mot de la liste de la personne (un lieu, une personne, un sujet) qui, retrouvé dans une carte tirée, fait arrêter l'ouverture des paquets, quelle que soit la rareté.
+
+**Arrêt** : le moment où l'ouverture des paquets s'interrompt sur une carte, parce que sa rareté est cochée ou qu'elle touche un centre d'intérêt. Le motif est toujours dit à la personne.
+
 **Lot** : un groupe de cartes traité en une fois, le temps d'un « Ranger ».
 
 **Couverture (Wikipédia)** : la part des cartes lues dans Wikipédia que leur phrase range dans un domaine. Cartes classées d'après Wikipédia / cartes concernées lues (celles laissées de côté par l'essai ne comptent pas, ni les pages de dates comme « 1869 en France » ou « 18 octobre 1965 », cause `page-ignoree` : retirées du dénominateur, ce qui est un changement de MESURE et non un gain de classement ; un appel bloqué compte comme un échec). La **couverture brute** garde les pages de dates au dénominateur. Les « 68 % » mesurés par la personne (434 sur ~640) sont une couverture. Elle ne dit pas si les domaines sont justes.

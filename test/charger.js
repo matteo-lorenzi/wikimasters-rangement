@@ -8,7 +8,7 @@ const lire = (f) => fs.readFileSync(path.join(SRC, f), 'utf8');
 
 // Le moteur seul, dans un contexte vm séparé.
 // Ses tableaux viennent d'un autre « monde » : les recopier ([...x]) avant deepEqual.
-const chargerRegles = () => vm.runInContext(lire('regles.js') + '\n;({ DOMAINES, AMBIGUS, IGNORER, classer, norm, A_TRAITER });', vm.createContext({}));
+const chargerRegles = () => vm.runInContext(lire('regles.js') + '\n;({ DOMAINES, AMBIGUS, IGNORER, classer, norm, A_TRAITER, raisonArret });', vm.createContext({}));
 
 // Le userscript complet, tel que le build l'assemble (IIFE autour de regles.js puis app.js).
 const sourceScript = () => `(function () {\n'use strict';\n${lire('regles.js')}\n${lire('app.js')}\n})();`;
