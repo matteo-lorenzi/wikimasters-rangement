@@ -295,3 +295,25 @@ test('titre absent de Wikipédia : repli sur le titre, message en français, tit
   assert.equal(d.vues[0].raison.texte, 'mot « zorg »');
   site.fermer();
 });
+
+// ── attente de la 1re carte (animation d'ouverture) et compteur découpé par le site ──
+test('1re carte tardive (animation d\'ouverture de 6 s) : le script attend au lieu d\'échouer', async () => {
+  const site = await creerSite({ page: 'pulls', premiereCarteLente: 6000 });
+  const r = await lancer(site);
+  assert.equal(r.etat, 'termine');
+  site.fermer();
+});
+
+test('compteur « Carte », « 1 » et « / 5 » sur trois lignes (innerText du vrai site) : lu quand même', async () => {
+  const site = await creerSite({ page: 'pulls', compteurEclate: true });
+  const r = await lancer(site);
+  assert.equal(r.etat, 'termine');
+  assert.deepEqual(types(site), ['ouvrir', ...FLECHES(4), 'continuer']);
+  site.fermer();
+});
+
+test('échec sur la 1re carte : le message dit ce que le script voyait (compteur, carte)', async () => {
+  const site = await creerSite({ page: 'pulls', premiereCarteLente: 10 ** 6 });
+  await assert.rejects(lancer(site), /aucun compteur.*aucune carte affichée/);
+  site.fermer();
+});

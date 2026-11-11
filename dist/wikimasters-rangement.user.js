@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WikiMasters — Rangement des cartes
 // @namespace    wikimasters-rangement
-// @version      1.9.17
+// @version      1.9.18
 // @description  Étiquette tes cartes WikiMasters par domaine (aperçu avant application, jamais de défausse).
 // @match        https://www.wiki-masters.com/*
 // @match        https://wiki-masters.com/*
@@ -1751,7 +1751,7 @@ const refusCentreInteret = (mot, liste) => {
 // ── Ouverture d'un paquet (ticket #16) ──
 // Seuls clics : « Ouvrir », la flèche droite (touche du clavier) et « Continuer » du site. Jamais les favoris, Défausser,
 // les enchères, les échanges ni « Encore N cartes » (qui n'avance pas, docs/wikimasters.md).
-const compteurCarte = () => { const m = texte().match(/Carte (\d+) \/ (\d+)/); return m ? [+m[1], +m[2]] : null; };
+const compteurCarte = () => { const m = texte().match(/Carte\s+(\d+)\s*\/\s*(\d+)/); return m ? [+m[1], +m[2]] : null; };
 // La carte affichée, ou null : même lecture que la Collection, avec la rareté sous le nom que raisonArret attend.
 const carteAffichee = () => { const el = cartesDom()[0]; if (!el) return null; const c = lireCarte(el); return { t: c.t, d: c.d, rarete: c.r }; };
 const cleCarte = (c) => c.t + '|' + c.d + '|' + c.rarete;
@@ -1759,7 +1759,12 @@ const ARRETS_GARDES = 20; // le journal du panneau (ticket #18) montre les 20 de
 // Attend la carte n (compteur « Carte n / N » ET contenu différent de la précédente : l'animation dure ~1 s), puis laisse l'animation finir.
 const attendreCarteN = async (n, precedente) => {
   const prete = () => { const k = compteurCarte(), c = carteAffichee(); return !!k && k[0] === n && !!c && (!precedente || cleCarte(c) !== cleCarte(precedente)); };
-  if (!(await attendre(prete, 4000))) throw new Error(`La carte ${n}${compteurCarte() ? ` / ${compteurCarte()[1]}` : ''} n'est pas apparue : le site n'a pas répondu à temps. Le paquet est resté ouvert, rien d'autre n'a été cliqué.`);
+  // La 1re carte suit l'animation d'ouverture du paquet : on lui laisse 15 s. Les suivantes, un retournement (~1 s) : 4 s.
+  if (!(await attendre(prete, n === 1 ? 15000 : 4000))) {
+    const k = compteurCarte(), c = carteAffichee();
+    const vu = `${k ? `compteur « Carte ${k[0]} / ${k[1]} »` : 'aucun compteur « Carte n / N » lisible'}, ${c ? `carte « ${c.t} » affichée` : 'aucune carte affichée'}`;
+    throw new Error(`La carte ${n}${k ? ` / ${k[1]}` : ''} n'est pas apparue : le site n'a pas répondu à temps (vu : ${vu}). Le paquet est resté ouvert, rien d'autre n'a été cliqué.`);
+  }
   await sleep(300);
   if (!prete()) throw new Error(`La carte ${n} a changé pendant la lecture : le site a bougé tout seul. Le paquet est resté ouvert, rien d'autre n'a été cliqué.`);
   return carteAffichee();

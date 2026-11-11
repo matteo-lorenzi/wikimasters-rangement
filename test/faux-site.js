@@ -553,13 +553,20 @@ const creerPagePaquets = async (o) => {
       if (dernier) b.addEventListener('click', () => { etat.paquets--; etat.ouverts++; afficherListe(); });
       bas.appendChild(b);
     };
+    // compteurEclate : « Carte », le numéro en vert et « / N » sont des blocs séparés (capture du 2026-11-11) : innerText les met sur 3 lignes
+    const majCompteur = () => {
+      if (!o.compteurEclate) { compteur.textContent = `Carte ${i + 1} / ${paquet.length}`; return; }
+      compteur.replaceChildren(...['Carte', String(i + 1), `/ ${paquet.length}`].map((x) => { const d = document.createElement('div'); d.textContent = x; return d; }));
+    };
     const afficherPaquet = () => {
       site.replaceChildren();
-      compteur = document.createElement('div'); compteur.textContent = `Carte 1 / ${paquet.length}`;
+      compteur = document.createElement('div');
       carteDom = document.createElement('div'); carteDom.className = `glow-${paquet[0].r}`;
       bas = document.createElement('div');
-      site.append(compteur, carteDom, bas);
-      remplir(); majBas();
+      majCompteur();
+      const monter = () => { site.append(compteur, carteDom, bas); remplir(); majBas(); };
+      // premiereCarteLente (ms réelles) : l'animation d'ouverture du paquet précède la 1re carte
+      if (o.premiereCarteLente) setTimeout(monter, o.premiereCarteLente * 0.02); else monter();
     };
     window.fetch = async (url, init) => {
       if (/wikipedia\.org\/w\/api\.php/.test(String(url))) return reponseWikipedia(url, init);
@@ -569,7 +576,7 @@ const creerPagePaquets = async (o) => {
       if (e.key !== 'ArrowRight' || fige || !carteDom || i >= paquet.length - 1) return;
       actions.push({ type: 'fleche', quand: Date.now() });
       i++; fige = true;
-      compteur.textContent = `Carte ${i + 1} / ${paquet.length}`; majBas();
+      majCompteur(); majBas();
       if (o.animationBloquee) return; // la carte attendue n'apparaît jamais
       setTimeout(() => { carteDom.className = `glow-${paquet[i].r}`; remplir(); fige = false; }, delai);
     });
