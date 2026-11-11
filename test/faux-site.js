@@ -59,7 +59,8 @@ const installerInnerText = (window) => {
  *     rechargerApres (0)            : la page est rechargée (comme un F5) après cette requête Wikipédia
  */
 const creerSite = async (config = {}) => {
-  // Page Paquets (`/pulls`, docs/wikimasters.md) : { page: 'pulls', paquets: 7, paquet: [{ t, d, r }, …], animation: 1000, animationBloquee: false }.
+  // Page Paquets (`/pulls`, docs/wikimasters.md) : { page: 'pulls', paquets: 7, paquet: [{ t, d, r }, …], animation: 1000, animationBloquee: false, erreurAuPaquet: 2 }.
+  // erreurAuPaquet: n = le n-ième paquet de la page échoue à l'ouverture (message du site, aucune carte, compteur inchangé) ; chaque action porte `quand` (Date.now()).
   // Compteur, bouton Ouvrir, puis le déroulé du site (voir creerPagePaquets).
   if (config.page === 'pulls') return creerPagePaquets(config);
   const o = {
@@ -493,7 +494,7 @@ const CARTES_PAQUET = [
 const creerPagePaquets = async (o) => {
   const actions = [];
   const paquet = o.paquet || CARTES_PAQUET;
-  const etat = { paquets: o.paquets ?? 10 };
+  const etat = { paquets: o.paquets ?? 10, ouverts: 0 };
   const delai = (o.animation ?? 1000) * 0.02; // même échelle que le script en test
   let ouverte = null;
   const ouvrirPage = async (stockage = {}) => {
@@ -506,7 +507,7 @@ const creerPagePaquets = async (o) => {
     const bouton = (texte, type, aria) => {
       const b = document.createElement('button'); b.textContent = texte;
       if (aria) b.setAttribute('aria-label', aria);
-      b.addEventListener('click', () => actions.push({ type: type || 'clic', nom: aria || texte }));
+      b.addEventListener('click', () => actions.push({ type: type || 'clic', nom: aria || texte, quand: Date.now() }));
       return b;
     };
     let i = 0, fige = false, carteDom = null, compteur = null, bas = null;
@@ -515,7 +516,11 @@ const creerPagePaquets = async (o) => {
       const h = document.createElement('h1'); h.textContent = 'Paquets';
       const c = document.createElement('div'); c.textContent = `${etat.paquets} / 10 paquets disponibles`;
       const ouvrir = bouton('Ouvrir', 'ouvrir');
-      ouvrir.addEventListener('click', () => { if (etat.paquets > 0) { i = 0; afficherPaquet(); } });
+      ouvrir.addEventListener('click', () => {
+        if (etat.paquets <= 0) return;
+        if (o.erreurAuPaquet === etat.ouverts + 1) { const e = document.createElement('div'); e.textContent = "Erreur : impossible d'ouvrir le paquet."; site.appendChild(e); return; }
+        i = 0; afficherPaquet();
+      });
       site.append(h, c, ouvrir);
     };
     const remplir = () => {
@@ -531,7 +536,7 @@ const creerPagePaquets = async (o) => {
       bas.replaceChildren();
       const dernier = i === paquet.length - 1;
       const b = bouton(dernier ? 'Continuer' : `Encore ${paquet.length - 1 - i} cartes`, dernier ? 'continuer' : 'encore');
-      if (dernier) b.addEventListener('click', () => { etat.paquets--; afficherListe(); });
+      if (dernier) b.addEventListener('click', () => { etat.paquets--; etat.ouverts++; afficherListe(); });
       bas.appendChild(b);
     };
     const afficherPaquet = () => {
@@ -544,7 +549,7 @@ const creerPagePaquets = async (o) => {
     };
     document.addEventListener('keydown', (e) => {
       if (e.key !== 'ArrowRight' || fige || !carteDom || i >= paquet.length - 1) return;
-      actions.push({ type: 'fleche' });
+      actions.push({ type: 'fleche', quand: Date.now() });
       i++; fige = true;
       compteur.textContent = `Carte ${i + 1} / ${paquet.length}`; majBas();
       if (o.animationBloquee) return; // la carte attendue n'apparaît jamais
@@ -573,6 +578,7 @@ const creerPagePaquets = async (o) => {
     get wmr() { return ouverte.window.__WMR; },
     actions, attente,
     paquets: () => etat.paquets,
+    regenerer: () => { etat.paquets++; }, // la régénération du site (1 paquet / 10 min), visible au prochain retour à la liste
     recharger: rechargerPage,
     fermer: () => ouverte.window.close(),
   };
