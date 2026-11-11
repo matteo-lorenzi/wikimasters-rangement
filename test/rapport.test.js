@@ -22,7 +22,7 @@ const panneau = (site) => {
 };
 const apercu = async (site) => {
   const p = panneau(site);
-  p.root.querySelector('.out').innerHTML = '';
+  p.root.querySelector('.out').innerHTML = ''; p.root.querySelector('.bas').replaceChildren();
   p.root.querySelector('[data-a=ranger]').click();
   const st = () => p.root.querySelector('.st').textContent;
   assert.ok(await attendreQue(() => p.root.querySelector('[data-go]') || /à ranger|⚠️/.test(st()), 30000), st());

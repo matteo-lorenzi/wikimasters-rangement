@@ -127,6 +127,53 @@ test('Aperçu détruit par la consultation de Diagnostic : l Aperçu en attente 
   site.fermer();
 });
 
+// ── barres fixes de l'Onglet Rangement ──
+
+const libelles = (el) => [...el.querySelectorAll('button')].map((b) => b.textContent.trim());
+
+test('Rangement : trois groupes de boutons dans la barre du haut, seul Ranger est vert, statut sur une ligne', async () => {
+  const site = await creerSite({ cartes: [] });
+  const p = panneau(site);
+  const haut = cadre(p, 'rangement').querySelector('.haut');
+  const groupes = [...haut.querySelectorAll('.groupe')];
+  assert.deepEqual(groupes.map((g) => g.dataset.groupe), ['ranger', 'analyser', 'maintenance']);
+  assert.deepEqual(groupes.map((g) => libelles(g)), [
+    ['Ranger les nouvelles cartes', 'Compléter les cartes rangées'], ['Suggestions', 'Doublons'], ['Migration (une fois)']]);
+  assert.deepEqual([...haut.querySelectorAll('button.b.p')].map((b) => b.textContent.trim()), ['Ranger les nouvelles cartes']);
+  assert.ok(haut.querySelector('.st'), 'le statut est dans la barre du haut');
+  assert.ok(!cadre(p, 'rangement').querySelector('.out').contains(haut), 'les boutons ne défilent pas avec l Aperçu');
+  site.fermer();
+});
+
+test('Rangement : Arrêter n apparaît que pendant un travail', async () => {
+  const site = await creerSite({ cartes: collection(), etiquettes: ['Sport'] });
+  const p = panneau(site);
+  const stop = p.root.querySelector('[data-a=stop]');
+  assert.equal(stop.style.display, 'none');
+  p.ranger();
+  assert.equal(stop.style.display, '', 'visible pendant la lecture');
+  assert.ok(await attendreQue(() => p.root.querySelector('[data-go]')), p.statut());
+  assert.ok(await attendreQue(() => stop.style.display === 'none'), 'masqué une fois le travail fini');
+  site.fermer();
+});
+
+test('Rangement : Appliquer et Revoir toutes les cartes dans la barre du bas, rappel en une ligne en pied', async () => {
+  const site = await creerSite({ cartes: collection(), etiquettes: ['Sport'] });
+  await rangerTout(site);
+  site.cartes.push({ id: 9001, t: 'Plus récente', d: 'astéroïde', r: 'C', tags: [], obtenu: date(5000) });
+  const p = panneau(site);
+  const bas = cadre(p, 'rangement').querySelector('.bas');
+  p.ranger();
+  assert.ok(await attendreQue(() => p.root.querySelector('[data-go]')), p.statut());
+  const out = cadre(p, 'rangement').querySelector('.out');
+  assert.deepEqual(libelles(bas), ['Appliquer', 'Revoir toutes les cartes sans étiquette']);
+  assert.equal(out.querySelector('[data-go]'), null, 'pas dans l Aperçu qui défile');
+  const pied = cadre(p, 'rangement').querySelector('.pied');
+  assert.match(pied.textContent, /Rien n'est modifié sans ton clic sur Appliquer/);
+  assert.equal(pied.textContent.trim().split('\n').length, 1);
+  site.fermer();
+});
+
 test('pastille de Diagnostic : compteur annoncé en texte, remise à zéro à la consultation, jamais de changement d onglet seul', async () => {
   const site = await creerSite({ cartes: [] });
   const p = panneau(site);
@@ -397,7 +444,7 @@ test('Ranger : les règles ont changé depuis le dernier rangement, toutes les c
   assert.ok(await attendreQue(() => /^\d+ carte/.test(p.statut())), p.statut());
   assert.match(p.statut(), /^15 carte\(s\) sans étiquette/);
   // relues avec les règles d'aujourd'hui : la prochaine fois, seulement les nouvelles cartes
-  site.wmr.ui().out.querySelector('[data-go]')?.click();
+  site.wmr.ui().bas.querySelector('[data-go]')?.click();
   assert.ok(await attendreQue(() => /✅|⚠️|^15 carte/.test(p.statut())), p.statut());
   p.ranger();
   assert.ok(await attendreQue(() => /nouvelle/.test(p.statut())), p.statut());
@@ -740,7 +787,7 @@ const cartesSansDescription = (titres, depart = 0) => titres.map((t, i) => ({ t,
 // Ranger jusqu'à l'aperçu (sans rien appliquer)
 const apercuWiki = async (site) => {
   const p = panneau(site);
-  p.root.querySelector('.out').innerHTML = '';
+  p.root.querySelector('.out').innerHTML = ''; p.root.querySelector('.bas').replaceChildren();
   p.ranger();
   assert.ok(await attendreQue(() => p.root.querySelector('[data-go]') || /à ranger|⚠️/.test(p.statut()), 30000), p.statut());
   return p;

@@ -835,6 +835,14 @@ const CSS = `
 .hd{padding:12px 14px;border-bottom:1px solid #2a2e2c;display:flex;justify-content:space-between;align-items:center}
 .hd b{font-size:14px}.x{background:none;border:0;color:#9aa19d;font-size:18px;cursor:pointer}
 .bd{padding:12px 14px;overflow:auto;flex:1}
+[data-cadre=rangement]{padding:0;overflow:hidden}
+.haut{padding:10px 14px;border-bottom:1px solid #2a2e2c;display:flex;flex-wrap:wrap;gap:8px 14px}
+.groupe{display:flex;gap:6px;flex-wrap:wrap}.groupe+.groupe{padding-left:14px;border-left:1px solid #2a2e2c}
+.stl{flex-basis:100%;display:flex;align-items:center;gap:8px}
+.stl .st{flex:1;margin:0;min-height:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.out{flex:1;min-height:0;overflow:auto;padding:12px 14px}
+.bas:empty{display:none}.bas{display:flex;padding:10px 14px;border-top:1px solid #2a2e2c;gap:6px;flex-wrap:wrap}
+.pied{padding:6px 14px;border-top:1px solid #2a2e2c;font-size:12px;color:#9aa19d;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
 button.b{background:#22262a;color:#e8ebe9;border:1px solid #343a37;border-radius:8px;padding:7px 10px;font-size:12px;font-weight:600;cursor:pointer}
 button.b:hover{border-color:#10b981}button.b.p{background:#10b981;color:#04130d;border-color:#10b981}
@@ -875,17 +883,23 @@ const monterUI = () => {
       <button role="tab" id="wmr-t-diagnostic" data-onglet="diagnostic" aria-selected="false" aria-controls="wmr-c-diagnostic" tabindex="-1">Diagnostic<span class="pastille" style="display:none" hidden></span></button>
     </div>
     <div class="bd" role="tabpanel" id="wmr-c-rangement" data-cadre="rangement" aria-labelledby="wmr-t-rangement">
-      <p class="hint">Rien n'est modifié sans que tu cliques sur « Appliquer ». Le script ne touche jamais à Défausser ni aux enchères.</p>
-      <div class="row">
-        <button class="b p" data-a="ranger">Ranger les nouvelles cartes</button>
-        <button class="b" data-a="suggestions">Suggestions</button>
-        <button class="b" data-a="completer">Compléter les cartes rangées</button>
-        <button class="b" data-a="doublons">Doublons</button>
-        <button class="b" data-a="migration">Migration (une fois)</button>
-        <button class="b d" data-a="stop" disabled>Arrêter</button>
+      <div class="haut">
+        <div class="groupe" data-groupe="ranger">
+          <button class="b p" data-a="ranger">Ranger les nouvelles cartes</button>
+          <button class="b" data-a="completer">Compléter les cartes rangées</button>
+        </div>
+        <div class="groupe" data-groupe="analyser">
+          <button class="b" data-a="suggestions">Suggestions</button>
+          <button class="b" data-a="doublons">Doublons</button>
+        </div>
+        <div class="groupe" data-groupe="maintenance">
+          <button class="b" data-a="migration">Migration (une fois)</button>
+        </div>
+        <div class="stl"><div class="st"></div><button class="b d" data-a="stop" hidden style="display:none">Arrêter</button></div>
       </div>
-      <div class="st"></div>
       <div class="out"></div>
+      <div class="bas" hidden style="display:none"></div>
+      <div class="pied">Rien n'est modifié sans ton clic sur Appliquer.</div>
     </div>
     <div class="bd" role="tabpanel" id="wmr-c-diagnostic" data-cadre="diagnostic" aria-labelledby="wmr-t-diagnostic" hidden style="display:none">
       <div class="diag-wp"></div>
@@ -896,10 +910,17 @@ const monterUI = () => {
   </div>`;
   const $ = (s) => root.querySelector(s);
   ui = {
-    root, $, st: $('.st'), out: $('.out'), wp: $('.diag-wp'), bugs: $('.diag-bugs'), log: $('.log'), nouveau: 0, onglet: 'rangement',
-    statut(t) { this.st.textContent = t; },
+    root, $, st: $('.st'), out: $('.out'), bas: $('.bas'), wp: $('.diag-wp'), bugs: $('.diag-bugs'), log: $('.log'), nouveau: 0, onglet: 'rangement',
+    statut(t) { this.st.textContent = t; this.st.title = t; },
+    // L'Aperçu défile ; ses boutons d'action (.actions : Appliquer…) passent dans la barre fixe du bas.
+    set apercu(html) {
+      this.out.innerHTML = html;
+      this.bas.replaceChildren(...this.out.querySelectorAll('.actions button'));
+      this.out.querySelectorAll('.actions').forEach((a) => a.remove());
+      montrer(this.bas, this.bas.children.length > 0);
+    },
     journal(t) { montrer(this.log, true); this.log.textContent += t + '\n'; this.log.scrollTop = 1e9; },
-    occupe(o) { root.querySelectorAll('button.b').forEach((b) => { b.disabled = b.dataset.a === 'stop' ? !o : o; }); },
+    occupe(o) { root.querySelectorAll('button.b').forEach((b) => { b.disabled = o; }); montrer($('[data-a=stop]'), o); $('[data-a=stop]').disabled = !o; },
   };
   $('.fab').onclick = () => montrer($('.pan'), $('.pan').hidden);
   $('.x').onclick = () => montrer($('.pan'), false);
@@ -1462,14 +1483,14 @@ const afficherRanger = (cartes, depuis, viaApi, wiki = {}) => {
   const nbMarquees = cartes.filter(estMarquee).length;
   ui.statut(`${cartes.length - nbMarquees} carte(s) ${depuis ? 'nouvelle(s)' : 'sans étiquette'}, dont ${neuves.length} à ranger.`
     + (nbMarquees ? ` Et ${nbMarquees} marquée(s) « ${A_TRAITER} », dont ${marquees.length} que les règles rangent maintenant.` : ''));
-  ui.out.innerHTML = (groupes.length ? `<h4>Rangement groupé</h4>
+  ui.apercu = (groupes.length ? `<h4>Rangement groupé</h4>
       <p class="hint">Beaucoup de cartes à ranger : ${groupes.length} recherche(s) en rangent d'abord ${groupees} par groupes, puis le reste page par page.</p>
       ${listeCartes('Recherches prévues', groupes.map((g) => ({ t: `« ${g.mot} » → #${g.dom}`, d: `${g.n} carte(s)` })))}` : '')
     + (marquees.length ? `<h4>Cartes « ${A_TRAITER} » rangées</h4>
       <div>${marquees.length} carte(s) : leur domaine, puis retrait de ${A_TRAITER} (et seulement elle)</div>
       ${listeCartes('Cartes concernées', marquees)}` : '')
     + apercuWikipedia(cartes, plans, wiki)
-    + resumePlan(cartes, plans) + `<div class="row" style="margin-top:12px">
+    + resumePlan(cartes, plans) + `<div class="actions">
       ${cibles.length ? '<button class="b p" data-go>Appliquer</button>' : ''}
       ${depuis ? '<button class="b" data-tout>Revoir toutes les cartes sans étiquette</button>' : ''}</div>`;
   const motsManquants = ui.out.querySelector('textarea');
@@ -1479,13 +1500,13 @@ const afficherRanger = (cartes, depuis, viaApi, wiki = {}) => {
     if (viaApi && plusRecente) retenirDepuis(plusRecente);
     store.set('ranger_lecture', null);
   }
-  const go = ui.out.querySelector('[data-go]');
+  const go = ui.bas.querySelector('[data-go]');
   if (go) go.onclick = () => {
     go.remove();
     oublierFait();
     lancer(() => appliquerLecture({ cartes, depuis, viaApi, phrases: wiki.phrases }), { etape: 'application' });
   };
-  const tt = ui.out.querySelector('[data-tout]');
+  const tt = ui.bas.querySelector('[data-tout]');
   if (tt) tt.onclick = () => lancer(() => modeRanger(true), { etape: 'lecture', tout: true });
 };
 
@@ -1513,7 +1534,7 @@ const proposerReprise = () => {
   }
   const l = lu;
   if (!l || !l.cartes || Date.now() - l.at > 6 * 3600e3) return;
-  ui.out.innerHTML = `<p class="hint">Une lecture de ${l.cartes.length} carte(s) faite à ${new Date(l.at).toLocaleTimeString()} n'a pas encore été appliquée.</p>
+  ui.apercu = `<p class="hint">Une lecture de ${l.cartes.length} carte(s) faite à ${new Date(l.at).toLocaleTimeString()} n'a pas encore été appliquée.</p>
     <div class="row"><button class="b p" data-reprise>Reprendre cette lecture</button></div>`;
   ui.out.querySelector('[data-reprise]').onclick = () => lancer(async () => { afficherRanger(l.cartes, l.depuis, l.viaApi, { phrases: l.phrases, ...l.wiki }); });
 };
@@ -1653,7 +1674,7 @@ const modeSuggestions = async () => {
   if (!lecture || !lectureComplete(lecture)) return afficherSuggestions(await lireCollection());
   const perimee = store.get('lecture2_perimee', false);
   ui.statut('');
-  ui.out.innerHTML = `<h4>Suggestions</h4>
+  ui.apercu = `<h4>Suggestions</h4>
     <p class="hint">Lecture de la collection du ${new Date(lecture.at).toLocaleString()}${perimee ? ' : des étiquettes ont été posées depuis, mieux vaut la relire' : ''}.</p>
     <div class="row"><button class="b${perimee ? '' : ' p'}" data-reutiliser>Réutiliser cette lecture</button>
       <button class="b${perimee ? ' p' : ''}" data-relire>Relire${perimee ? ' (recommandé)' : ''} (≈ 2 min)</button></div>`;
@@ -1677,7 +1698,7 @@ const afficherSuggestions = (lecture) => {
   const cartes = [`Cartes sans règle (${sansRegle.length}) :`, ...sansRegle.map(exemple), '',
     `Cartes avec un mot ambigu seul (${ambigues.length}) :`, ...ambigues.map(exemple)].join('\n');
   ui.statut(`${Object.keys(lecture.cartes).length} cartes lues, ${candidats.length} mot(s) à proposer.`);
-  ui.out.innerHTML = `<h4>Cartes sans domaine</h4><div>${esc(resume)}</div>
+  ui.apercu = `<h4>Cartes sans domaine</h4><div>${esc(resume)}</div>
     <h4>Mots que les règles ne connaissent pas</h4>
     <p class="hint">Domaine proposé : celui de tes cartes déjà étiquetées qui contiennent ce mot (70 % au moins). Copie la liste pour Claude : il ajoutera aux règles les mots que tu choisis.</p>
     ${candidats.length ? lignesMots(candidats) : `<p class="hint">Aucun mot inconnu ne revient sur ${SUGG_MIN_CARTES} cartes ou plus.</p>`}
@@ -1730,9 +1751,9 @@ const afficherCompleter = (l, rangees) => {
       cs.slice(0, 200).map((c) => `<div class="li">${esc(c.t)}</div>`).join('')}</details></td></tr>`).join('');
   ui.statut(cibles.length ? `${cibles.length} carte(s) rangée(s) gagnent un domaine${rangees ? ` (sur ${rangees} qui en ont déjà un)` : ''}.`
     : 'Rien à compléter : toutes tes cartes rangées ont déjà les domaines que les règles leur trouvent.');
-  ui.out.innerHTML = (cibles.length ? `<h4>Domaines ajoutés</h4><p class="hint">Rien n'est retiré, et seuls des domaines sont ajoutés (5 au plus par carte).</p><table>${lignes}</table>
-    <div class="row" style="margin-top:12px"><button class="b p" data-go>Appliquer</button></div>` : '');
-  const go = ui.out.querySelector('[data-go]');
+  ui.apercu = (cibles.length ? `<h4>Domaines ajoutés</h4><p class="hint">Rien n'est retiré, et seuls des domaines sont ajoutés (5 au plus par carte).</p><table>${lignes}</table>
+    <div class="actions"><button class="b p" data-go>Appliquer</button></div>` : '');
+  const go = ui.bas.querySelector('[data-go]');
   if (go) go.onclick = () => {
     go.remove();
     store.set('completer_fait', null);
@@ -1773,9 +1794,9 @@ const modeDoublons = async () => {
   }
   const liste = doublons(toutes);
   ui.statut(`${toutes.length} cartes lues, ${liste.length} carte(s) en double sans « ${DOUBLON} ».`);
-  ui.out.innerHTML = listeCartes('Cartes en double', liste.map((c) => ({ t: `${c.t} (×${c.n})`, d: c.d })))
-    + (liste.length ? '<div class="row" style="margin-top:12px"><button class="b p" data-go>Appliquer</button></div>' : '');
-  const go = ui.out.querySelector('[data-go]');
+  ui.apercu = listeCartes('Cartes en double', liste.map((c) => ({ t: `${c.t} (×${c.n})`, d: c.d })))
+    + (liste.length ? '<div class="actions"><button class="b p" data-go>Appliquer</button></div>' : '');
+  const go = ui.bas.querySelector('[data-go]');
   if (go) go.onclick = () => { go.remove(); lancer(() => appliquerDoublons(liste)); };
 };
 const appliquerDoublons = async (liste) => {
@@ -1852,15 +1873,15 @@ const modeMigration = async () => {
   const afficher = () => {
     const sup = rapportSuppression(lecture, plans);
     const applique = store.get('migration_ok2', false);
-    ui.out.innerHTML = resumePlan(cartes, plans) + `
-      <div class="row" style="margin-top:12px"><button class="b p" data-go>${applique ? 'Réappliquer' : 'Appliquer les étiquettes'}</button></div>
+    ui.apercu = resumePlan(cartes, plans) + `
+      <div class="actions"><button class="b p" data-go>${applique ? 'Réappliquer' : 'Appliquer les étiquettes'}</button></div>
       <h4>Anciennes étiquettes</h4>
       <p class="hint">${applique ? 'Supprimable = toutes ses cartes ont le domaine de l\'étiquette ; pour une nationalité, le mot doit aussi être dans leur titre ou leur description.' : 'La suppression se débloque une fois les étiquettes appliquées.'}</p>
       <table>${sup.map((l) => `<tr><td>${l.ok ? '<span class="ok">✔</span>' : '<span class="ko">●</span>'} #${esc(l.nom)}${l.connu ? '' : ' <i>(non prévue)</i>'}
         ${l.bloque.length ? `<details><summary>${l.bloque.length} carte(s) à garder</summary>${l.bloque.slice(0, 50).map((x) => `<div class="li">${esc(x.c.t)} — ${x.pourquoi}</div>`).join('')}</details>` : ''}</td>
         <td class="n">${l.n}</td><td class="n">${l.ok && applique ? `<button class="b d" data-del="${esc(l.nom)}">Suppr.</button>` : ''}</td></tr>`).join('')}</table>
       ${applique && sup.some((l) => l.ok) ? `<div class="row" style="margin-top:10px"><button class="b d" data-delall>Supprimer les ${sup.filter((l) => l.ok).length} sûres</button></div>` : ''}`;
-    ui.out.querySelector('[data-go]').onclick = () => lancer(async () => {
+    ui.bas.querySelector('[data-go]').onclick = () => lancer(async () => {
       ui.out.querySelectorAll('button').forEach((b) => { b.disabled = true; });
       const plan = new Map([...plans].filter(([, p]) => p.tags.length).map(([k, p]) => [k, p.tags]));
       const fait = new Set(store.get('fait2', []));
