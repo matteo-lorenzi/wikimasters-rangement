@@ -953,6 +953,7 @@ const monterUI = () => {
     };
   });
   afficherBugs();
+  afficherRapportWikipedia({ rapport: true }, false); // le rapport déjà stocké : affiché, mais pas « nouveau »
   proposerReprise();
 };
 
@@ -1479,13 +1480,13 @@ const apercuWikipedia = (cartes, plans, wiki) => {
 };
 // La « Mesure Wikipédia » vit dans Diagnostic ; si elle ne s'affiche pas, l'aperçu arrive sans elle (journal des bugs).
 // Un Ranger sans rapport neuf laisse celui qui est déjà affiché.
-const afficherRapportWikipedia = (wiki) => {
+const afficherRapportWikipedia = (wiki, nouveau = true) => {
   try {
     const r = wiki.rapport && store.get('wp_rapport', null);
     if (!r) return;
     ui.wp.innerHTML = apercuRapportWikipedia(r);
     brancherCopie(jsonRapport(r), 'Rapport copié : colle-le dans la conversation avec Claude.', '[data-wp-rapport]', '[data-copier-wp]', ui.wp);
-    signaler();
+    if (nouveau) signaler();
   } catch (e) {
     noterBug(e, 'rapport Wikipédia impossible à afficher : aperçu sans lui');
   }

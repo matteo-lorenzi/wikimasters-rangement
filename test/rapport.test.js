@@ -153,8 +153,9 @@ test('rapport Wikipédia : appel bloqué, chaque carte « appel-bloque » et le 
 
 test('rapport Wikipédia : Ranger sans carte concernée n\'écrase pas le rapport et ne montre pas le bouton', async () => {
   const site = await creerSite({ cartes: [{ t: 'Zidane', d: 'footballeur français', obtenu: date(1) }], wikipedia: { articles: {} } });
+  const p = panneau(site); // monté avant d'écrire le rapport : seul le Ranger pourrait le montrer
   site.wmr.store.set('wp_rapport', { ancien: true });
-  const p = await apercu(site);
+  await apercu(site);
   assert.deepEqual({ ...rapport(site) }, { ancien: true });
   assert.equal(p.root.querySelector('[data-copier-wp]'), null);
   site.fermer();
@@ -464,5 +465,16 @@ test('pastille de Diagnostic : un rapport compte comme un nouveau (singulier ann
   assert.equal(p.root.querySelector('#wmr-t-rangement').getAttribute('aria-selected'), 'true');
   p.root.querySelector('#wmr-t-diagnostic').click();
   assert.equal(pastille.style.display, 'none', 'consulté : la pastille disparaît');
+  site.fermer();
+});
+
+test('Diagnostic au montage : la mesure Wikipédia déjà stockée est affichée avec son bouton Copier, sans compter dans la pastille', async () => {
+  const site = await siteCauses();
+  await apercu(site);
+  assert.ok(rapport(site), 'un rapport est stocké');
+  site.document.getElementById('wmr-host').remove();
+  const p = panneau(site); // nouveau montage du panneau (rechargement de la page) : le rapport vient du stockage
+  assert.ok(p.root.querySelector('.diag-wp [data-copier-wp]'), 'rapport affiché dans Diagnostic dès le montage');
+  assert.equal(p.root.querySelector('#wmr-t-diagnostic .pastille').style.display, 'none', 'rien de nouveau à signaler');
   site.fermer();
 });
