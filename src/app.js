@@ -1020,6 +1020,20 @@ const noterArret = (n, carte, raison) => {
   store.set('paquets_arrets', liste.slice(-ARRETS_GARDES));
   return (suite) => { liste[liste.length - 1].suite = suite; store.set('paquets_arrets', liste.slice(-ARRETS_GARDES)); };
 };
+// Carte sans description (ticket #19) : sa phrase Wikipédia (lecture et cache de Ranger) tient lieu de description pour la règle d'arrêt.
+// Carte avec description : aucun appel. Échec ou titre sans phrase : null, la carte est testée sur son titre seul, et on le dit.
+const renfortWikipedia = async (carte, dire) => {
+  if (carte.d.trim()) return null;
+  const e = await lireWikipedia([{ t: carte.t, d: '' }]);
+  if (e) {
+    noterBug(e, 'Wikipédia bloquée ou en erreur : la carte est testée sur son titre seul');
+    dire(`Wikipédia n'a pas pu être lue (${e.message}) : « ${carte.t} » est testée sur son titre seul.`);
+    return null;
+  }
+  const phrase = wikiPhrase(wikiEntree(carte.t));
+  if (!phrase) { dire(`Wikipédia n'a pas de phrase exploitable pour « ${carte.t} » : elle est testée sur son titre seul.`); return null; }
+  return { ...carte, d: phrase, wikipedia: true };
+};
 /**
  * Ouvre un paquet et lit ses cartes une à une. Rend { etat: 'termine' | 'arret', n, total, carte?, raison? }.
  *  reglages : { raretes, interets } (reglagesPaquets())
@@ -1037,7 +1051,7 @@ const ouvrirPaquet = async ({ reglages, surCarte, surArret, dire = () => {} }) =
     total = compteurCarte()[1];
     precedente = carte;
     dire(`Carte ${n} / ${total} : ${carte.t} (${carte.rarete || '?'})`);
-    const jugee = (surCarte && await surCarte(carte, { n, total })) || carte;
+    const jugee = (surCarte && await surCarte(carte, { n, total })) || await renfortWikipedia(carte, dire) || carte;
     const raison = raisonArret(jugee, reglages);
     if (raison) {
       const noter = noterArret(n, carte, raison);
@@ -1370,7 +1384,7 @@ const lireWikipedia = async (cartes) => {
   let faits = 0;
   while (file.length) {
     arret();
-    ui.statut(`Wikipédia : ${faits} / ${aLire.length} titre(s) lu(s)…`);
+    if (ui) ui.statut(`Wikipédia : ${faits} / ${aLire.length} titre(s) lu(s)…`); // pas de panneau Collection sur la page Paquets
     const lot = file.splice(0, WIKI_LOT);
     const mesureLot = { titres: lot.length, debut: Date.now(), ok: false };
     mesurer((m) => m.lots.push(mesureLot));

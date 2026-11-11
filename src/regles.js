@@ -729,5 +729,8 @@ const raisonArret = (carte, reglages) => {
   const texte = norm(`${carte.t || ''} ${carte.d || ''}`);
   // un mot vide (ou d'espaces) est écarté : il se retrouverait dans toutes les cartes
   const mot = interets.find((m) => norm(m).trim() && texte.includes(norm(m).trim()));
-  return mot ? { type: 'mot', valeur: mot, texte: `mot « ${mot} »` } : null;
+  if (!mot) return null;
+  // la description vient de Wikipédia (carte.wikipedia) : le motif le dit quand le mot n'est pas dans le titre
+  const dePhrase = carte.wikipedia && !norm(carte.t || '').includes(norm(mot).trim());
+  return { type: 'mot', valeur: mot, texte: `mot « ${mot} »${dePhrase ? ' (trouvé dans la phrase Wikipédia)' : ''}` };
 };
