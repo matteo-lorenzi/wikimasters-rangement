@@ -1017,7 +1017,7 @@ const signaler = () => { if (ui.onglet !== 'diagnostic') ui.nouveau++; majPastil
 const majPastille = () => {
   const p = ui.root.querySelector('.pastille');
   montrer(p, ui.nouveau > 0);
-  p.innerHTML = `${ui.nouveau}<span class="sr"> nouveaux dans Diagnostic</span>`;
+  p.innerHTML = `${ui.nouveau}<span class="sr"> nouveau${ui.nouveau > 1 ? 'x' : ''} dans Diagnostic</span>`;
 };
 // Le bouton du panneau ([data-copier]) copie le texte de sa zone (le premier textarea) ; sinon le texte est sélectionné pour Ctrl+C.
 const brancherCopie = (t, ok, zone = 'textarea', bouton = '[data-copier]', ou = ui.out) => {

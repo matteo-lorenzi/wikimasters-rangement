@@ -452,3 +452,17 @@ test('essai : sur la référence (test/reference-wikipedia.json), sans réseau, 
   assert.match(r.stdout, /Couverture : \d+ \/ 212/);
   assert.match(r.stdout, /Précision : \d+ \/ \d+/);
 });
+
+test('pastille de Diagnostic : un rapport compte comme un nouveau (singulier annoncé), un bug de plus fait 2, aucun changement d onglet', async () => {
+  const site = await siteCauses();
+  const p = await apercu(site);
+  const pastille = p.root.querySelector('#wmr-t-diagnostic .pastille');
+  assert.equal(pastille.style.display, '', 'le rapport fait apparaître la pastille');
+  assert.equal(pastille.textContent.trim(), '1 nouveau dans Diagnostic');
+  site.wmr.noterBug(new Error('un bug'), 'essai');
+  assert.equal(pastille.textContent.trim(), '2 nouveaux dans Diagnostic');
+  assert.equal(p.root.querySelector('#wmr-t-rangement').getAttribute('aria-selected'), 'true');
+  p.root.querySelector('#wmr-t-diagnostic').click();
+  assert.equal(pastille.style.display, 'none', 'consulté : la pastille disparaît');
+  site.fermer();
+});
