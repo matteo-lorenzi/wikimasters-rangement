@@ -164,3 +164,59 @@ test('panneau : un échec du site s\'affiche en français, sans exception non g�
   assert.ok(await attendreQue(() => /pas apparue/.test(p.etat())));
   p.site.fermer();
 });
+
+// ── Wikipédia en renfort pour une carte sans description (ticket #19) ──
+const SANS_DESCRIPTION = [
+  { t: 'Aigaliers', d: '', r: 'C' },
+  { t: 'Rome', d: 'capitale de l\'Italie', r: 'C' },
+];
+const ARTICLES = { Aigaliers: 'Aigaliers est une commune française située dans le département du Gard, en région Occitanie.' };
+
+test('carte avec description : aucun appel Wikipédia', async () => {
+  const site = await creerSite({ page: 'pulls', paquet: [{ t: 'Rome', d: 'capitale de l\'Italie', r: 'C' }], wikipedia: { articles: ARTICLES } });
+  await lancer(site, { reglages: { raretes: [], interets: ['Gard'] } });
+  assert.deepEqual(site.wikipedia(), []);
+  site.fermer();
+});
+
+test('carte sans description : la phrase Wikipédia est testée et le motif dit que le mot vient de Wikipédia', async () => {
+  const site = await creerSite({ page: 'pulls', paquet: SANS_DESCRIPTION, wikipedia: { articles: ARTICLES } });
+  const d = decisions('arreter');
+  const r = await lancer(site, { reglages: { raretes: [], interets: ['Gard'] }, surArret: d.surArret });
+  assert.deepEqual(site.titresWikipedia(), ['Aigaliers']);
+  assert.equal(r.etat, 'arret');
+  assert.equal(d.vues[0].titre, 'Aigaliers');
+  assert.equal(d.vues[0].raison.type, 'mot');
+  assert.match(d.vues[0].raison.texte, /« Gard ».*Wikipédia/);
+  assert.deepEqual(types(site), ['ouvrir', 'wikipedia'], 'seul Ouvrir est cliqué, puis la lecture Wikipédia');
+  site.fermer();
+});
+
+test('mot déjà dans le titre : le motif ne parle pas de Wikipédia', async () => {
+  const site = await creerSite({ page: 'pulls', paquet: SANS_DESCRIPTION, wikipedia: { articles: ARTICLES } });
+  const d = decisions('arreter');
+  await lancer(site, { reglages: { raretes: [], interets: ['Aigaliers'] }, surArret: d.surArret });
+  assert.equal(d.vues[0].raison.texte, 'mot « Aigaliers »');
+  site.fermer();
+});
+
+test('Wikipédia sans réponse (bloquée) : repli sur le titre, message en français, le paquet continue', async () => {
+  const site = await creerSite({ page: 'pulls', paquet: SANS_DESCRIPTION, wikipedia: { bloque: true } });
+  const dits = [];
+  const r = await lancer(site, { reglages: { raretes: [], interets: ['Gard'] }, dire: (t) => dits.push(t) });
+  assert.equal(r.etat, 'termine', 'pas d\'arrêt du script');
+  assert.ok(dits.some((t) => /Wikipédia n'a pas pu être lue.*« Aigaliers » est testée sur son titre seul/.test(t)), dits.join('\n'));
+  assert.ok(site.wikipedia().length >= 1, 'chemin pris : Wikipédia a bien été appelée');
+  site.fermer();
+});
+
+test('titre absent de Wikipédia : repli sur le titre, message en français, titre seul encore testé', async () => {
+  const site = await creerSite({ page: 'pulls', paquet: [{ t: 'Zorglub', d: '', r: 'C' }], wikipedia: { articles: {} } });
+  const dits = [];
+  const d = decisions('arreter');
+  const r = await lancer(site, { reglages: { raretes: [], interets: ['zorg'] }, surArret: d.surArret, dire: (t) => dits.push(t) });
+  assert.ok(dits.some((t) => /pas de phrase exploitable pour « Zorglub »/.test(t)), dits.join('\n'));
+  assert.equal(r.etat, 'arret', 'le titre seul est testé');
+  assert.equal(d.vues[0].raison.texte, 'mot « zorg »');
+  site.fermer();
+});
