@@ -54,6 +54,96 @@ test('le panneau s\'ouvre et se ferme', async () => {
   site.fermer();
 });
 
+// ── onglets ──
+
+const onglet = (p, nom) => p.root.querySelector(`[role=tab][data-onglet=${nom}]`);
+const cadre = (p, nom) => p.root.querySelector(`[role=tabpanel][data-cadre=${nom}]`);
+const touche = (el, key) => el.dispatchEvent(new el.ownerDocument.defaultView.KeyboardEvent('keydown', { key, bubbles: true }));
+
+test('onglets Rangement et Diagnostic : rôles ARIA, un seul cadre visible, 560 px sur 80 vh', async () => {
+  const site = await creerSite({ cartes: [] });
+  const p = panneau(site);
+  const liste = p.root.querySelector('[role=tablist]');
+  assert.ok(liste);
+  assert.deepEqual([...liste.querySelectorAll('[role=tab]')].map((t) => t.textContent.trim().split(/\s/)[0]), ['Rangement', 'Diagnostic']);
+  assert.equal(onglet(p, 'rangement').getAttribute('aria-selected'), 'true');
+  assert.equal(onglet(p, 'diagnostic').getAttribute('aria-selected'), 'false');
+  assert.equal(onglet(p, 'rangement').tabIndex, 0);
+  assert.equal(onglet(p, 'diagnostic').tabIndex, -1);
+  for (const n of ['rangement', 'diagnostic']) {
+    assert.equal(onglet(p, n).getAttribute('aria-controls'), cadre(p, n).id);
+    assert.equal(cadre(p, n).getAttribute('aria-labelledby'), onglet(p, n).id);
+  }
+  assert.equal(cadre(p, 'rangement').style.display, '');
+  assert.equal(cadre(p, 'diagnostic').style.display, 'none');
+  onglet(p, 'diagnostic').click();
+  assert.equal(onglet(p, 'diagnostic').getAttribute('aria-selected'), 'true');
+  assert.equal(cadre(p, 'rangement').style.display, 'none');
+  assert.equal(cadre(p, 'diagnostic').style.display, '');
+  assert.match(p.root.querySelector('style').textContent, /\.pan\{[^}]*width:min\(560px[^}]*max-height:80vh/);
+  assert.match(p.root.querySelector('style').textContent, /:focus-visible/);
+  site.fermer();
+});
+
+test('onglets : flèches gauche et droite, en boucle, le focus suit', async () => {
+  const site = await creerSite({ cartes: [] });
+  const p = panneau(site);
+  p.cliquer('.fab');
+  onglet(p, 'rangement').focus();
+  touche(onglet(p, 'rangement'), 'ArrowRight');
+  assert.equal(onglet(p, 'diagnostic').getAttribute('aria-selected'), 'true');
+  assert.equal(p.root.activeElement, onglet(p, 'diagnostic'));
+  touche(onglet(p, 'diagnostic'), 'ArrowRight');
+  assert.equal(onglet(p, 'rangement').getAttribute('aria-selected'), 'true');
+  touche(onglet(p, 'rangement'), 'ArrowLeft');
+  assert.equal(onglet(p, 'diagnostic').getAttribute('aria-selected'), 'true');
+  site.fermer();
+});
+
+test('Diagnostic contient la mesure Wikipédia, le journal des bugs et le journal technique ; Rangement n a plus de bouton des bugs', async () => {
+  const site = await creerSite({ cartes: [] });
+  const p = panneau(site);
+  const d = cadre(p, 'diagnostic');
+  for (const sel of ['.diag-wp', '.diag-bugs', '.log']) assert.ok(d.querySelector(sel), sel);
+  assert.equal(p.root.querySelector('[data-a=bugs]'), null);
+  site.fermer();
+});
+
+test('Aperçu détruit par la consultation de Diagnostic : l Aperçu en attente survit, Appliquer marche encore', async () => {
+  const site = await creerSite({ cartes: collection(), etiquettes: ['Sport'] });
+  const p = panneau(site);
+  p.ranger();
+  assert.ok(await attendreQue(() => p.root.querySelector('[data-go]')), p.statut());
+  const avant = p.root.querySelector('.out').innerHTML;
+  site.wmr.noterBug(new Error('bug de test'), 'essai');
+  onglet(p, 'diagnostic').click();
+  assert.match(p.root.querySelector('.diag-bugs').textContent, /bug de test/);
+  onglet(p, 'rangement').click();
+  assert.equal(p.root.querySelector('.out').innerHTML, avant);
+  assert.ok(p.root.querySelector('[data-go]'));
+  p.appliquer();
+  assert.ok(await attendreQue(() => BILAN.test(p.statut()), 60000), p.statut());
+  assert.match(p.statut(), /✅ 75 carte\(s\) rangée\(s\)/);
+  site.fermer();
+});
+
+test('pastille de Diagnostic : compteur annoncé en texte, remise à zéro à la consultation, jamais de changement d onglet seul', async () => {
+  const site = await creerSite({ cartes: [] });
+  const p = panneau(site);
+  const pastille = () => onglet(p, 'diagnostic').querySelector('.pastille');
+  assert.equal(pastille().style.display, 'none');
+  site.wmr.noterBug(new Error('un'), 'essai');
+  site.wmr.noterBug(new Error('deux'), 'essai');
+  assert.equal(pastille().style.display, '');
+  assert.match(pastille().textContent, /2 nouveaux/);
+  assert.equal(onglet(p, 'rangement').getAttribute('aria-selected'), 'true', 'le panneau ne change pas d onglet seul');
+  onglet(p, 'diagnostic').click();
+  assert.equal(pastille().style.display, 'none');
+  site.wmr.noterBug(new Error('trois'), 'essai');
+  assert.equal(pastille().style.display, 'none', 'déjà sur Diagnostic : rien de nouveau à signaler');
+  site.fermer();
+});
+
 // ── lecture par l'écran ──
 
 test('lecture d\'une vue : pagination tardive au total faux, cartes sans description', async () => {
@@ -498,9 +588,8 @@ const toutRange = (site) => {
   for (const c of site.cartes.filter((x) => x.t.startsWith('Nouvelle'))) assert.deepEqual(c.tags, attendues[c.d], c.t);
 };
 const journalBugs = async (p) => {
-  p.cliquer('[data-a=bugs]');
-  const zone = p.root.querySelector('.out textarea'); // journal vide : « Aucun bug noté », sans zone de texte
-  return zone ? zone.value : p.root.querySelector('.out').textContent;
+  const zone = p.root.querySelector('.diag-bugs textarea'); // journal vide : « Aucun bug noté », sans zone de texte
+  return zone ? zone.value : p.root.querySelector('.diag-bugs').textContent;
 };
 
 test('lecture API : une erreur passagère est réessayée, sans lecture par l\'écran', async () => {
@@ -552,7 +641,7 @@ test('ratés à répétition : 3 rechargements au plus, puis arrêt avec un mess
   assert.match(bugs, /Filtre : Sans étiquette/);
   assert.match(bugs, /Journal :/);
   p.cliquer('[data-vider]');
-  assert.match(p.root.querySelector('.out').textContent, /Aucun bug noté/);
+  assert.match(p.root.querySelector('.diag-bugs').textContent, /Aucun bug noté/);
   site.fermer();
 });
 

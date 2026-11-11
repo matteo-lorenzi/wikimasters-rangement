@@ -100,7 +100,7 @@ test('rapport Wikipédia : bouton « Copier le rapport Wikipédia (JSON) » et t
   assert.equal(lignes.length, 8);
   for (const l of lignes) JSON.parse(l.trim().replace(/,$/, ''));
   assert.ok(!/</.test(zone.value), 'pas de HTML dans le JSON');
-  const o = p.root.querySelector('.out').textContent;
+  const o = p.root.querySelector('.diag-wp').textContent;
   assert.match(o, /Couverture : 1 \/ 8/);
   assert.match(o, /phrase-ambigue\s*2/);
   assert.doesNotMatch(o, /Précision/, 'pas de précision sans vérité');

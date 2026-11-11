@@ -831,7 +831,7 @@ const CSS = `
 [hidden]{display:none!important}
 *{box-sizing:border-box;font-family:Inter,system-ui,sans-serif}
 .fab{position:fixed;right:18px;bottom:18px;z-index:2147483000;background:#10b981;color:#04130d;border:0;border-radius:999px;padding:10px 16px;font-weight:700;font-size:13px;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.4)}
-.pan{position:fixed;right:18px;bottom:66px;z-index:2147483000;width:min(420px,calc(100vw - 36px));max-height:72vh;display:flex;flex-direction:column;background:#141615;color:#e8ebe9;border:1px solid #2a2e2c;border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.55);font-size:13px}
+.pan{position:fixed;right:18px;bottom:66px;z-index:2147483000;width:min(560px,calc(100vw - 36px));max-height:80vh;display:flex;flex-direction:column;background:#141615;color:#e8ebe9;border:1px solid #2a2e2c;border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.55);font-size:13px}
 .hd{padding:12px 14px;border-bottom:1px solid #2a2e2c;display:flex;justify-content:space-between;align-items:center}
 .hd b{font-size:14px}.x{background:none;border:0;color:#9aa19d;font-size:18px;cursor:pointer}
 .bd{padding:12px 14px;overflow:auto;flex:1}
@@ -847,6 +847,13 @@ details{margin:4px 0}summary{cursor:pointer;color:#cfd4d1}
 .ok{color:#34d399}.ko{color:#fbbf24}.log{font-family:ui-monospace,monospace;font-size:11px;color:#9aa19d;white-space:pre-wrap;max-height:140px;overflow:auto;background:#0e100f;border-radius:6px;padding:6px;margin-top:8px}
 .hint{font-size:12px;color:#9aa19d;margin:0 0 10px}
 .opt{display:block;margin:0 0 4px;font-size:12px;color:#cfd4d1;cursor:pointer}
+[role=tablist]{display:flex;gap:4px;padding:0 14px;border-bottom:1px solid #2a2e2c}
+[role=tab]{background:none;border:0;border-bottom:2px solid transparent;color:#9aa19d;padding:9px 12px;font-size:13px;font-weight:600;cursor:pointer}
+[role=tab][aria-selected=true]{color:#e8ebe9;border-bottom-color:#10b981}
+:focus-visible{outline:2px solid #34d399;outline-offset:2px}
+.pastille{display:inline-block;margin-left:6px;min-width:18px;padding:0 5px;border-radius:9px;background:#fbbf24;color:#1a1300;font-size:11px;text-align:center}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+[role=tabpanel]{display:flex;flex-direction:column;flex:1;min-height:0}
 textarea{width:100%;background:#0e100f;color:#cfd4d1;border:1px solid #2a2e2c;border-radius:6px;padding:6px;font-family:ui-monospace,monospace;font-size:11px;margin-bottom:8px}
 `;
 
@@ -863,7 +870,11 @@ const monterUI = () => {
   <button class="fab">🏷 Rangement</button>
   <div class="pan" hidden style="display:none">
     <div class="hd"><b>Rangement des cartes</b><button class="x" title="Fermer">×</button></div>
-    <div class="bd">
+    <div role="tablist" aria-label="Sections du panneau">
+      <button role="tab" id="wmr-t-rangement" data-onglet="rangement" aria-selected="true" aria-controls="wmr-c-rangement" tabindex="0">Rangement</button>
+      <button role="tab" id="wmr-t-diagnostic" data-onglet="diagnostic" aria-selected="false" aria-controls="wmr-c-diagnostic" tabindex="-1">Diagnostic<span class="pastille" style="display:none" hidden></span></button>
+    </div>
+    <div class="bd" role="tabpanel" id="wmr-c-rangement" data-cadre="rangement" aria-labelledby="wmr-t-rangement">
       <p class="hint">Rien n'est modifié sans que tu cliques sur « Appliquer ». Le script ne touche jamais à Défausser ni aux enchères.</p>
       <div class="row">
         <button class="b p" data-a="ranger">Ranger les nouvelles cartes</button>
@@ -872,16 +883,20 @@ const monterUI = () => {
         <button class="b" data-a="doublons">Doublons</button>
         <button class="b" data-a="migration">Migration (une fois)</button>
         <button class="b d" data-a="stop" disabled>Arrêter</button>
-        <button class="b" data-a="bugs">Journal des bugs</button>
       </div>
       <div class="st"></div>
       <div class="out"></div>
+    </div>
+    <div class="bd" role="tabpanel" id="wmr-c-diagnostic" data-cadre="diagnostic" aria-labelledby="wmr-t-diagnostic" hidden style="display:none">
+      <div class="diag-wp"></div>
+      <div class="diag-bugs"></div>
+      <h4>Journal technique</h4>
       <div class="log" hidden style="display:none"></div>
     </div>
   </div>`;
   const $ = (s) => root.querySelector(s);
   ui = {
-    root, $, st: $('.st'), out: $('.out'), log: $('.log'),
+    root, $, st: $('.st'), out: $('.out'), wp: $('.diag-wp'), bugs: $('.diag-bugs'), log: $('.log'), nouveau: 0, onglet: 'rangement',
     statut(t) { this.st.textContent = t; },
     journal(t) { montrer(this.log, true); this.log.textContent += t + '\n'; this.log.scrollTop = 1e9; },
     occupe(o) { root.querySelectorAll('button.b').forEach((b) => { b.disabled = b.dataset.a === 'stop' ? !o : o; }); },
@@ -894,8 +909,27 @@ const monterUI = () => {
   root.querySelector('[data-a=completer]').onclick = () => lancer(modeCompleter, { etape: 'completer-lecture' });
   root.querySelector('[data-a=doublons]').onclick = () => lancer(modeDoublons);
   root.querySelector('[data-a=migration]').onclick = () => lancer(modeMigration);
-  root.querySelector('[data-a=bugs]').onclick = afficherBugs;
-  majBoutonBugs();
+  const onglets = [...root.querySelectorAll('[role=tab]')];
+  const choisirOnglet = (nom, focus = false) => {
+    ui.onglet = nom;
+    for (const t of onglets) {
+      const actif = t.dataset.onglet === nom;
+      t.setAttribute('aria-selected', String(actif)); t.tabIndex = actif ? 0 : -1;
+      montrer($(`[data-cadre=${t.dataset.onglet}]`), actif);
+      if (actif && focus) t.focus();
+    }
+    if (nom === 'diagnostic') { ui.nouveau = 0; majPastille(); }
+  };
+  onglets.forEach((t) => {
+    t.onclick = () => choisirOnglet(t.dataset.onglet);
+    t.onkeydown = (e) => {
+      const pas = { ArrowRight: 1, ArrowLeft: -1 }[e.key];
+      if (!pas) return;
+      e.preventDefault();
+      choisirOnglet(onglets[(onglets.indexOf(t) + pas + onglets.length) % onglets.length].dataset.onglet, true);
+    };
+  });
+  afficherBugs();
   proposerReprise();
 };
 
@@ -946,7 +980,7 @@ const noterBug = (e, contexte) => {
     journal: ui ? ui.log.textContent.trim().split('\n').filter(Boolean).slice(-25) : [],
   });
   store.set('bugs', bugs.slice(-30));
-  majBoutonBugs();
+  if (ui) { signaler(); afficherBugs(); }
 };
 const texteBugs = () => store.get('bugs', []).map((b, i) => [
   `#${i + 1} — ${b.quand} — ${b.contexte}`,
@@ -956,15 +990,18 @@ const texteBugs = () => store.get('bugs', []).map((b, i) => [
   `Code : ${b.code}`,
   'Journal :', ...b.journal.map((l) => '  ' + l),
 ].join('\n')).join('\n\n');
-const majBoutonBugs = () => {
-  const b = ui && ui.root.querySelector('[data-a=bugs]');
-  const n = store.get('bugs', []).length;
-  if (b) b.textContent = 'Journal des bugs' + (n ? ` (${n})` : '');
+// Pastille de l'onglet Diagnostic : le nombre de bugs et de rapports arrivés depuis la dernière consultation.
+// Le panneau ne change jamais d'onglet seul ; sur Diagnostic, rien n'est « nouveau ».
+const signaler = () => { if (ui.onglet !== 'diagnostic') ui.nouveau++; majPastille(); };
+const majPastille = () => {
+  const p = ui.root.querySelector('.pastille');
+  montrer(p, ui.nouveau > 0);
+  p.innerHTML = `${ui.nouveau}<span class="sr"> nouveaux dans Diagnostic</span>`;
 };
 // Le bouton du panneau ([data-copier]) copie le texte de sa zone (le premier textarea) ; sinon le texte est sélectionné pour Ctrl+C.
-const brancherCopie = (t, ok, zone = 'textarea', bouton = '[data-copier]') => {
-  const ta = ui.out.querySelector(zone);
-  const copier = ui.out.querySelector(bouton);
+const brancherCopie = (t, ok, zone = 'textarea', bouton = '[data-copier]', ou = ui.out) => {
+  const ta = ou.querySelector(zone);
+  const copier = ou.querySelector(bouton);
   if (copier) copier.onclick = () => {
     const echec = () => { ta.select(); ui.statut('Copie impossible ici : le texte est sélectionné, fais Ctrl+C.'); };
     try { navigator.clipboard.writeText(t).then(() => ui.statut(ok), echec); } catch (e) { echec(); }
@@ -972,13 +1009,13 @@ const brancherCopie = (t, ok, zone = 'textarea', bouton = '[data-copier]') => {
 };
 const afficherBugs = () => {
   const t = texteBugs();
-  ui.out.innerHTML = '<h4>Journal des bugs</h4>' + (t ? `<p class="hint">Copie ce texte et colle-le dans la conversation avec Claude.</p>
+  ui.bugs.innerHTML = '<h4>Journal des bugs</h4>' + (t ? `<p class="hint">Copie ce texte et colle-le dans la conversation avec Claude.</p>
     <textarea readonly rows="12">${esc(t)}</textarea>
     <div class="row"><button class="b p" data-copier>Copier</button><button class="b d" data-vider>Vider le journal</button></div>`
     : '<p class="hint">Aucun bug noté.</p>');
-  brancherCopie(t, 'Journal copié : colle-le dans la conversation avec Claude.');
-  const vider = ui.out.querySelector('[data-vider]');
-  if (vider) vider.onclick = () => { store.set('bugs', []); majBoutonBugs(); afficherBugs(); };
+  brancherCopie(t, 'Journal copié : colle-le dans la conversation avec Claude.', 'textarea', '[data-copier]', ui.bugs);
+  const vider = ui.bugs.querySelector('[data-vider]');
+  if (vider) vider.onclick = () => { store.set('bugs', []); afficherBugs(); };
 };
 
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -1404,17 +1441,19 @@ const apercuWikipedia = (cartes, plans, wiki) => {
       <p class="hint">Mots que les règles ne connaissent pas, sur ${SUGG_MIN_CARTES} cartes ou plus de ce lot (les phrases Wikipédia comme descriptions). Copie la liste pour Claude : il écrit la règle, le script ne crée jamais de domaine tout seul.</p>
       ${lignesMots(candidats)}
       <textarea readonly rows="6">${esc(texteMots(`Mots manquants WikiMasters v${VERSION}, lot de ${cartes.length} cartes (Ranger)`, candidats))}</textarea>
-      <div class="row"><button class="b p" data-copier>Copier pour Claude</button></div>` : '')
-    + blocRapportWikipedia(wiki);
+      <div class="row"><button class="b p" data-copier>Copier pour Claude</button></div>` : '');
 };
-// Le groupe « Mesure Wikipédia » de l'aperçu ; s'il ne s'affiche pas, l'aperçu arrive sans lui (journal des bugs).
-const blocRapportWikipedia = (wiki) => {
+// La « Mesure Wikipédia » vit dans Diagnostic ; si elle ne s'affiche pas, l'aperçu arrive sans elle (journal des bugs).
+// Un Ranger sans rapport neuf laisse celui qui est déjà affiché.
+const afficherRapportWikipedia = (wiki) => {
   try {
     const r = wiki.rapport && store.get('wp_rapport', null);
-    return r ? apercuRapportWikipedia(r) : '';
+    if (!r) return;
+    ui.wp.innerHTML = apercuRapportWikipedia(r);
+    brancherCopie(jsonRapport(r), 'Rapport copié : colle-le dans la conversation avec Claude.', '[data-wp-rapport]', '[data-copier-wp]', ui.wp);
+    signaler();
   } catch (e) {
     noterBug(e, 'rapport Wikipédia impossible à afficher : aperçu sans lui');
-    return '';
   }
 };
 const afficherRanger = (cartes, depuis, viaApi, wiki = {}) => {
@@ -1435,8 +1474,7 @@ const afficherRanger = (cartes, depuis, viaApi, wiki = {}) => {
       ${depuis ? '<button class="b" data-tout>Revoir toutes les cartes sans étiquette</button>' : ''}</div>`;
   const motsManquants = ui.out.querySelector('textarea');
   if (motsManquants) brancherCopie(motsManquants.value, 'Liste copiée : colle-la dans la conversation avec Claude.');
-  const rapportWp = ui.out.querySelector('[data-wp-rapport]');
-  if (rapportWp) brancherCopie(rapportWp.value, 'Rapport copié : colle-le dans la conversation avec Claude.', '[data-wp-rapport]', '[data-copier-wp]');
+  afficherRapportWikipedia(wiki);
   if (!cibles.length) { // rien à poser : ces cartes ne seront plus relues
     if (viaApi && plusRecente) retenirDepuis(plusRecente);
     store.set('ranger_lecture', null);
@@ -1879,7 +1917,7 @@ if (window.__WMR_TEST__ || store.get('debug', false)) {
     classer, planCarte, norm, cle, store, cartesDom, lireCarte, pageInfo,
     lireVue, lireApi, parcourirVue, changerPage, choisirFiltre, choisirTri, listerEtiquettes,
     modeSelection, poserEtiquette, appliquerSurPage, appliquerRanger, modeRanger, modeMigration, motsGroupes, rechercher,
-    supprimerEtiquette, rapportSuppression, suggestions, morceauWikipedia, pageDeDate, monterUI, ui: () => ui, stop: () => { STOP = true; },
+    supprimerEtiquette, rapportSuppression, suggestions, morceauWikipedia, pageDeDate, monterUI, noterBug, ui: () => ui, stop: () => { STOP = true; },
     // mesure Wikipédia, aussi pour scripts/essai-wikipedia.js
     CAUSES_WIKIPEDIA, causeWikipedia, classerPhrase, jugerWikipedia, bilanWikipedia, jsonRapport, VERSION,
   };
