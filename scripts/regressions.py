@@ -5,7 +5,7 @@ lance le test qui le surveille, et exige qu'il le DÉTECTE (sortie en échec).
     python scripts/regressions.py             toutes les mutations (~2 min)
     python scripts/regressions.py recherche   seulement celles dont le nom contient « recherche »
     python scripts/regressions.py --ancres    vérifie seulement que chaque texte d'origine est
-                                              présent une fois (instantané, lancé par build.sh)
+                                              présent une fois (instantané, lancé par scripts/build.js)
 
 Les tests lisent les sources dans le dossier indiqué par WMR_SRC (voir test/charger.js).
 Un bug corrigé ajoute ici sa mutation : (nom, fichier, texte d'origine, texte fautif, test).
@@ -503,4 +503,5 @@ def main(args):
 
 
 if __name__ == '__main__':
+    sys.stdout.reconfigure(encoding='utf-8')  # sinon « ✓ » plante la console Windows (cp1252)
     sys.exit(main(sys.argv[1:]))

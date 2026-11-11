@@ -11,7 +11,7 @@ Userscript Tampermonkey (Chrome) qui étiquette par domaine les cartes de la pag
 - **Concevoir ou relire** un changement → `CODING_STANDARDS.md`. Sa règle 1 tranche toute idée de raccourci : on écrit sur le compte uniquement par les boutons du site, l'API sert à lire.
 - **Automatisation du site** (sélecteurs, attentes, pagination, API, Chrome de la personne) → `docs/wikimasters.md`. Un comportement nouveau du site s'y note **et** se rejoue dans `test/faux-site.js`.
 - **Auditer des résultats Wikipédia** (rapport JSON, couverture, précision, témoin de 100 cartes) → `rapports-wikipedia/LISEZMOI.md` ; les rapports sont dans ce dossier (`AAAA-MM-JJ-vX.Y.Z.json`).
-- **Tests** (écrire, réparer, faux site, mutations) → `docs/tests.md`.
+- **Tests** (écrire, réparer, faux site, mutations) ou **voir le rendu du Panneau** (capture avant de rapporter un changement d'affichage) → `docs/tests.md`.
 - **Reprise de session** → `HANDOFF.md` : état, prochaine étape, questions en suspens. La personne demande par où commencer → lui donner « Avant tout, en début de session » de `HANDOFF.md`.
 
 ## Changer le code
@@ -24,7 +24,7 @@ Userscript Tampermonkey (Chrome) qui étiquette par domaine les cartes de la pag
 
 Le disque de travail peut être effacé sans prévenir (c'est déjà arrivé). La copie durable est GitHub : `matteo-lorenzi/wikimasters-rangement`. Chaque commit est poussé tout de suite sur la branche de travail (`main` seulement après le oui de la personne) ; un travail qui n'existe qu'en local est un travail qu'on peut perdre.
 
-Dépôt absent au démarrage → le cloner, puis `npm install`.
+Dépôt absent au démarrage → le cloner, puis `npm install`. Un worktree neuf n'a pas de `node_modules` : `npm install` avant le premier `npm test`.
 
 ## Agent skills
 
@@ -34,7 +34,7 @@ Issues sur GitHub (`matteo-lorenzi/wikimasters-rangement`), via le CLI `gh`. Voi
 
 ### Triage labels
 
-Vocabulaire par d�faut : `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. Voir `docs/agents/triage-labels.md`.
+Vocabulaire par défaut : `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. Voir `docs/agents/triage-labels.md`.
 
 ### Domain docs
 
