@@ -1004,7 +1004,7 @@ const compteurCarte = () => { const m = texte().match(/Carte (\d+) \/ (\d+)/); r
 // La carte affichée, ou null : même lecture que la Collection, avec la rareté sous le nom que raisonArret attend.
 const carteAffichee = () => { const el = cartesDom()[0]; if (!el) return null; const c = lireCarte(el); return { t: c.t, d: c.d, rarete: c.r }; };
 const cleCarte = (c) => c.t + '|' + c.d + '|' + c.rarete;
-const ARRETS_GARDES = 200;
+const ARRETS_GARDES = 20; // le journal du panneau (ticket #18) montre les 20 derniers arrêts
 // Attend la carte n (compteur « Carte n / N » ET contenu différent de la précédente : l'animation dure ~1 s), puis laisse l'animation finir.
 const attendreCarteN = async (n, precedente) => {
   const prete = () => { const k = compteurCarte(), c = carteAffichee(); return !!k && k[0] === n && !!c && (!precedente || cleCarte(c) !== cleCarte(precedente)); };
@@ -1027,9 +1027,14 @@ const noterArret = (n, carte, raison) => {
  *  surArret(carte, raison, { n, total }) : rend 'continuer' ou 'arreter' (la personne décide dans le panneau)
  *  dire(texte) : avancement
  */
-const ouvrirPaquet = async ({ reglages, surCarte, surArret, dire = () => {} }) => {
+const ouvrirPaquet = async (opts) => {
   const ouvrir = bouton(/^Ouvrir$/);
   if (!ouvrir) throw new Error('Je ne trouve pas le bouton « Ouvrir » : va sur la page Paquets (wiki-masters.com/pulls) et relance.');
+  // « Paquet en cours » : si la page est rechargée avant la fin, le panneau le dit (aucune reprise automatique). Levé à toute sortie normale.
+  store.set('paquet_en_cours', { quand: new Date().toLocaleString() });
+  try { return await lirePaquet(ouvrir, opts); } finally { store.set('paquet_en_cours', null); }
+};
+const lirePaquet = async (ouvrir, { reglages, surCarte, surArret, dire = () => {} }) => {
   ouvrir.click();
   let precedente = null, total = 0, n = 0;
   for (n = 1; ; n++) {
@@ -1086,6 +1091,11 @@ const monterPaquets = () => {
         <p class="arret-texte"></p>
         <button class="b p" data-paquets="continuer">Continuer</button> <button class="b" data-paquets="arreter">Arrêter</button>
       </div>
+      <h4>Journal des arrêts</h4>
+      <p class="hint">Les 20 derniers arrêts, du plus ancien au plus récent. Ils restent après un rechargement.</p>
+      <ol class="journal-paquets" aria-label="Journal des arrêts"></ol>
+      <details class="journal-copie" hidden style="display:none"><summary>Texte à copier</summary><textarea class="journal-paquets-texte" readonly rows="8"></textarea></details>
+      <div class="row"><button class="b" data-paquets="copier-journal">Copier le journal pour Claude</button></div>
     </div>
   </div>`;
   const $ = (s) => root.querySelector(s);
@@ -1112,13 +1122,34 @@ const monterPaquets = () => {
         dire: etat,
         surArret: (carte, raison, { n, total }) => new Promise((fin) => {
           $('.arret-texte').textContent = `Arrêt sur la carte ${n} / ${total} : « ${carte.t} » (rareté ${carte.rarete || '?'}), pour le motif ${raison.texte}.${carte.d ? ` Description : ${carte.d}` : ''}`;
-          montrer($('.arret-paquet'), true);
+          montrer($('.arret-paquet'), true); journal();
           decider = (c) => { decider = null; montrer($('.arret-paquet'), false); fin(c); };
         }),
       });
       etat(r.etat === 'arret' ? `Arrêté sur « ${r.carte.t} » : le paquet est laissé ouvert sur le site, je ne clique plus rien.` : `Paquet terminé (${r.total} cartes), le site est revenu à la page Paquets.`);
-    } catch (e) { etat('⚠️ ' + e.message); } finally { lancerBtn.disabled = false; }
+    } catch (e) { etat('⚠️ ' + e.message); } finally { lancerBtn.disabled = false; journal(); }
   };
+  // Journal des arrêts : relu du stockage à chaque affichage, donc identique après un rechargement.
+  const textesArrets = () => store.get('paquets_arrets', []).map((a, i) => `#${i + 1} — ${a.quand} — carte ${a.n} : « ${a.titre} » (rareté ${a.rarete || '?'}), motif ${a.motif}, suite : ${a.suite || 'aucune'}${a.description ? `\n  Description : ${a.description}` : ''}`).join('\n');
+  const journal = () => {
+    const liste = store.get('paquets_arrets', []);
+    const ol = $('.journal-paquets'); ol.replaceChildren();
+    if (!liste.length) { const li = document.createElement('li'); li.textContent = 'Aucun arrêt noté.'; ol.appendChild(li); }
+    for (const a of liste) { const li = document.createElement('li'); li.textContent = `${a.quand} — « ${a.titre} » (${a.rarete || '?'}), ${a.motif}`; ol.appendChild(li); }
+    $('.journal-paquets-texte').value = textesArrets();
+  };
+  $('[data-paquets=copier-journal]').onclick = () => {
+    const ta = $('.journal-paquets-texte'), t = ta.value;
+    if (!t) { dire('Le journal est vide : rien à copier.'); return; }
+    const echec = () => { montrer($('.journal-copie'), true); $('.journal-copie').open = true; ta.select(); dire('Copie impossible ici : le texte est sélectionné, fais Ctrl+C.'); };
+    try { navigator.clipboard.writeText(t).then(() => dire('Journal copié : colle-le dans la conversation avec Claude.'), echec); } catch (e) { echec(); }
+  };
+  // Page rechargée en plein paquet : on le dit, on ne reprend rien (le paquet est resté ouvert sur le site).
+  const enCours = store.get('paquet_en_cours', null);
+  if (enCours) {
+    store.set('paquet_en_cours', null);
+    etat(`⚠️ La page a été rechargée pendant l'ouverture d'un paquet (lancée ${enCours.quand}). Je ne reprends rien tout seul : regarde la page, le paquet est peut-être resté ouvert sur une carte. Termine-le toi-même sur le site, puis clique sur Lancer pour le suivant.`);
+  }
   const dessiner = () => {
     const r = reglagesPaquets();
     const ul = $('.mots'); ul.replaceChildren();
@@ -1151,7 +1182,7 @@ const monterPaquets = () => {
   });
   $('.fab').onclick = () => montrer($('.pan'), $('.pan').hidden);
   $('.x').onclick = () => montrer($('.pan'), false);
-  dessiner();
+  dessiner(); journal();
 };
 
 // Lance un mode. reprise ({ etape, tout }) : en cas de raté du site (PanneSite), la page est rechargée

@@ -164,3 +164,78 @@ test('panneau : un échec du site s\'affiche en français, sans exception non g�
   assert.ok(await attendreQue(() => /pas apparue/.test(p.etat())));
   p.site.fermer();
 });
+
+// ── journal des arrêts (ticket #18) ──
+const lignes = (p) => [...p.racine().querySelectorAll('.journal-paquets li')].map((l) => l.textContent);
+
+test('journal : chaque arrêt ajoute une ligne (titre, rareté, motif, date) ; au-delà de 20, la plus ancienne disparaît', async () => {
+  const p = await panneau();
+  const vieux = Array.from({ length: 20 }, (_, i) => ({ quand: `jour ${i}`, n: 1, titre: `Ancien ${i}`, description: '', rarete: 'C', type: 'rarete', motif: 'rareté C', suite: 'arreter' }));
+  p.site.window.localStorage.setItem('wmr_paquets_arrets', JSON.stringify(vieux));
+  await p.site.recharger();
+  assert.equal(lignes(p).length, 20);
+  p.clic('lancer'); p.clic('confirmer');
+  assert.ok(await attendreQue(() => /Football/.test(lignes(p)[19] || '')), 'la nouvelle ligne est en dernier');
+  const l = lignes(p);
+  assert.equal(l.length, 20);
+  assert.ok(!l.some((x) => /Ancien 0\b/.test(x)), 'le plus ancien a disparu');
+  assert.match(l[19], /Football/); assert.match(l[19], /\bR\b/); assert.match(l[19], /rareté R/);
+  assert.equal(p.site.wmr.store.get('paquets_arrets', []).length, 20);
+  p.site.fermer();
+});
+
+test('journal : il reste après un rechargement de la page', async () => {
+  const p = await panneau();
+  p.clic('lancer'); p.clic('confirmer');
+  assert.ok(await attendreQue(() => p.visible('.arret-paquet')));
+  p.clic('arreter');
+  assert.ok(await attendreQue(() => /laissé ouvert/.test(p.etat())));
+  await p.site.recharger();
+  assert.equal(lignes(p).length, 1);
+  assert.match(lignes(p)[0], /Football/);
+  p.site.fermer();
+});
+
+test('journal : vide, il le dit', async () => {
+  const p = await panneau();
+  assert.match(p.q('.journal-paquets').textContent, /Aucun arrêt/);
+  p.site.fermer();
+});
+
+test('page rechargée en plein paquet : message clair, aucun clic automatique, rien ne reprend', async () => {
+  const p = await panneau();
+  p.clic('lancer'); p.clic('confirmer');
+  assert.ok(await attendreQue(() => p.visible('.arret-paquet')));
+  await p.site.recharger();
+  assert.match(p.etat(), /rechargée/);
+  assert.match(p.etat(), /paquet/);
+  assert.deepEqual(types(p.site), ['ouvrir', ...FLECHES(3), 'rechargement'], 'aucun clic de plus après le rechargement');
+  await p.site.attente(150);
+  assert.deepEqual(types(p.site), ['ouvrir', ...FLECHES(3), 'rechargement']);
+  assert.equal(p.site.wmr.store.get('paquet_en_cours', null), null, 'le message ne revient pas au rechargement suivant');
+  p.site.fermer();
+});
+
+test('paquet terminé, arrêté ou en échec : « paquet en cours » est levé', async () => {
+  for (const cas of ['termine', 'arret', 'echec']) {
+    const site = await creerSite({ page: 'pulls', animationBloquee: cas === 'echec' });
+    await lancer(site, { reglages: { raretes: cas === 'arret' ? ['R'] : [], interets: [] } }).catch(() => null);
+    assert.equal(site.wmr.store.get('paquet_en_cours', null), null, cas);
+    site.fermer();
+  }
+});
+
+test('journal : le texte à copier reprend chaque arrêt avec sa description et la suite donnée', async () => {
+  const p = await panneau();
+  p.clic('lancer'); p.clic('confirmer');
+  assert.ok(await attendreQue(() => p.visible('.arret-paquet')));
+  p.clic('arreter');
+  assert.ok(await attendreQue(() => /laissé ouvert/.test(p.etat())));
+  const t = p.q('.journal-paquets-texte').value;
+  assert.match(t, /Football/); assert.match(t, /sport collectif/); assert.match(t, /rareté R/); assert.match(t, /arreter/);
+  let copie = null;
+  Object.defineProperty(p.site.window.navigator, 'clipboard', { value: { writeText: async (x) => { copie = x; } }, configurable: true });
+  p.q('[data-paquets=copier-journal]').click();
+  assert.ok(await attendreQue(() => copie === t));
+  p.site.fermer();
+});
