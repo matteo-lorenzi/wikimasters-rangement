@@ -849,6 +849,8 @@ button.b:hover{border-color:#10b981}button.b.p{background:#10b981;color:#04130d;
 button.b.d{border-color:#7f1d1d;color:#fca5a5}button.b:disabled{opacity:.4;cursor:default}
 .st{color:#9aa19d;margin:6px 0 10px;min-height:16px;white-space:pre-wrap}
 h4{margin:14px 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:#9aa19d}
+.sec{border-top:1px solid #2a2e2c;padding-top:16px;margin-top:16px}.sec:first-child{border-top:0;padding-top:0;margin-top:0}
+.sec h4{display:flex;justify-content:space-between;margin:0 0 8px;font-size:13px;font-weight:700;text-transform:none;letter-spacing:0;color:#e8ebe9}.cpt{color:#9aa19d;font-weight:600}
 table{width:100%;border-collapse:collapse}td{padding:3px 4px;border-bottom:1px solid #222;vertical-align:top}td.n{text-align:right;color:#9aa19d;width:48px}
 details{margin:4px 0}summary{cursor:pointer;color:#cfd4d1}
 .li{color:#b9bfbb;font-size:12px;padding:2px 0 2px 10px}
@@ -1043,21 +1045,33 @@ const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&l
 const listeCartes = (titre, cartes, max = 300) => cartes.length ? `<details><summary>${esc(titre)} (${cartes.length})</summary>${
   cartes.slice(0, max).map((c) => `<div class="li">${esc(c.t)}${c.d ? ' — <i>' + esc(c.d) + '</i>' : ''}</div>`).join('')}${cartes.length > max ? '<div class="li">…</div>' : ''}</details>` : '';
 
-const resumePlan = (cartes, plans) => {
-  const parTag = {}, groupes = { classee: [], a_traiter: [], ignoree: [], inconnue: [] };
+// Une Section de l'Aperçu : titre (13 px, gras), compteur à droite, filet fin ; ni carte ni fond.
+const section = (titre, n, corps) => `<section class="sec"><h4><span>${esc(titre)}</span><span class="cpt">${n}</span></h4>${corps}</section>`;
+const pluriel = (n, mot) => `${n} ${mot}${n > 1 ? 's' : ''}`;
+
+// Section « Résultat prévu » : la synthèse d'une ligne, puis le tableau par domaine.
+const resultatPrevu = (cartes, plans) => {
+  const parTag = {}, nb = { classee: 0, a_traiter: 0, ignoree: 0, inconnue: 0 };
   for (const c of cartes) {
     const p = plans.get(cle(c));
     for (const t of p.tags) (parTag[t] = parTag[t] || []).push(c);
-    groupes[p.statut].push(c);
+    nb[p.statut]++;
   }
   const lignes = Object.entries(parTag).sort((a, b) => b[1].length - a[1].length)
     .map(([t, l]) => `<tr><td><details><summary>${esc(t)}</summary>${l.slice(0, 200).map((c) => `<div class="li">${esc(c.t)}</div>`).join('')}</details></td><td class="n">${l.length}</td></tr>`).join('');
-  return `<h4>Résultat prévu</h4>
-    <div>${groupes.classee.length} classée(s) · ${groupes.a_traiter.length} à traiter · ${groupes.ignoree.length} ignorée(s) · ${groupes.inconnue.length} sans règle</div>
-    <table>${lignes}</table>
-    ${listeCartes('Sans règle (restent « Sans étiquette »)', groupes.inconnue)}
-    ${listeCartes('Ignorées volontairement (homonymies, listes…)', groupes.ignoree)}`;
+  return section('Résultat prévu', cartes.length, `<div>${pluriel(nb.classee, 'classée')} · ${nb.a_traiter} à traiter · ${pluriel(nb.ignoree, 'ignorée')} · ${nb.inconnue} sans règle</div>
+    <table>${lignes}</table>`);
 };
+// Section « À revoir » : cartes à traiter, sans règle, ignorées.
+const aRevoir = (cartes, plans) => {
+  const g = { a_traiter: [], inconnue: [], ignoree: [] };
+  for (const c of cartes) { const p = plans.get(cle(c)); if (g[p.statut]) g[p.statut].push(c); }
+  const n = g.a_traiter.length + g.inconnue.length + g.ignoree.length;
+  return n ? section('À revoir', n, listeCartes('À traiter (mot ambigu seul)', g.a_traiter)
+    + listeCartes('Sans règle (restent « Sans étiquette »)', g.inconnue)
+    + listeCartes('Ignorées volontairement (homonymies, listes…)', g.ignoree)) : '';
+};
+const resumePlan = (cartes, plans) => resultatPrevu(cartes, plans) + aRevoir(cartes, plans);
 
 // ═══════════════════════════════════════════════════════════════════
 //  WIKIPÉDIA — la première phrase de l'article, pour les cartes sans description utile
@@ -1456,13 +1470,12 @@ const apercuWikipedia = (cartes, plans, wiki) => {
   const reference = lecture && lectureComplete(lecture) && !store.get('lecture2_perimee', false) ? Object.values(lecture.cartes) : [];
   const { candidats } = suggestions(lot, reference);
   return (wiki.erreur ? `<p class="hint ko">⚠️ ${esc(wiki.erreur)}</p>` : '')
-    + (classees.length ? `<h4>D'après Wikipédia</h4><details><summary>Classées d'après Wikipédia (${classees.length})</summary>${
-      classees.slice(0, 300).map((c) => `<div class="li">${esc(c.t)} — <i>${esc(plans.get(cle(c)).phrase)}</i> → ${esc(plans.get(cle(c)).tags.join(', '))}</div>`).join('')}${classees.length > 300 ? '<div class="li">…</div>' : ''}</details>` : '')
-    + (candidats.length ? `<h4>Mots manquants</h4>
-      <p class="hint">Mots que les règles ne connaissent pas, sur ${SUGG_MIN_CARTES} cartes ou plus de ce lot (les phrases Wikipédia comme descriptions). Copie la liste pour Claude : il écrit la règle, le script ne crée jamais de domaine tout seul.</p>
+    + (classees.length ? section("D'après Wikipédia", classees.length, classees.slice(0, 300).map((c) => `<div class="li">${esc(c.t)} — <i>${esc(plans.get(cle(c)).phrase)}</i> → ${esc(plans.get(cle(c)).tags.join(', '))}</div>`).join('')
+      + (classees.length > 300 ? '<div class="li">…</div>' : '')) : '')
+    + (candidats.length ? section('Mots manquants', candidats.length, `<p class="hint">Mots que les règles ne connaissent pas, sur ${SUGG_MIN_CARTES} cartes ou plus de ce lot (les phrases Wikipédia comme descriptions). Copie la liste pour Claude : il écrit la règle, le script ne crée jamais de domaine tout seul.</p>
       ${lignesMots(candidats)}
-      <textarea readonly rows="6">${esc(texteMots(`Mots manquants WikiMasters v${VERSION}, lot de ${cartes.length} cartes (Ranger)`, candidats))}</textarea>
-      <div class="row"><button class="b p" data-copier>Copier pour Claude</button></div>` : '');
+      <div class="row"><button class="b p" data-copier>Copier pour Claude</button></div>
+      <details><summary>Texte à copier</summary><textarea readonly rows="6">${esc(texteMots(`Mots manquants WikiMasters v${VERSION}, lot de ${cartes.length} cartes (Ranger)`, candidats))}</textarea></details>`) : '');
 };
 // La « Mesure Wikipédia » vit dans Diagnostic ; si elle ne s'affiche pas, l'aperçu arrive sans elle (journal des bugs).
 // Un Ranger sans rapport neuf laisse celui qui est déjà affiché.
@@ -1479,18 +1492,12 @@ const afficherRapportWikipedia = (wiki) => {
 };
 const afficherRanger = (cartes, depuis, viaApi, wiki = {}) => {
   const { plans, cibles, neuves, marquees, plusRecente, groupes } = preparerRanger(cartes, depuis, wiki.phrases);
-  const groupees = groupes.reduce((s, g) => s + g.n, 0);
   const nbMarquees = cartes.filter(estMarquee).length;
   ui.statut(`${cartes.length - nbMarquees} carte(s) ${depuis ? 'nouvelle(s)' : 'sans étiquette'}, dont ${neuves.length} à ranger.`
     + (nbMarquees ? ` Et ${nbMarquees} marquée(s) « ${A_TRAITER} », dont ${marquees.length} que les règles rangent maintenant.` : ''));
-  ui.apercu = (groupes.length ? `<h4>Rangement groupé</h4>
-      <p class="hint">Beaucoup de cartes à ranger : ${groupes.length} recherche(s) en rangent d'abord ${groupees} par groupes, puis le reste page par page.</p>
-      ${listeCartes('Recherches prévues', groupes.map((g) => ({ t: `« ${g.mot} » → #${g.dom}`, d: `${g.n} carte(s)` })))}` : '')
-    + (marquees.length ? `<h4>Cartes « ${A_TRAITER} » rangées</h4>
-      <div>${marquees.length} carte(s) : leur domaine, puis retrait de ${A_TRAITER} (et seulement elle)</div>
-      ${listeCartes('Cartes concernées', marquees)}` : '')
+  ui.apercu = resultatPrevu(cartes, plans) + aRevoir(cartes, plans)
     + apercuWikipedia(cartes, plans, wiki)
-    + resumePlan(cartes, plans) + `<div class="actions">
+    + `<div class="actions">
       ${cibles.length ? '<button class="b p" data-go>Appliquer</button>' : ''}
       ${depuis ? '<button class="b" data-tout>Revoir toutes les cartes sans étiquette</button>' : ''}</div>`;
   const motsManquants = ui.out.querySelector('textarea');

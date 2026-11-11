@@ -178,7 +178,7 @@ test('rapport Wikipédia : la construction du rapport lève une exception, l\'ap
   site.window.Date.prototype.toISOString = () => { throw new Error('date du rapport impossible'); };
   const p = await apercu(site);
   assert.ok(p.root.querySelector('[data-go]'), 'le bouton Appliquer est là');
-  assert.match(p.root.querySelector('.out').textContent, /Classées d'après Wikipédia \(3\)/, 'l\'aperçu de Wikipédia est complet');
+  assert.match(p.root.querySelector('.out').textContent, /D'après Wikipédia3/, 'l\'aperçu de Wikipédia est complet');
   assert.equal(rapport(site), null, 'pas de rapport');
   assert.equal(p.root.querySelector('[data-copier-wp]'), null);
   const bugs = site.wmr.store.get('bugs', []);
@@ -213,7 +213,7 @@ test('rapport Wikipédia : la mesure plante en pleine lecture, la lecture et Ran
   const p = await apercu(site);
   delete site.window.Object.prototype['Pierre F.'];
   assert.ok(p.root.querySelector('[data-go]'), 'le bouton Appliquer est là');
-  assert.match(p.root.querySelector('.out').textContent, /Classées d'après Wikipédia \(3\)/, 'chaque titre lu malgré la mesure');
+  assert.match(p.root.querySelector('.out').textContent, /D'après Wikipédia3/, 'chaque titre lu malgré la mesure');
   assert.equal(site.titresWikipedia().length, 8);
   const bugs = site.wmr.store.get('bugs', []);
   assert.equal(bugs.length, 1, 'un seul bug, pas un par titre');

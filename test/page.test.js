@@ -377,7 +377,7 @@ test('Ranger, gros stock : recherches groupées d\'abord, puis page par page ; c
   const p = panneau(site);
   p.ranger();
   assert.ok(await attendreQue(() => p.root.querySelector('[data-go]')), p.statut());
-  assert.match(p.root.querySelector('.out').textContent, /Rangement groupé/);
+  assert.ok(!/Rangement groupé/.test(p.root.querySelector('.out').textContent), 'plus de Section « Rangement groupé » : la synthèse suffit');
   p.appliquer();
   assert.ok(await attendreQue(() => /✅|⚠️|Terminé, mais/.test(p.statut()), 60000), p.statut());
   assert.match(p.statut(), /✅ 231 carte\(s\) rangée\(s\)/);
@@ -488,6 +488,16 @@ test('Ranger : une carte !À traiter que les règles rangent reçoit son domaine
   site.fermer();
 });
 
+test("Ranger : les cartes !À traiter rangées n'ont plus de Section, l'info est dans le statut du haut", async () => {
+  const site = await creerSite({ cartes: marquees() });
+  const p = panneau(site);
+  p.ranger();
+  assert.ok(await attendreQue(() => p.root.querySelector('[data-go]'), 30000), p.statut());
+  assert.match(p.statut(), /Et 62 marquée\(s\) « !À traiter », dont 61 que les règles rangent maintenant/);
+  assert.ok(!/rangées/.test(sortie(p)), 'pas de Section « Cartes !À traiter rangées »');
+  site.fermer();
+});
+
 test('Ranger : le script ne retire jamais que !À traiter', async () => {
   const site = await creerSite({ cartes: marquees() });
   await rangerTout(site);
@@ -523,7 +533,7 @@ test('Ranger : aperçu des cartes qui perdent !À traiter, et rien à faire quan
   const p2 = panneau(site2);
   p2.ranger();
   assert.ok(await attendreQue(() => p2.root.querySelector('[data-go]')), p2.statut());
-  assert.match(p2.root.querySelector('.out').textContent, /61 carte\(s\) : .*retrait de !À traiter/);
+  assert.match(p2.statut(), /marquée\(s\) « !À traiter », dont 61 que les règles rangent/, "l'info passe dans le statut");
   site2.fermer();
 });
 
@@ -828,7 +838,7 @@ test('Wikipédia : cache, un deuxième Ranger ne refait aucune requête', async 
   assert.equal(avant, 2);
   const p = await apercuWiki(site);
   assert.equal(site.wikipedia().length, avant, 'rien de redemandé');
-  assert.match(sortie(p), /Classées d'après Wikipédia \(30\)/, 'les phrases viennent du cache');
+  assert.match(sortie(p), /D'après Wikipédia30/, 'les phrases viennent du cache');
   site.fermer();
 });
 
@@ -870,7 +880,7 @@ test('Wikipédia : plus de plafond, ni case ni aide sur l essai, et les 100 cart
   await apercuWiki(site);
   assert.equal(site.titresWikipedia().length, 100, 'aucun plafond');
   assert.doesNotMatch(sortie(p), /Essai Wikipédia/);
-  assert.match(sortie(p), /Classées d'après Wikipédia \(100\)/);
+  assert.match(sortie(p), /D'après Wikipédia100/);
   site.fermer();
 });
 
@@ -1028,11 +1038,10 @@ test('Wikipédia : l\'aperçu liste les cartes classées d\'après Wikipédia av
   } } });
   const p = await apercuWiki(site);
   const o = sortie(p);
-  assert.match(o, /Classées d'après Wikipédia \(3\)/);
+  assert.match(o, /D'après Wikipédia3/);
   assert.match(o, /Marcel Dubois — chirurgien français à avoir réalisé une greffe du rein → Sciences/);
   assert.match(o, /McLaren MP4-28 — monoplace de Formule 1 engagée par McLaren lors de la saison 2013 de Formule 1 → Sport/);
   assert.match(o, /Pierre Fehlmann — navigateur suisse.* → !À traiter/);
-  assert.ok(/<details><summary>Classées d'après Wikipédia/.test(p.root.querySelector('.out').innerHTML), 'groupe dépliable');
   assert.ok(!/Mary Butters — /.test(o) && !/Hanabie\. — /.test(o), 'sans règle ou sans phrase : pas dans ce groupe');
   assert.deepEqual(site.poses(), [], 'rien n\'est posé avant « Appliquer »');
   assert.deepEqual(site.actions.filter((a) => a.type === 'retrait'), []);
@@ -1143,7 +1152,40 @@ test('Wikipédia : « Mots manquants » dans l\'aperçu, avec « Copier pour Cla
   assert.match(o, /klorpien → \?/, 'pas de domaine connu pour ce mot');
   assert.match(p.root.querySelector('textarea').value, /zoblix — 4 cartes — Nature/);
   assert.match(p.root.querySelector('[data-copier]').textContent, /Copier pour Claude/);
+  assert.ok(p.root.querySelector('.out details textarea'), 'le texte à copier est replié');
   assert.deepEqual(site.poses(), [], 'le script ne crée jamais de domaine tout seul');
+  site.fermer();
+});
+
+// ── Aperçu de Ranger en quatre Sections (v1.9.16) ──
+const sections = (p) => [...p.root.querySelectorAll('.out section')].map((s) => [s.querySelector('h4 span').textContent, s.querySelector('h4 .cpt').textContent]);
+
+test("Aperçu de Ranger : Résultat prévu, À revoir, D'après Wikipédia, dans l'ordre, avec leur compteur ; synthèse d'une ligne puis tableau par domaine", async () => {
+  const cartes = cartesSansDescription(['Marcel Dubois', 'McLaren MP4-28', 'Pierre Fehlmann', 'Mary Butters', 'Hanabie.']);
+  const site = await creerSite({ cartes, wikipedia: { articles: {
+    'Marcel Dubois': 'Marcel Dubois, né en 1920, est le premier chirurgien français à avoir réalisé une greffe du rein.',
+    'McLaren MP4-28': 'La McLaren MP4-28 est la monoplace de Formule 1 engagée par McLaren lors de la saison 2013 de Formule 1.',
+    'Pierre Fehlmann': 'Pierre Fehlmann, né en 1942 à Morges, est un navigateur suisse, célèbre par ses participations aux courses autour du monde.',
+    'Mary Butters': 'Mary Butters ( c. 1770 - c. 1850) est une chiffonnière irlandaise connue sous le surnom de la dame de Carnmoney.',
+    'Hanabie.': 'Hanabie.',
+  } } });
+  const p = await apercuWiki(site);
+  assert.deepEqual(sections(p), [['Résultat prévu', '5'], ['À revoir', '3'], ["D'après Wikipédia", '3']]);
+  const resultat = p.root.querySelector('.out section');
+  assert.match(resultat.children[1].textContent, /^2 classées · 1 à traiter · 0 ignorée · 2 sans règle$/);
+  assert.ok(resultat.querySelector('table td.n'), 'le tableau par domaine suit la synthèse');
+  assert.ok(!/Rangement groupé|rangées/.test(sortie(p)), 'pas de Section « Rangement groupé » ni « !À traiter rangées »');
+  site.fermer();
+});
+
+test('Aperçu de Ranger : Mots manquants vient en dernier, avec son compteur et son texte replié', async () => {
+  const titres = serie(4, (i) => nom(700 + i));
+  const site = await creerSite({ cartes: cartesSansDescription(titres), wikipedia: { articles: articlesDe(titres, motInconnu) } });
+  const p = await apercuWiki(site);
+  const s = sections(p);
+  assert.deepEqual(s[s.length - 1][0], 'Mots manquants');
+  assert.match(s[s.length - 1][1], /^\d+$/);
+  assert.ok(p.root.querySelector('.out details textarea'), 'texte replié');
   site.fermer();
 });
 
