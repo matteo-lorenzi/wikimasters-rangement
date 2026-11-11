@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WikiMasters — Rangement des cartes
 // @namespace    wikimasters-rangement
-// @version      1.9.16
+// @version      1.9.17
 // @description  Étiquette tes cartes WikiMasters par domaine (aperçu avant application, jamais de défausse).
 // @match        https://www.wiki-masters.com/*
 // @match        https://wiki-masters.com/*
@@ -733,6 +733,22 @@ const classer = (carte, deWikipedia = false) => {
   return { etiquettes, statut: 'inconnue', source, mots };
 };
 
+// Page Paquets : faut-il s'arrêter sur cette carte tirée ? Deux motifs indépendants (l'un OU l'autre) :
+// sa rareté est cochée, ou l'un des centres d'intérêt (sous-chaîne, sans casse ni accents) est dans son titre ou sa description.
+// carte = { t, d, rarete } ; reglages = { raretes: ['UR', …], interets: ['Gard', …] }.
+// Rend { type: 'rarete' | 'mot', valeur, texte } (texte = le motif dit à la personne), ou null s'il ne faut pas s'arrêter.
+const raisonArret = (carte, reglages) => {
+  const { raretes = [], interets = [] } = reglages || {};
+  if (carte.rarete && raretes.includes(carte.rarete)) return { type: 'rarete', valeur: carte.rarete, texte: `rareté ${carte.rarete}` };
+  const texte = norm(`${carte.t || ''} ${carte.d || ''}`);
+  // un mot vide (ou d'espaces) est écarté : il se retrouverait dans toutes les cartes
+  const mot = interets.find((m) => norm(m).trim() && texte.includes(norm(m).trim()));
+  if (!mot) return null;
+  // la description vient de Wikipédia (carte.wikipedia) : le motif le dit quand le mot n'est pas dans le titre
+  const dePhrase = carte.wikipedia && !norm(carte.t || '').includes(norm(mot).trim());
+  return { type: 'mot', valeur: mot, texte: `mot « ${mot} »${dePhrase ? ' (trouvé dans la phrase Wikipédia)' : ''}` };
+};
+
 // ═══════════════════════════════════════════════════════════════════
 //  ANCIENNES ÉTIQUETTES — utilisé par le mode Migration
 //  d : domaines à donner aux cartes qui portent cette étiquette
@@ -859,7 +875,8 @@ const ECHELLE = window.__WMR_ECHELLE__ || 1;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms * ECHELLE));
 const store = {
   get(k, def) { try { const v = localStorage.getItem('wmr_' + k); return v == null ? def : JSON.parse(v); } catch (e) { return def; } },
-  set(k, v) { try { localStorage.setItem('wmr_' + k, JSON.stringify(v)); } catch (e) { /* stockage plein ou bloqué */ } },
+  // false = stockage plein ou bloqué (l'appelant décide s'il faut le dire à la personne)
+  set(k, v) { try { localStorage.setItem('wmr_' + k, JSON.stringify(v)); return true; } catch (e) { return false; } },
 };
 const cle = (c) => c.t + '|' + c.d + '|' + c.r;
 let STOP = false;
@@ -1602,6 +1619,12 @@ details{margin:4px 0}summary{cursor:pointer;color:#cfd4d1}
 .pastille{display:inline-block;margin-left:6px;min-width:18px;padding:0 5px;border-radius:9px;background:#fbbf24;color:#1a1300;font-size:11px;text-align:center}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 [role=tabpanel]{display:flex;flex-direction:column;flex:1;min-height:0}
+.mots{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0;padding:0;list-style:none}
+.mot{display:inline-flex;align-items:center;gap:4px;background:#1c1f1e;border:1px solid #2a2e2c;border-radius:14px;padding:2px 4px 2px 10px;font-size:14px;color:#e8ebe9}
+.mot button{background:none;border:0;color:#9aa19d;cursor:pointer;min-width:24px;min-height:24px;font-size:16px}
+.msg-paquets{font-size:13px;color:#fbbf24;min-height:1.4em;margin:4px 0}
+.rar{display:flex;flex-wrap:wrap;gap:4px 14px}
+input[type=text]{background:#0e100f;color:#cfd4d1;border:1px solid #2a2e2c;border-radius:6px;padding:6px;font-size:14px;min-height:32px}
 textarea{width:100%;background:#0e100f;color:#cfd4d1;border:1px solid #2a2e2c;border-radius:6px;padding:6px;font-family:ui-monospace,monospace;font-size:12px;margin-bottom:8px}
 `;
 
@@ -1611,6 +1634,7 @@ let ui;
 const montrer = (el, oui) => { el.hidden = !oui; el.style.display = oui ? '' : 'none'; };
 const monterUI = () => {
   if (document.getElementById('wmr-host')) return;
+  if (/^\/pulls/.test(location.pathname)) return monterPaquets();
   const host = document.createElement('div'); host.id = 'wmr-host';
   document.body.appendChild(host);
   const root = host.attachShadow({ mode: 'open' });
@@ -1693,6 +1717,289 @@ const monterUI = () => {
   afficherBugs();
   afficherRapportWikipedia({ rapport: true }, false); // le rapport déjà stocké : affiché, mais pas « nouveau »
   proposerReprise();
+};
+
+// ── Page Paquets : un panneau à part, avec le seul onglet « Paquets » (centres d'intérêt et raretés d'arrêt) ──
+const RARETES_PAQUETS = ['C', 'PC', 'R', 'SR', 'UR', 'L'];
+const RARETES_PAR_DEFAUT = ['R', 'UR', 'L'];
+const MOTS_VIDES_INTERET = new Set(['a', 'au', 'aux', 'de', 'des', 'du', 'en', 'et', 'la', 'le', 'les', 'un', 'une', 'ou', 'sur', 'dans', 'par', 'pour']);
+// Le réglage vit en mémoire le temps de la page ; le stockage le garde d'une page à l'autre (et peut refuser).
+let reglagesMemoire = null;
+// Les réglages tels que l'ouverture des paquets (ticket #16) les relit : { interets: [mots], raretes: [raretés cochées, de C à L] }
+const reglagesPaquets = () => {
+  if (!reglagesMemoire) {
+    const interets = store.get('paquets_interets', []);
+    const raretes = store.get('paquets_raretes', RARETES_PAR_DEFAUT);
+    reglagesMemoire = { interets: Array.isArray(interets) ? interets : [], raretes: Array.isArray(raretes) ? raretes : RARETES_PAR_DEFAUT };
+  }
+  return { interets: [...reglagesMemoire.interets], raretes: RARETES_PAQUETS.filter((r) => reglagesMemoire.raretes.includes(r)) };
+};
+// true si le navigateur a bien enregistré
+const enregistrerPaquets = (r) => {
+  reglagesMemoire = r;
+  return store.set('paquets_interets', r.interets) && store.set('paquets_raretes', r.raretes);
+};
+const MSG_STOCKAGE = 'Ton navigateur ne peut pas enregistrer ce réglage : il sera perdu au rechargement de la page.';
+const refusCentreInteret = (mot, liste) => {
+  const n = norm(mot).trim();
+  if (!n) return "Tape un mot avant d'ajouter.";
+  if (n.length < 2 || MOTS_VIDES_INTERET.has(n)) return `« ${mot} » est trop courant ou trop court : il ferait arrêter l'ouverture sans cesse.`;
+  if (liste.some((x) => norm(x) === n)) return `« ${mot} » est déjà dans ta liste.`;
+  return '';
+};
+
+// ── Ouverture d'un paquet (ticket #16) ──
+// Seuls clics : « Ouvrir », la flèche droite (touche du clavier) et « Continuer » du site. Jamais les favoris, Défausser,
+// les enchères, les échanges ni « Encore N cartes » (qui n'avance pas, docs/wikimasters.md).
+const compteurCarte = () => { const m = texte().match(/Carte (\d+) \/ (\d+)/); return m ? [+m[1], +m[2]] : null; };
+// La carte affichée, ou null : même lecture que la Collection, avec la rareté sous le nom que raisonArret attend.
+const carteAffichee = () => { const el = cartesDom()[0]; if (!el) return null; const c = lireCarte(el); return { t: c.t, d: c.d, rarete: c.r }; };
+const cleCarte = (c) => c.t + '|' + c.d + '|' + c.rarete;
+const ARRETS_GARDES = 20; // le journal du panneau (ticket #18) montre les 20 derniers arrêts
+// Attend la carte n (compteur « Carte n / N » ET contenu différent de la précédente : l'animation dure ~1 s), puis laisse l'animation finir.
+const attendreCarteN = async (n, precedente) => {
+  const prete = () => { const k = compteurCarte(), c = carteAffichee(); return !!k && k[0] === n && !!c && (!precedente || cleCarte(c) !== cleCarte(precedente)); };
+  if (!(await attendre(prete, 4000))) throw new Error(`La carte ${n}${compteurCarte() ? ` / ${compteurCarte()[1]}` : ''} n'est pas apparue : le site n'a pas répondu à temps. Le paquet est resté ouvert, rien d'autre n'a été cliqué.`);
+  await sleep(300);
+  if (!prete()) throw new Error(`La carte ${n} a changé pendant la lecture : le site a bougé tout seul. Le paquet est resté ouvert, rien d'autre n'a été cliqué.`);
+  return carteAffichee();
+};
+// Enregistre l'arrêt (relu par le journal, ticket #19) ; rend la fonction qui note la suite donnée.
+const noterArret = (n, carte, raison) => {
+  const liste = store.get('paquets_arrets', []);
+  liste.push({ quand: new Date().toLocaleString(), n, titre: carte.t, description: carte.d, rarete: carte.rarete, type: raison.type, motif: raison.texte, suite: '' });
+  store.set('paquets_arrets', liste.slice(-ARRETS_GARDES));
+  return (suite) => { liste[liste.length - 1].suite = suite; store.set('paquets_arrets', liste.slice(-ARRETS_GARDES)); };
+};
+// Carte sans description (ticket #19) : sa phrase Wikipédia (lecture et cache de Ranger) tient lieu de description pour la règle d'arrêt.
+// Carte avec description : aucun appel. Échec ou titre sans phrase : null, la carte est testée sur son titre seul, et on le dit.
+const renfortWikipedia = async (carte, dire) => {
+  if (carte.d.trim()) return null;
+  const e = await lireWikipedia([{ t: carte.t, d: '' }]);
+  if (e) {
+    noterBug(e, 'Wikipédia bloquée ou en erreur : la carte est testée sur son titre seul');
+    dire(`Wikipédia n'a pas pu être lue (${e.message}) : « ${carte.t} » est testée sur son titre seul.`);
+    return null;
+  }
+  const phrase = wikiPhrase(wikiEntree(carte.t));
+  if (!phrase) { dire(`Wikipédia n'a pas de phrase exploitable pour « ${carte.t} » : elle est testée sur son titre seul.`); return null; }
+  return { ...carte, d: phrase, wikipedia: true };
+};
+/**
+ * Ouvre un paquet et lit ses cartes une à une. Rend { etat: 'termine' | 'arret', n, total, carte?, raison? }.
+ *  reglages : { raretes, interets } (reglagesPaquets())
+ *  surCarte(carte, { n, total }) : appelé une fois par carte lue, avant la règle d'arrêt ; peut rendre une carte à juger à la place (ex. description Wikipédia, #17)
+ *  surArret(carte, raison, { n, total }) : rend 'continuer' ou 'arreter' (la personne décide dans le panneau)
+ *  dire(texte) : avancement
+ *  annule() : vrai quand le panneau a été démonté ; le paquet s'arrête alors sans plus rien cliquer (etat 'abandon')
+ *  dansSerie : le drapeau « paquet en cours » est géré par ouvrirSerie, pas ici
+ */
+const ouvrirPaquet = async (opts) => {
+  const ouvrir = bouton(/^Ouvrir$/);
+  if (!ouvrir) throw new Error('Je ne trouve pas le bouton « Ouvrir » : va sur la page Paquets (wiki-masters.com/pulls) et relance.');
+  // « Paquet en cours » : si la page est rechargée avant la fin, le panneau le dit (aucune reprise automatique). Levé à toute sortie normale.
+  if (opts.dansSerie) return lirePaquet(ouvrir, opts);
+  store.set('paquet_en_cours', { quand: new Date().toLocaleString() });
+  try { return await lirePaquet(ouvrir, opts); } finally { store.set('paquet_en_cours', null); }
+};
+const lirePaquet = async (ouvrir, { reglages, surCarte, surArret, dire = () => {}, annule = () => false }) => {
+  ouvrir.click();
+  let precedente = null, total = 0, n = 0;
+  for (n = 1; ; n++) {
+    const carte = await attendreCarteN(n, precedente);
+    total = compteurCarte()[1];
+    precedente = carte;
+    dire(`Carte ${n} / ${total} : ${carte.t} (${carte.rarete || '?'})`);
+    const jugee = (surCarte && await surCarte(carte, { n, total })) || await renfortWikipedia(carte, dire) || carte;
+    if (annule()) return { etat: 'abandon', n, total };
+    const raison = raisonArret(jugee, reglages);
+    if (raison) {
+      const noter = noterArret(n, carte, raison);
+      const choix = await surArret(carte, raison, { n, total });
+      noter(choix);
+      if (choix !== 'continuer') return { etat: 'arret', n, total, carte, raison };
+    }
+    if (n >= total) break;
+    document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', code: 'ArrowRight', keyCode: 39, bubbles: true }));
+  }
+  const suite = bouton(/^Continuer$/);
+  if (!suite) throw new Error('Je ne trouve pas le bouton « Continuer » du site sur la dernière carte. Le paquet est resté ouvert : clique dessus toi-même.');
+  suite.click();
+  // Le bouton Ouvrir suffit : au dernier paquet le compteur peut ne plus s'afficher (hypothèse, voir ouvrirSerie).
+  if (!(await attendre(() => !!bouton(/^Ouvrir$/), 4000))) throw new Error('Le site n\'est pas revenu à la page Paquets après « Continuer ». Regarde la page : le paquet est peut-être déjà rangé.');
+  return { etat: 'termine', n, total };
+};
+
+// ── Série de paquets (ticket #17) : tous les paquets restants, une seule confirmation ──
+const PAUSE_ENTRE_PAQUETS = 2000;
+const lireCompteur = () => { const m = texte().match(/(\d+)\s*\/\s*\d+\s+paquets disponibles/); return m ? +m[1] : null; };
+const paquetsDisponibles = () => {
+  const n = lireCompteur();
+  if (n === null) throw new Error('Je ne lis pas le compteur de paquets disponibles sur la page : va sur la page Paquets (wiki-masters.com/pulls) et relance.');
+  return n;
+};
+const nbPaquets = (n, mot) => `${n} paquet${n > 1 ? 's' : ''} ${mot}${n > 1 ? 's' : ''}`;
+// Enchaîne les paquets, au plus le nombre lu au départ (la régénération d'un paquet toutes les 10 minutes n'est pas attendue).
+// Mêmes réglages que ouvrirPaquet. Rend { etat: 'termine' | 'epuise' | 'arret', ouverts (jusqu'au bout), restants, carte?, raison? } ; une erreur du site est relancée avec le bilan.
+// Sur un arrêt le paquet reste ouvert, la page n'affiche plus le compteur : « restants » est celui lu avant l'ouverture, moins ce paquet laissé ouvert.
+// annule() (panneau démonté) : plus aucun clic, on rend { etat: 'abandon', ouverts }. Le drapeau « paquet en cours » reste posé toute la série, pauses comprises.
+// Après un paquet ouvert, un compteur absent veut dire « 0 » (hypothèse : à 0 le site n'affiche plus « N / 10 paquets disponibles », jamais observé) ; absent dès le départ = échec bruyant.
+const ouvrirSerie = async ({ dire = () => {}, annule = () => false, ...opts }) => {
+  const total = paquetsDisponibles();
+  let ouverts = 0;
+  store.set('paquet_en_cours', { quand: new Date().toLocaleString() });
+  try {
+    for (; ouverts < total; ouverts++) {
+      if (ouverts) await sleep(PAUSE_ENTRE_PAQUETS);
+      if (annule()) return { etat: 'abandon', ouverts };
+      const dispo = ouverts ? (lireCompteur() ?? 0) : total;
+      if (dispo < 1) break;
+      const r = await ouvrirPaquet({ ...opts, annule, dansSerie: true, dire: (t) => dire(`Paquet ${ouverts + 1} sur ${total} · ${t}`) });
+      if (r.etat === 'abandon') return { etat: 'abandon', ouverts };
+      if (r.etat === 'arret') return { etat: 'arret', ouverts, restants: dispo - 1, carte: r.carte, raison: r.raison };
+    }
+  } catch (e) {
+    e.message += ` (${nbPaquets(ouverts, 'ouvert')} jusqu'au bout avant cette erreur.)`;
+    throw e;
+  } finally { store.set('paquet_en_cours', null); }
+  const restants = lireCompteur() ?? 0;
+  return { etat: restants ? 'termine' : 'epuise', ouverts, restants };
+};
+const bilanSerie = (r) => `${nbPaquets(r.ouverts, 'ouvert')} jusqu'au bout, ${r.restants} restant${r.restants > 1 ? 's' : ''}.`;
+
+const demonterUI = (host) => { host.dispatchEvent(new Event('wmr-demonte')); host.remove(); };
+const monterPaquets = () => {
+  const host = document.createElement('div'); host.id = 'wmr-host';
+  document.body.appendChild(host);
+  const root = host.attachShadow({ mode: 'open' });
+  root.innerHTML = `<style>${CSS}</style>
+  <button class="fab">🏷 Paquets</button>
+  <div class="pan" hidden style="display:none">
+    <div class="hd"><b>Ouverture des paquets</b><button class="x" title="Fermer">×</button></div>
+    <div role="tablist" aria-label="Sections du panneau">
+      <button role="tab" id="wmr-t-paquets" data-onglet="paquets" aria-selected="true" aria-controls="wmr-c-paquets" tabindex="0">Paquets</button>
+    </div>
+    <div class="bd" role="tabpanel" id="wmr-c-paquets" data-cadre="paquets" aria-labelledby="wmr-t-paquets">
+      <h4>Centres d'intérêt</h4>
+      <p class="hint">Un lieu, une personne, un sujet : une carte qui le contient fait arrêter l'ouverture, quelle que soit sa rareté.</p>
+      <form data-paquets="form"><input type="text" data-paquets="champ" aria-label="Nouveau centre d'intérêt" placeholder="Un mot à la fois"> <button class="b p" type="submit" data-paquets="ajouter">Ajouter</button></form>
+      <div class="msg-paquets" role="status"></div>
+      <ul class="mots" aria-label="Tes centres d'intérêt"></ul>
+      <h4>Raretés d'arrêt</h4>
+      <p class="hint">L'ouverture s'arrête sur une carte de l'une de ces raretés.</p>
+      <div class="rar">${RARETES_PAQUETS.map((r) => `<label class="opt"><input type="checkbox" data-rarete="${r}"> ${r}</label>`).join('')}</div>
+      <h4>Ouvrir un paquet</h4>
+      <button class="b p" data-paquets="lancer">Lancer</button>
+      <div class="conf-paquets" role="group" aria-label="Confirmation" hidden style="display:none">
+        <p class="conf-texte"></p>
+        <button class="b p" data-paquets="confirmer">Ouvrir le paquet</button> <button class="b" data-paquets="annuler">Annuler</button>
+      </div>
+      <div class="etat-paquet" role="status"></div>
+      <div class="arret-paquet" role="alert" hidden style="display:none">
+        <p class="arret-texte"></p>
+        <button class="b p" data-paquets="continuer">Continuer</button> <button class="b" data-paquets="arreter">Arrêter</button>
+      </div>
+      <h4>Journal des arrêts</h4>
+      <p class="hint">Les 20 derniers arrêts, du plus ancien au plus récent. Ils restent après un rechargement.</p>
+      <ol class="journal-paquets" aria-label="Journal des arrêts"></ol>
+      <details class="journal-copie" hidden style="display:none"><summary>Texte à copier</summary><textarea class="journal-paquets-texte" readonly rows="8"></textarea></details>
+      <div class="row"><button class="b" data-paquets="copier-journal">Copier le journal pour Claude</button></div>
+    </div>
+  </div>`;
+  const $ = (s) => root.querySelector(s);
+  const dire = (t) => { $('.msg-paquets').textContent = t; };
+  // ── ouverture : Lancer → confirmation → paquet ouvert, arrêt avec Continuer / Arrêter ──
+  const etat = (t) => { $('.etat-paquet').textContent = t; };
+  const lancerBtn = $('[data-paquets=lancer]');
+  let decider = null; // résout 'continuer' ou 'arreter'
+  const choisir = (c) => { if (decider) decider(c); };
+  // Panneau démonté (changement de page) : la série en cours s'arrête, y compris suspendue sur un arrêt.
+  let demonte = false;
+  host.addEventListener('wmr-demonte', () => { demonte = true; choisir('arreter'); });
+  lancerBtn.onclick = () => {
+    const r = reglagesPaquets();
+    const motifs = [r.raretes.length ? `les raretés ${r.raretes.join(', ')}` : '', r.interets.length ? `les mots ${r.interets.map((m) => `« ${m} »`).join(', ')}` : ''].filter(Boolean);
+    let dispo;
+    try { dispo = paquetsDisponibles(); } catch (e) { etat('⚠️ ' + e.message); return; }
+    if (!dispo) { etat("Il n'y a plus de paquet disponible : le site en régénère un toutes les 10 minutes, reviens plus tard."); return; }
+    $('.conf-texte').textContent = `Je vais ouvrir ${dispo} paquet${dispo > 1 ? 's' : ''} au plus sur le site, à la suite : ils ne se referment pas et consomment tes paquets disponibles. Je lis les cartes une par une et je m'arrête à la première carte qui t'intéresse : ${motifs.length ? motifs.join(' ou sur ') : 'aucune carte (ni rareté ni mot réglés : les paquets seront passés en entier)'}. Je ne touche ni aux favoris, ni à Défausser, ni aux enchères, ni aux échanges.`;
+    etat(''); montrer($('.conf-paquets'), true); lancerBtn.disabled = true;
+  };
+  $('[data-paquets=annuler]').onclick = () => { montrer($('.conf-paquets'), false); lancerBtn.disabled = false; };
+  $('[data-paquets=continuer]').onclick = () => choisir('continuer');
+  $('[data-paquets=arreter]').onclick = () => choisir('arreter');
+  $('[data-paquets=confirmer]').onclick = async () => {
+    montrer($('.conf-paquets'), false);
+    try {
+      const r = await ouvrirSerie({
+        annule: () => demonte,
+        reglages: reglagesPaquets(),
+        dire: etat,
+        surArret: (carte, raison, { n, total }) => new Promise((fin) => {
+          $('.arret-texte').textContent = `Arrêt sur la carte ${n} / ${total} : « ${carte.t} » (rareté ${carte.rarete || '?'}), pour le motif ${raison.texte}.${carte.d ? ` Description : ${carte.d}` : ''}`;
+          montrer($('.arret-paquet'), true); journal();
+          decider = (c) => { decider = null; montrer($('.arret-paquet'), false); fin(c); };
+        }),
+      });
+      if (r.etat === 'abandon') return;
+      etat(r.etat === 'arret' ? `Arrêté sur « ${r.carte.t} » : le paquet est laissé ouvert sur le site, je ne clique plus rien. ${bilanSerie(r)}`
+        : `${r.etat === 'epuise' ? "Il n'y a plus de paquet disponible (le site en régénère un toutes les 10 minutes). " : 'Série terminée. '}${bilanSerie(r)}`);
+    } catch (e) { etat('⚠️ ' + e.message); } finally { lancerBtn.disabled = false; journal(); }
+  };
+  // Journal des arrêts : relu du stockage à chaque affichage, donc identique après un rechargement.
+  const textesArrets = () => store.get('paquets_arrets', []).map((a, i) => `#${i + 1} — ${a.quand} — carte ${a.n} : « ${a.titre} » (rareté ${a.rarete || '?'}), motif ${a.motif}, suite : ${a.suite || 'aucune'}${a.description ? `\n  Description : ${a.description}` : ''}`).join('\n');
+  const journal = () => {
+    const liste = store.get('paquets_arrets', []);
+    const ol = $('.journal-paquets'); ol.replaceChildren();
+    if (!liste.length) { const li = document.createElement('li'); li.textContent = 'Aucun arrêt noté.'; ol.appendChild(li); }
+    for (const a of liste) { const li = document.createElement('li'); li.textContent = `${a.quand} — « ${a.titre} » (${a.rarete || '?'}), ${a.motif}`; ol.appendChild(li); }
+    $('.journal-paquets-texte').value = textesArrets();
+  };
+  $('[data-paquets=copier-journal]').onclick = () => {
+    const ta = $('.journal-paquets-texte'), t = ta.value;
+    if (!t) { dire('Le journal est vide : rien à copier.'); return; }
+    const echec = () => { montrer($('.journal-copie'), true); $('.journal-copie').open = true; ta.select(); dire('Copie impossible ici : le texte est sélectionné, fais Ctrl+C.'); };
+    try { navigator.clipboard.writeText(t).then(() => dire('Journal copié : colle-le dans la conversation avec Claude.'), echec); } catch (e) { echec(); }
+  };
+  // Page rechargée en plein paquet : on le dit, on ne reprend rien (le paquet est resté ouvert sur le site).
+  const enCours = store.get('paquet_en_cours', null);
+  if (enCours) {
+    store.set('paquet_en_cours', null);
+    etat(`⚠️ La page a été rechargée pendant l'ouverture d'un paquet (lancée ${enCours.quand}). Je ne reprends rien tout seul : regarde la page, le paquet est peut-être resté ouvert sur une carte. Termine-le toi-même sur le site, puis clique sur Lancer pour le suivant.`);
+  }
+  const dessiner = () => {
+    const r = reglagesPaquets();
+    const ul = $('.mots'); ul.replaceChildren();
+    for (const mot of r.interets) {
+      const li = document.createElement('li'); li.className = 'mot'; li.dataset.mot = mot;
+      const t = document.createElement('span'); t.textContent = mot;
+      const x = document.createElement('button'); x.type = 'button'; x.textContent = '×'; x.setAttribute('aria-label', `Retirer ${mot}`);
+      x.onclick = () => { const s = reglagesPaquets(); dire(enregistrerPaquets({ ...s, interets: s.interets.filter((m) => m !== mot) }) ? '' : MSG_STOCKAGE); dessiner(); };
+      li.append(t, x); ul.appendChild(li);
+    }
+    for (const c of root.querySelectorAll('[data-rarete]')) c.checked = r.raretes.includes(c.dataset.rarete);
+  };
+  const ajouter = () => {
+    const champ = $('[data-paquets=champ]');
+    const mot = champ.value.trim().replace(/\s+/g, ' ');
+    const s = reglagesPaquets();
+    const refus = refusCentreInteret(mot, s.interets);
+    if (refus) { dire(refus); return; }
+    champ.value = '';
+    dire(enregistrerPaquets({ ...s, interets: [...s.interets, mot] }) ? '' : MSG_STOCKAGE);
+    dessiner();
+  };
+  $('[data-paquets=form]').onsubmit = (e) => { e.preventDefault(); ajouter(); };
+  root.querySelectorAll('[data-rarete]').forEach((c) => {
+    c.onchange = () => {
+      const s = reglagesPaquets();
+      const cochees = new Set(s.raretes); c.checked ? cochees.add(c.dataset.rarete) : cochees.delete(c.dataset.rarete);
+      dire(enregistrerPaquets({ ...s, raretes: RARETES_PAQUETS.filter((x) => cochees.has(x)) }) ? '' : MSG_STOCKAGE);
+    };
+  });
+  $('.fab').onclick = () => montrer($('.pan'), $('.pan').hidden);
+  $('.x').onclick = () => montrer($('.pan'), false);
+  dessiner(); journal();
 };
 
 // Lance un mode. reprise ({ etape, tout }) : en cas de raté du site (PanneSite), la page est rechargée
@@ -1911,7 +2218,7 @@ const lireWikipedia = async (cartes) => {
   let faits = 0;
   while (file.length) {
     arret();
-    ui.statut(`Wikipédia : ${faits} / ${aLire.length} titre(s) lu(s)…`);
+    if (ui) ui.statut(`Wikipédia : ${faits} / ${aLire.length} titre(s) lu(s)…`); // pas de panneau Collection sur la page Paquets
     const lot = file.splice(0, WIKI_LOT);
     const mesureLot = { titres: lot.length, debut: Date.now(), ok: false };
     mesurer((m) => m.lots.push(mesureLot));
@@ -2680,7 +2987,7 @@ if (window.__WMR_TEST__ || store.get('debug', false)) {
     classer, planCarte, norm, cle, store, cartesDom, lireCarte, pageInfo,
     lireVue, lireApi, parcourirVue, changerPage, choisirFiltre, choisirTri, listerEtiquettes,
     modeSelection, poserEtiquette, appliquerSurPage, appliquerRanger, modeRanger, modeMigration, motsGroupes, rechercher,
-    supprimerEtiquette, rapportSuppression, suggestions, morceauWikipedia, pageDeDate, monterUI, noterBug, ui: () => ui, stop: () => { STOP = true; },
+    supprimerEtiquette, rapportSuppression, suggestions, morceauWikipedia, pageDeDate, monterUI, demonterUI, reglagesPaquets, ouvrirPaquet, ouvrirSerie, noterBug, ui: () => ui, stop: () => { STOP = true; },
     // mesure Wikipédia, aussi pour scripts/essai-wikipedia.js
     CAUSES_WIKIPEDIA, causeWikipedia, classerPhrase, jugerWikipedia, bilanWikipedia, jsonRapport, VERSION,
   };
@@ -2689,9 +2996,12 @@ if (window.__WMR_TEST__ || store.get('debug', false)) {
 // La page est une application : on surveille les changements d'URL.
 if (!window.__WMR_TEST__) {
   setInterval(() => {
-    const ici = /^\/collection/.test(location.pathname);
-    const host = document.getElementById('wmr-host');
-    if (ici && !host) monterUI();
+    const page = /^\/pulls/.test(location.pathname) ? 'pulls' : /^\/collection/.test(location.pathname) ? 'collection' : '';
+    let host = document.getElementById('wmr-host');
+    // le site change de page sans recharger : le panneau d'une page ne sert pas sur l'autre
+    if (host && host.dataset.page !== page) { demonterUI(host); host = null; }
+    if (page && !host) { monterUI(); host = document.getElementById('wmr-host'); host.dataset.page = page; }
+    const ici = !!page;
     if (host) host.style.display = ici ? '' : 'none';
   }, 1000);
 }

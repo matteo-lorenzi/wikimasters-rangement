@@ -23,7 +23,7 @@ test('sans aucun arrêt : 5 cartes lues une par une, flèche droite ×4, « Cont
   assert.deepEqual(lues, ['Aigaliers', 'Uzès', 'Lac Léman', 'Football', 'France']);
   assert.deepEqual(types(site), ['ouvrir', ...FLECHES(4), 'continuer'], 'seuls Ouvrir, la flèche droite et Continuer sont touchés');
   assert.equal(site.paquets(), 9);
-  assert.match(site.document.body.innerText, /9 \/ 10 paquets disponibles/);
+  assert.match(site.document.body.innerText, /9 \/ 10\s+paquets disponibles/);
   assert.equal(r.etat, 'termine');
   site.fermer();
 });

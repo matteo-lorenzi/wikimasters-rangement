@@ -522,7 +522,13 @@ const creerPagePaquets = async (o) => {
     const afficherListe = () => {
       site.replaceChildren();
       const h = document.createElement('h1'); h.textContent = 'Paquets';
-      const c = document.createElement('div'); c.textContent = etat.paquets <= 0 && o.compteurAbsentA0 ? '' : `${etat.paquets} / 10 paquets disponibles`;
+      // Mise en page réelle (capture du 2026-11-11) : « N / 10 » et « paquets disponibles » sont deux blocs, donc deux lignes dans innerText.
+      const c = document.createElement('div');
+      if (!(etat.paquets <= 0 && o.compteurAbsentA0)) {
+        const n = document.createElement('div'); n.textContent = `${etat.paquets} / 10`;
+        const l = document.createElement('div'); l.textContent = 'paquets disponibles';
+        c.append(n, l);
+      }
       const ouvrir = bouton('Ouvrir', 'ouvrir');
       ouvrir.addEventListener('click', () => {
         if (etat.paquets <= 0) return;

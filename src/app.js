@@ -1081,7 +1081,7 @@ const lirePaquet = async (ouvrir, { reglages, surCarte, surArret, dire = () => {
 
 // ── Série de paquets (ticket #17) : tous les paquets restants, une seule confirmation ──
 const PAUSE_ENTRE_PAQUETS = 2000;
-const lireCompteur = () => { const m = texte().match(/(\d+) \/ \d+ paquets disponibles/); return m ? +m[1] : null; };
+const lireCompteur = () => { const m = texte().match(/(\d+)\s*\/\s*\d+\s+paquets disponibles/); return m ? +m[1] : null; };
 const paquetsDisponibles = () => {
   const n = lireCompteur();
   if (n === null) throw new Error('Je ne lis pas le compteur de paquets disponibles sur la page : va sur la page Paquets (wiki-masters.com/pulls) et relance.');
