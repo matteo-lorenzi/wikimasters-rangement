@@ -59,8 +59,8 @@ const installerInnerText = (window) => {
  *     rechargerApres (0)            : la page est rechargée (comme un F5) après cette requête Wikipédia
  */
 const creerSite = async (config = {}) => {
-  // Page Paquets (`/pulls`, docs/wikimasters.md) : { page: 'pulls', paquets: 7 }. Compteur et bouton Ouvrir, rien de plus
-  // pour l'instant (l'ouverture d'un paquet viendra avec le ticket #16).
+  // Page Paquets (`/pulls`, docs/wikimasters.md) : { page: 'pulls', paquets: 7, paquet: [{ t, d, r }, …], animation: 1000, animationBloquee: false }.
+  // Compteur, bouton Ouvrir, puis le déroulé du site (voir creerPagePaquets).
   if (config.page === 'pulls') return creerPagePaquets(config);
   const o = {
     paginationTardive: 40, pagesFantomes: 2, chargement: 15, pose: 20,
@@ -480,21 +480,82 @@ const creerSite = async (config = {}) => {
 };
 
 // La page Paquets seule : le userscript s'y monte avec son seul onglet « Paquets » ; même rechargement (même localStorage) que la Collection.
+// Déroulé rejoué (docs/wikimasters.md) : Ouvrir → « Carte 1 / N » → flèche droite (le compteur change tout de suite,
+// la carte ~1 s plus tard) → « Encore N cartes » sans effet → « Continuer » sur la dernière → retour à /pulls, compteur - 1.
+// site.actions : { type: 'ouvrir' | 'fleche' | 'continuer' | 'encore' | 'favori' | 'defausser' | 'clic' (autre bouton) }. Seuls les trois premiers sont permis.
+const CARTES_PAQUET = [
+  { t: 'Aigaliers', d: 'commune française du département du Gard', r: 'C' },
+  { t: 'Uzès', d: 'commune française du département du Gard', r: 'C' },
+  { t: 'Lac Léman', d: 'lac alpin', r: 'PC' },
+  { t: 'Football', d: 'sport collectif', r: 'R' },
+  { t: 'France', d: 'pays d\'Europe de l\'Ouest', r: 'UR' },
+];
 const creerPagePaquets = async (o) => {
   const actions = [];
+  const paquet = o.paquet || CARTES_PAQUET;
+  const etat = { paquets: o.paquets ?? 10 };
+  const delai = (o.animation ?? 1000) * 0.02; // même échelle que le script en test
   let ouverte = null;
   const ouvrirPage = async (stockage = {}) => {
     const dom = new JSDOM('<!doctype html><html><body></body></html>', { url: 'https://www.wiki-masters.com/pulls', runScripts: 'outside-only', pretendToBeVisual: true });
     const { window } = dom;
+    const { document } = window;
     installerInnerText(window);
     for (const [k, v] of Object.entries(stockage)) window.localStorage.setItem(k, v);
-    window.document.body.innerHTML = `<div id="site"><h1>Paquets</h1><div>${o.paquets ?? 10} / 10 paquets disponibles</div><button>Ouvrir</button></div>`;
-    window.document.querySelector('button').addEventListener('click', () => actions.push({ type: 'ouvrir' }));
+    const site = document.createElement('div'); site.id = 'site'; document.body.appendChild(site);
+    const bouton = (texte, type, aria) => {
+      const b = document.createElement('button'); b.textContent = texte;
+      if (aria) b.setAttribute('aria-label', aria);
+      b.addEventListener('click', () => actions.push({ type: type || 'clic', nom: aria || texte }));
+      return b;
+    };
+    let i = 0, fige = false, carteDom = null, compteur = null, bas = null;
+    const afficherListe = () => {
+      site.replaceChildren();
+      const h = document.createElement('h1'); h.textContent = 'Paquets';
+      const c = document.createElement('div'); c.textContent = `${etat.paquets} / 10 paquets disponibles`;
+      const ouvrir = bouton('Ouvrir', 'ouvrir');
+      ouvrir.addEventListener('click', () => { if (etat.paquets > 0) { i = 0; afficherPaquet(); } });
+      site.append(h, c, ouvrir);
+    };
+    const remplir = () => {
+      const c = paquet[i];
+      carteDom.replaceChildren();
+      const badge = document.createElement('div'); badge.className = 'absolute top-2 left-2'; badge.textContent = c.r;
+      const h3 = document.createElement('h3'); h3.textContent = c.t;
+      carteDom.append(badge, bouton('★', 'favori', 'Ajouter aux favoris (verrouille la carte : ni défausse, ni vente, ni échange)'), h3);
+      if (c.d) { const p = document.createElement('p'); p.textContent = c.d; carteDom.appendChild(p); }
+      carteDom.appendChild(bouton('Défausser', 'defausser'));
+    };
+    const majBas = () => {
+      bas.replaceChildren();
+      const dernier = i === paquet.length - 1;
+      const b = bouton(dernier ? 'Continuer' : `Encore ${paquet.length - 1 - i} cartes`, dernier ? 'continuer' : 'encore');
+      if (dernier) b.addEventListener('click', () => { etat.paquets--; afficherListe(); });
+      bas.appendChild(b);
+    };
+    const afficherPaquet = () => {
+      site.replaceChildren();
+      compteur = document.createElement('div'); compteur.textContent = `Carte 1 / ${paquet.length}`;
+      carteDom = document.createElement('div'); carteDom.className = `glow-${paquet[0].r}`;
+      bas = document.createElement('div');
+      site.append(compteur, carteDom, bas);
+      remplir(); majBas();
+    };
+    document.addEventListener('keydown', (e) => {
+      if (e.key !== 'ArrowRight' || fige || !carteDom || i >= paquet.length - 1) return;
+      actions.push({ type: 'fleche' });
+      i++; fige = true;
+      compteur.textContent = `Carte ${i + 1} / ${paquet.length}`; majBas();
+      if (o.animationBloquee) return; // la carte attendue n'apparaît jamais
+      setTimeout(() => { carteDom.className = `glow-${paquet[i].r}`; remplir(); fige = false; }, delai);
+    });
+    afficherListe();
     window.__WMR_TEST__ = true;
     window.__WMR_ECHELLE__ = 0.02;
     window.__WMR_RECHARGER__ = () => setTimeout(rechargerPage, 0);
     window.eval(sourceScript());
-    ouverte = { window, document: window.document };
+    ouverte = { window, document };
   };
   const rechargerPage = async () => {
     const ancienne = ouverte.window;
@@ -511,6 +572,7 @@ const creerPagePaquets = async (o) => {
     get document() { return ouverte.document; },
     get wmr() { return ouverte.window.__WMR; },
     actions, attente,
+    paquets: () => etat.paquets,
     recharger: rechargerPage,
     fermer: () => ouverte.window.close(),
   };

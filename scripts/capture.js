@@ -3,7 +3,7 @@
 // donc débordements, coupures et lisibilité ne se voient que là. Détails dans docs/tests.md, « Voir le rendu ».
 //
 //   node scripts/capture.js [dossier]     (défaut : le dossier temporaire du système)
-//   écrit paquets.html (page Paquets), rangement.html, rangement-ouvert.html (Sections dépliées) et diagnostic.html
+//   écrit paquets.html (page Paquets), paquets-confirmation.html et paquets-arret.html (ouverture d'un paquet), rangement.html, rangement-ouvert.html (Sections dépliées) et diagnostic.html
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
@@ -49,6 +49,12 @@ const page = (root, ouvert, onglet) => {
   rp.querySelector('[data-paquets=champ]').value = 'de'; rp.querySelector('[data-paquets=ajouter]').click();
   rp.querySelectorAll('[data-rarete]').forEach((c) => c.checked && c.setAttribute('checked', '')); // le HTML écrit ne garde que les attributs
   fs.writeFileSync(path.join(dossier, 'paquets.html'), page(rp, false, 'paquets'));
+  rp.querySelector('[data-paquets=lancer]').click();
+  fs.writeFileSync(path.join(dossier, 'paquets-confirmation.html'), page(rp, false, 'paquets'));
+  rp.querySelector('[data-paquets=confirmer]').click();
+  const finArret = Date.now() + 10000;
+  while (Date.now() < finArret && rp.querySelector('.arret-paquet').hidden) await new Promise((r) => setTimeout(r, 20));
+  fs.writeFileSync(path.join(dossier, 'paquets-arret.html'), page(rp, false, 'paquets'));
   pq.fermer();
   console.log('Pages écrites dans ' + dossier);
 })();

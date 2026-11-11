@@ -997,6 +997,64 @@ const refusCentreInteret = (mot, liste) => {
   return '';
 };
 
+// ── Ouverture d'un paquet (ticket #16) ──
+// Seuls clics : « Ouvrir », la flèche droite (touche du clavier) et « Continuer » du site. Jamais les favoris, Défausser,
+// les enchères, les échanges ni « Encore N cartes » (qui n'avance pas, docs/wikimasters.md).
+const compteurCarte = () => { const m = texte().match(/Carte (\d+) \/ (\d+)/); return m ? [+m[1], +m[2]] : null; };
+// La carte affichée, ou null : même lecture que la Collection, avec la rareté sous le nom que raisonArret attend.
+const carteAffichee = () => { const el = cartesDom()[0]; if (!el) return null; const c = lireCarte(el); return { t: c.t, d: c.d, rarete: c.r }; };
+const cleCarte = (c) => c.t + '|' + c.d + '|' + c.rarete;
+const ARRETS_GARDES = 200;
+// Attend la carte n (compteur « Carte n / N » ET contenu différent de la précédente : l'animation dure ~1 s), puis laisse l'animation finir.
+const attendreCarteN = async (n, precedente) => {
+  const prete = () => { const k = compteurCarte(), c = carteAffichee(); return !!k && k[0] === n && !!c && (!precedente || cleCarte(c) !== cleCarte(precedente)); };
+  if (!(await attendre(prete, 4000))) throw new Error(`La carte ${n}${compteurCarte() ? ` / ${compteurCarte()[1]}` : ''} n'est pas apparue : le site n'a pas répondu à temps. Le paquet est resté ouvert, rien d'autre n'a été cliqué.`);
+  await sleep(300);
+  if (!prete()) throw new Error(`La carte ${n} a changé pendant la lecture : le site a bougé tout seul. Le paquet est resté ouvert, rien d'autre n'a été cliqué.`);
+  return carteAffichee();
+};
+// Enregistre l'arrêt (relu par le journal, ticket #19) ; rend la fonction qui note la suite donnée.
+const noterArret = (n, carte, raison) => {
+  const liste = store.get('paquets_arrets', []);
+  liste.push({ quand: new Date().toLocaleString(), n, titre: carte.t, description: carte.d, rarete: carte.rarete, type: raison.type, motif: raison.texte, suite: '' });
+  store.set('paquets_arrets', liste.slice(-ARRETS_GARDES));
+  return (suite) => { liste[liste.length - 1].suite = suite; store.set('paquets_arrets', liste.slice(-ARRETS_GARDES)); };
+};
+/**
+ * Ouvre un paquet et lit ses cartes une à une. Rend { etat: 'termine' | 'arret', n, total, carte?, raison? }.
+ *  reglages : { raretes, interets } (reglagesPaquets())
+ *  surCarte(carte, { n, total }) : appelé une fois par carte lue, avant la règle d'arrêt ; peut rendre une carte à juger à la place (ex. description Wikipédia, #17)
+ *  surArret(carte, raison, { n, total }) : rend 'continuer' ou 'arreter' (la personne décide dans le panneau)
+ *  dire(texte) : avancement
+ */
+const ouvrirPaquet = async ({ reglages, surCarte, surArret, dire = () => {} }) => {
+  const ouvrir = bouton(/^Ouvrir$/);
+  if (!ouvrir) throw new Error('Je ne trouve pas le bouton « Ouvrir » : va sur la page Paquets (wiki-masters.com/pulls) et relance.');
+  ouvrir.click();
+  let precedente = null, total = 0, n = 0;
+  for (n = 1; ; n++) {
+    const carte = await attendreCarteN(n, precedente);
+    total = compteurCarte()[1];
+    precedente = carte;
+    dire(`Carte ${n} / ${total} : ${carte.t} (${carte.rarete || '?'})`);
+    const jugee = (surCarte && await surCarte(carte, { n, total })) || carte;
+    const raison = raisonArret(jugee, reglages);
+    if (raison) {
+      const noter = noterArret(n, carte, raison);
+      const choix = await surArret(carte, raison, { n, total });
+      noter(choix);
+      if (choix !== 'continuer') return { etat: 'arret', n, total, carte, raison };
+    }
+    if (n >= total) break;
+    document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', code: 'ArrowRight', keyCode: 39, bubbles: true }));
+  }
+  const suite = bouton(/^Continuer$/);
+  if (!suite) throw new Error('Je ne trouve pas le bouton « Continuer » du site sur la dernière carte. Le paquet est resté ouvert : clique dessus toi-même.');
+  suite.click();
+  if (!(await attendre(() => /paquets disponibles/.test(texte()) && !!bouton(/^Ouvrir$/), 4000))) throw new Error('Le site n\'est pas revenu à la page Paquets après « Continuer ». Regarde la page : le paquet est peut-être déjà rangé.');
+  return { etat: 'termine', n, total };
+};
+
 const monterPaquets = () => {
   const host = document.createElement('div'); host.id = 'wmr-host';
   document.body.appendChild(host);
@@ -1017,10 +1075,50 @@ const monterPaquets = () => {
       <h4>Raretés d'arrêt</h4>
       <p class="hint">L'ouverture s'arrête sur une carte de l'une de ces raretés.</p>
       <div class="rar">${RARETES_PAQUETS.map((r) => `<label class="opt"><input type="checkbox" data-rarete="${r}"> ${r}</label>`).join('')}</div>
+      <h4>Ouvrir un paquet</h4>
+      <button class="b p" data-paquets="lancer">Lancer</button>
+      <div class="conf-paquets" role="group" aria-label="Confirmation" hidden style="display:none">
+        <p class="conf-texte"></p>
+        <button class="b p" data-paquets="confirmer">Ouvrir le paquet</button> <button class="b" data-paquets="annuler">Annuler</button>
+      </div>
+      <div class="etat-paquet" role="status"></div>
+      <div class="arret-paquet" role="alert" hidden style="display:none">
+        <p class="arret-texte"></p>
+        <button class="b p" data-paquets="continuer">Continuer</button> <button class="b" data-paquets="arreter">Arrêter</button>
+      </div>
     </div>
   </div>`;
   const $ = (s) => root.querySelector(s);
   const dire = (t) => { $('.msg-paquets').textContent = t; };
+  // ── ouverture : Lancer → confirmation → paquet ouvert, arrêt avec Continuer / Arrêter ──
+  const etat = (t) => { $('.etat-paquet').textContent = t; };
+  const lancerBtn = $('[data-paquets=lancer]');
+  let decider = null; // résout 'continuer' ou 'arreter'
+  const choisir = (c) => { if (decider) decider(c); };
+  lancerBtn.onclick = () => {
+    const r = reglagesPaquets();
+    const motifs = [r.raretes.length ? `les raretés ${r.raretes.join(', ')}` : '', r.interets.length ? `les mots ${r.interets.map((m) => `« ${m} »`).join(', ')}` : ''].filter(Boolean);
+    $('.conf-texte').textContent = `Je vais ouvrir 1 paquet sur le site : il ne se referme pas et consomme un de tes paquets disponibles. Je lis ses cartes une par une et je m'arrête sur ${motifs.length ? motifs.join(' ou sur ') : 'aucune carte (ni rareté ni mot réglés : le paquet sera passé en entier)'}. Je ne touche ni aux favoris, ni à Défausser, ni aux enchères, ni aux échanges.`;
+    etat(''); montrer($('.conf-paquets'), true); lancerBtn.disabled = true;
+  };
+  $('[data-paquets=annuler]').onclick = () => { montrer($('.conf-paquets'), false); lancerBtn.disabled = false; };
+  $('[data-paquets=continuer]').onclick = () => choisir('continuer');
+  $('[data-paquets=arreter]').onclick = () => choisir('arreter');
+  $('[data-paquets=confirmer]').onclick = async () => {
+    montrer($('.conf-paquets'), false);
+    try {
+      const r = await ouvrirPaquet({
+        reglages: reglagesPaquets(),
+        dire: etat,
+        surArret: (carte, raison, { n, total }) => new Promise((fin) => {
+          $('.arret-texte').textContent = `Arrêt sur la carte ${n} / ${total} : « ${carte.t} » (rareté ${carte.rarete || '?'}), pour le motif ${raison.texte}.${carte.d ? ` Description : ${carte.d}` : ''}`;
+          montrer($('.arret-paquet'), true);
+          decider = (c) => { decider = null; montrer($('.arret-paquet'), false); fin(c); };
+        }),
+      });
+      etat(r.etat === 'arret' ? `Arrêté sur « ${r.carte.t} » : le paquet est laissé ouvert sur le site, je ne clique plus rien.` : `Paquet terminé (${r.total} cartes), le site est revenu à la page Paquets.`);
+    } catch (e) { etat('⚠️ ' + e.message); } finally { lancerBtn.disabled = false; }
+  };
   const dessiner = () => {
     const r = reglagesPaquets();
     const ul = $('.mots'); ul.replaceChildren();
@@ -2041,7 +2139,7 @@ if (window.__WMR_TEST__ || store.get('debug', false)) {
     classer, planCarte, norm, cle, store, cartesDom, lireCarte, pageInfo,
     lireVue, lireApi, parcourirVue, changerPage, choisirFiltre, choisirTri, listerEtiquettes,
     modeSelection, poserEtiquette, appliquerSurPage, appliquerRanger, modeRanger, modeMigration, motsGroupes, rechercher,
-    supprimerEtiquette, rapportSuppression, suggestions, morceauWikipedia, pageDeDate, monterUI, reglagesPaquets, noterBug, ui: () => ui, stop: () => { STOP = true; },
+    supprimerEtiquette, rapportSuppression, suggestions, morceauWikipedia, pageDeDate, monterUI, reglagesPaquets, ouvrirPaquet, noterBug, ui: () => ui, stop: () => { STOP = true; },
     // mesure Wikipédia, aussi pour scripts/essai-wikipedia.js
     CAUSES_WIKIPEDIA, causeWikipedia, classerPhrase, jugerWikipedia, bilanWikipedia, jsonRapport, VERSION,
   };
