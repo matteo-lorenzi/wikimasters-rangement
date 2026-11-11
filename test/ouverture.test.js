@@ -16,7 +16,7 @@ const attendreQue = async (cond, ms = 3000) => {
 const decisions = (...liste) => { const vues = []; return { vues, surArret: async (carte, raison) => { vues.push({ titre: carte.t, rarete: carte.rarete, raison: plat(raison) }); return liste.shift() || 'arreter'; } }; };
 const lancer = (site, opts) => site.wmr.ouvrirPaquet({ reglages: { raretes: [], interets: [] }, surArret: async () => 'arreter', ...opts });
 
-test('sans aucun arrêt : 5 cartes lues une par une, flèche droite ×4, « Continuer » du site, retour à /pulls', async () => {
+test('sans aucun arrêt : 5 cartes lues une par une, bouton « > » ×4, « Continuer » du site, retour à /pulls', async () => {
   const site = await creerSite({ page: 'pulls', paquets: 10 });
   const lues = [];
   const r = await lancer(site, { surCarte: async (c) => { lues.push(c.t); } });

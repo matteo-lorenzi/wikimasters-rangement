@@ -449,6 +449,9 @@ MUTATIONS = [
     ('série : « paquet en cours » levé entre deux paquets', 'app.js',
      "      const r = await ouvrirPaquet({ ...opts, annule, dansSerie: true,", "      const r = await ouvrirPaquet({ ...opts, annule,",
      "« paquet en cours » reste posé"),
+    ('paquet : touche flèche du clavier au lieu du bouton « > »', 'app.js',
+     "    suivante.click();", "    document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));",
+     "sans aucun arrêt"),
 ]
 
 

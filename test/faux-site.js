@@ -441,8 +441,8 @@ const creerSite = async (config = {}) => {
 };
 
 // La page Paquets seule : le userscript s'y monte avec son seul onglet « Paquets » ; même rechargement (même localStorage) que la Collection.
-// Déroulé rejoué (docs/wikimasters.md) : Ouvrir → « Carte 1 / N » → flèche droite (le compteur change tout de suite,
-// la carte ~1 s plus tard) → « Encore N cartes » sans effet → « Continuer » sur la dernière → retour à /pulls, compteur - 1.
+// Déroulé rejoué (docs/wikimasters.md) : Ouvrir → « Carte 1 / N » → bouton rond « > » sans nom (le compteur change tout de suite,
+// la carte ~1 s plus tard ; le clavier, même la vraie touche flèche, n'avance pas) → « Encore N cartes » sans effet → « Continuer » sur la dernière → retour à /pulls, compteur - 1.
 // site.actions : { type: 'ouvrir' | 'fleche' | 'continuer' | 'encore' | 'favori' | 'defausser' | 'clic' (autre bouton) }. Seuls les trois premiers sont permis.
 const CARTES_PAQUET = [
   { t: 'Aigaliers', d: 'commune française du département du Gard', r: 'C' },
@@ -546,8 +546,24 @@ const creerPagePaquets = async (o) => {
       if (c.d) { const p = document.createElement('p'); p.textContent = c.d; carteDom.appendChild(p); }
       carteDom.appendChild(bouton('Défausser', 'defausser'));
     };
+    // Navigation réelle (2026-11-11) : « < » (grisé sur la 1re), 5 points, « > » (grisé sur la dernière) ; boutons ronds sans texte ni nom accessible.
+    const rond = (pas) => {
+      const b = document.createElement('button'); b.className = 'w-12 h-12 rounded-full';
+      b.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg"><path d="m9 18 6-6-6-6"></path></svg>';
+      b.disabled = pas < 0 ? i === 0 : i >= paquet.length - 1;
+      b.addEventListener('click', () => { if (pas > 0) avancer(); else actions.push({ type: 'clic', nom: 'precedente' }); });
+      return b;
+    };
+    const avancer = () => {
+      if (fige || !carteDom || i >= paquet.length - 1) return;
+      actions.push({ type: 'fleche', quand: Date.now() });
+      i++; fige = true;
+      majCompteur(); majBas();
+      if (o.animationBloquee) return; // la carte attendue n'apparaît jamais
+      setTimeout(() => { carteDom.className = `glow-${paquet[i].r}`; remplir(); fige = false; }, delai);
+    };
     const majBas = () => {
-      bas.replaceChildren();
+      bas.replaceChildren(rond(-1), ...paquet.map(() => { const d = document.createElement('button'); d.className = 'w-3 h-3 rounded-full'; return d; }), rond(1));
       const dernier = i === paquet.length - 1;
       const b = bouton(dernier ? 'Continuer' : `Encore ${paquet.length - 1 - i} cartes`, dernier ? 'continuer' : 'encore');
       if (dernier) b.addEventListener('click', () => { etat.paquets--; etat.ouverts++; afficherListe(); });
@@ -572,14 +588,7 @@ const creerPagePaquets = async (o) => {
       if (/wikipedia\.org\/w\/api\.php/.test(String(url))) return reponseWikipedia(url, init);
       throw new TypeError('Failed to fetch');
     };
-    document.addEventListener('keydown', (e) => {
-      if (e.key !== 'ArrowRight' || fige || !carteDom || i >= paquet.length - 1) return;
-      actions.push({ type: 'fleche', quand: Date.now() });
-      i++; fige = true;
-      majCompteur(); majBas();
-      if (o.animationBloquee) return; // la carte attendue n'apparaît jamais
-      setTimeout(() => { carteDom.className = `glow-${paquet[i].r}`; remplir(); fige = false; }, delai);
-    });
+    document.addEventListener('keydown', (e) => { if (e.key === 'ArrowRight') actions.push({ type: 'touche' }); }); // sans effet sur le vrai site
     afficherListe();
     window.__WMR_TEST__ = true;
     window.__WMR_ECHELLE__ = 0.02;

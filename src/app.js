@@ -998,8 +998,14 @@ const refusCentreInteret = (mot, liste) => {
 };
 
 // ── Ouverture d'un paquet (ticket #16) ──
-// Seuls clics : « Ouvrir », la flèche droite (touche du clavier) et « Continuer » du site. Jamais les favoris, Défausser,
-// les enchères, les échanges ni « Encore N cartes » (qui n'avance pas, docs/wikimasters.md).
+// Seuls clics : « Ouvrir », le bouton « > » et « Continuer » du site. Jamais les favoris, Défausser,
+// les enchères, les échanges ni « Encore N cartes » (qui n'avance pas, docs/wikimasters.md). Le clavier n'avance pas non plus.
+// « < » et « > » : ronds, sans texte ni nom accessible ; « > » est le dernier des deux, grisé sur la dernière carte.
+const boutonCarteSuivante = () => {
+  const b = [...document.querySelectorAll('button.rounded-full')]
+    .filter((x) => !x.closest('#wmr-host') && !x.textContent.trim() && !x.getAttribute('aria-label') && x.querySelector('svg')).pop();
+  return b && !b.disabled ? b : null;
+};
 const compteurCarte = () => { const m = texte().match(/Carte\s+(\d+)\s*\/\s*(\d+)/); return m ? [+m[1], +m[2]] : null; };
 // La carte affichée, ou null : même lecture que la Collection, avec la rareté sous le nom que raisonArret attend.
 const carteAffichee = () => { const el = cartesDom()[0]; if (!el) return null; const c = lireCarte(el); return { t: c.t, d: c.d, rarete: c.r }; };
@@ -1074,7 +1080,9 @@ const lirePaquet = async (ouvrir, { reglages, surCarte, surArret, dire = () => {
       if (choix !== 'continuer') return { etat: 'arret', n, total, carte, raison };
     }
     if (n >= total) break;
-    document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', code: 'ArrowRight', keyCode: 39, bubbles: true }));
+    const suivante = boutonCarteSuivante();
+    if (!suivante) throw new Error(`Je ne trouve pas le bouton « > » qui passe à la carte ${n + 1}. Le paquet est resté ouvert, rien d'autre n'a été cliqué.`);
+    suivante.click();
   }
   const suite = bouton(/^Continuer$/);
   if (!suite) throw new Error('Je ne trouve pas le bouton « Continuer » du site sur la dernière carte. Le paquet est resté ouvert : clique dessus toi-même.');
